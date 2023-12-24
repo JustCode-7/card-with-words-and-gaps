@@ -1,19 +1,16 @@
 <div class="container-fluid">
   <mat-card appearance="outlined" class="bg-gradient bg-success">
     <mat-card-header>
-      <mat-card-title>Der Lückentext random aus Datei befüllt</mat-card-title>
+      <mat-card-title>{{this.cardContent.value[getCardNumber()]}}</mat-card-title>
       <mat-card-subtitle>Diese Karte ist für alle sichtbar</mat-card-subtitle>
     </mat-card-header>
-    <mat-card-content>
-      <p>
-        Ein LückenText ...
-      </p>
-    </mat-card-content>
+    <div class="d-flex justify-content-around">
     <mat-card-actions>
-      <button mat-button>Nächste Karte</button>
+      <button mat-raised-button (click)="getCardNumber()">Nächste Karte</button>
     </mat-card-actions>
     <mat-card-actions>
-      <button mat-button>Alle zeigen</button>
+      <button color="primary" mat-raised-button>Alle Antworten zeigen</button>
     </mat-card-actions>
+    </div>
   </mat-card>
 </div>
