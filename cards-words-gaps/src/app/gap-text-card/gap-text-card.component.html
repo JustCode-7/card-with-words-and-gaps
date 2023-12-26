@@ -1,15 +1,15 @@
 <div class="container-fluid">
   <mat-card appearance="outlined" class="bg-gradient bg-success">
     <mat-card-header>
-      <mat-card-title>{{this.cardContent.value[getCardNumber()]}}</mat-card-title>
+      <mat-card-title>{{this.currentCard | async}}</mat-card-title>
       <mat-card-subtitle>Diese Karte ist für alle sichtbar</mat-card-subtitle>
     </mat-card-header>
     <div class="d-flex justify-content-around">
     <mat-card-actions>
-      <button mat-raised-button (click)="getCardNumber()">Nächste Karte</button>
+      <button mat-raised-button class="p-2" (click)="nextCard()">Nächste Karte</button>
     </mat-card-actions>
     <mat-card-actions>
-      <button color="primary" mat-raised-button>Alle Antworten zeigen</button>
+      <button color="primary" class="p-2" mat-raised-button (click)="showAnswers()">Alle Antworten zeigen</button>
     </mat-card-actions>
     </div>
   </mat-card>

@@ -2,20 +2,21 @@ import {Component, OnInit} from '@angular/core';
 import {MatCardModule} from "@angular/material/card";
 import {MatButtonModule} from "@angular/material/button";
 import {BehaviorSubject} from "rxjs";
+import {AsyncPipe} from "@angular/common";
 
 @Component({
   selector: 'app-gap-text-card',
   standalone: true,
   imports: [
     MatCardModule,
-    MatButtonModule
+    MatButtonModule,
+    AsyncPipe
   ],
   templateUrl: './gap-text-card.component.html',
   styleUrl: './gap-text-card.component.scss'
 })
 export class GapTextCardComponent implements OnInit{
 
-  cardContent = new BehaviorSubject<string[]>([""]);
   cardSet: string[] = [
     "Alles ist besser mit ___.",
     "Warum tut mir alles weh?",
@@ -63,14 +64,47 @@ export class GapTextCardComponent implements OnInit{
     "Um sein Land wieder unter Kontrolle zu bringen, setzt Assad auf ___.",
     "Angela Merkel hat ___ zur Chefsache erklärt."
   ]
-
+  currentCardNr = 0
+  cardNumber= parseInt((Math.random() * this.cardSet.length - 1).toFixed());
+  currentCard?: BehaviorSubject<string> ;
 
   ngOnInit(): void {
-    this.cardContent.next(this.cardSet);
+    this.cardNumber = parseInt((Math.random() * this.cardSet.length - 1).toFixed());
+    this.currentCardNr = this.cardNumber;
+    this.currentCard = new BehaviorSubject(this.cardSet[this.currentCardNr])
   }
 
 
-  getCardNumber() {
-    return parseInt((Math.random()*this.cardSet.length-1).toFixed());
+  nextCard() {
+    if(this.cardSet.length < 1){
+      return;
+    }
+    if(this.cardSet.length === 1){
+      this.currentCardNr = 1;
+    }
+    this.cardSet.splice(this.currentCardNr,1);
+    this.cardNumber = parseInt((Math.random() * this.cardSet.length - 1).toFixed());
+    this.currentCardNr = this.cardNumber;
+    if(this.cardSet[this.currentCardNr] === undefined){
+      this.cardNumber = parseInt((Math.random() * this.cardSet.length - 1).toFixed());
+      this.currentCardNr = this.cardNumber;
+    }
+    this.currentCard?.next(this.cardSet[this.currentCardNr])
+    this.changeCardMaster();
+  }
+
+  changeCardMaster() {
+    // change Master
+    this.fillSpielerCardStack()
+  }
+
+
+
+  showAnswers() {
+    console.log("show all")
+  }
+
+  fillSpielerCardStack() {
+    // randomly fill answer cards for every player to 10
   }
 }
