@@ -1,15 +1,15 @@
 import {Component, Input} from '@angular/core';
-import {GapTextCardComponent} from "../components/gap-text-card/gap-text-card.component";
-import {AnswerTextCardComponent} from "../components/answer-text-card/answer-text-card.component";
 import {PlayerPageComponent} from "../player-page/player-page.component";
-import {MatchService} from "../service/match.service";
-import {SpielerKartenService} from "../service/spieler-karten.service";
-import {Game} from "../modal/game-model";
-import {cardSet} from "../modal/catlord-cards";
-import {answerSet} from "../modal/answer-cards";
-import {Spieler} from "../modal/spieler-model";
 import {CatLordPageComponent} from "../cat-lord-page/cat-lord-page.component";
 import {NgIf} from "@angular/common";
+import {GapTextCardComponent} from "../../components/gap-text-card/gap-text-card.component";
+import {AnswerTextCardComponent} from "../../components/answer-text-card/answer-text-card.component";
+import {Spieler} from "../../modal/spieler-model";
+import {MatchService} from "../../service/match.service";
+import {SpielerKartenService} from "../../service/spieler-karten.service";
+import {Game} from "../../modal/game-model";
+import {cardSet} from "../../modal/catlord-cards";
+import {answerSet} from "../../modal/answer-cards";
 
 @Component({
   selector: 'app-match-page',

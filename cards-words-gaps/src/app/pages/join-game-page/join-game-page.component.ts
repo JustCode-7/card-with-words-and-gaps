@@ -5,7 +5,7 @@ import {MatFormFieldModule} from "@angular/material/form-field";
 import {MatIconModule} from "@angular/material/icon";
 import {MatInputModule} from "@angular/material/input";
 import {RouterLink} from "@angular/router";
-import {InputHelperService} from "../service/input-helper.service";
+import {InputHelperService} from "../../service/input-helper.service";
 
 @Component({
   selector: 'app-join-game',
@@ -19,7 +19,7 @@ import {InputHelperService} from "../service/input-helper.service";
     RouterLink
   ],
   templateUrl: './join-game-page.component.html',
-  styleUrl: './join-game.component.scss'
+  styleUrl: './join-game-page.component.scss'
 })
 export class JoinGamePageComponent {
   valuePlayerName= "Bitte Namen eingeben.";

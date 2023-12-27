@@ -1,9 +1,8 @@
 import {Component, Input} from '@angular/core';
-import {AnswerTextCardComponent} from "../components/answer-text-card/answer-text-card.component";
-import {GapTextCardComponent} from "../components/gap-text-card/gap-text-card.component";
+import {AnswerTextCardComponent} from "../../components/answer-text-card/answer-text-card.component";
+import {GapTextCardComponent} from "../../components/gap-text-card/gap-text-card.component";
 import {MatButtonModule} from "@angular/material/button";
 import {NgForOf} from "@angular/common";
-import {SpielerKartenService} from "../service/spieler-karten.service";
 
 @Component({
   selector: 'app-player-page',

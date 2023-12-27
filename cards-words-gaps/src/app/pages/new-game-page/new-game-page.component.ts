@@ -8,7 +8,7 @@ import {MatPaginatorModule} from "@angular/material/paginator";
 import {MatSelectModule} from "@angular/material/select";
 import {AsyncPipe, NgForOf} from "@angular/common";
 import {BehaviorSubject} from "rxjs";
-import {InputHelperService} from "../service/input-helper.service";
+import {InputHelperService} from "../../service/input-helper.service";
 
 @Component({
   selector: 'app-new-game',
@@ -25,7 +25,7 @@ import {InputHelperService} from "../service/input-helper.service";
     AsyncPipe
   ],
   templateUrl: './new-game-page.component.html',
-  styleUrl: './new-game.component.scss'
+  styleUrl: './new-game-page.component.scss'
 })
 export class NewGamePageComponent {
   maximaleSpielerAnzahl =  Array.of("Löschen","1","2","3","4","5","6","7","8","9","10");
