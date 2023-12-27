@@ -24,10 +24,10 @@ import {InputHelperService} from "../service/input-helper.service";
     NgForOf,
     AsyncPipe
   ],
-  templateUrl: './new-game.component.html',
+  templateUrl: './new-game-page.component.html',
   styleUrl: './new-game.component.scss'
 })
-export class NewGameComponent {
+export class NewGamePageComponent {
   maximaleSpielerAnzahl =  Array.of("Löschen","1","2","3","4","5","6","7","8","9","10");
   valuePlayerCount= new BehaviorSubject("Mitspieleranzahl");
   valueCreatorName= "Namen eingeben bitte";

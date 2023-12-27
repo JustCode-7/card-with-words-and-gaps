@@ -18,10 +18,10 @@ import {InputHelperService} from "../service/input-helper.service";
     MatInputModule,
     RouterLink
   ],
-  templateUrl: './join-game.component.html',
+  templateUrl: './join-game-page.component.html',
   styleUrl: './join-game.component.scss'
 })
-export class JoinGameComponent {
+export class JoinGamePageComponent {
   valuePlayerName= "Bitte Namen eingeben.";
 
   constructor(public readonly inputHelper: InputHelperService) {

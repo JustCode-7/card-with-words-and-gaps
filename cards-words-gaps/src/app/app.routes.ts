@@ -1,15 +1,14 @@
-import { Routes } from '@angular/router';
-import {EntryPageComponent} from "./entry-page/entry-page.component";
-import {NewGameComponent} from "./new-game/new-game.component";
-import {JoinGameComponent} from "./join-game/join-game.component";
-import {MatchPageComponent} from "./match-page/match-page.component";
+import {Routes} from '@angular/router';
+import {EntryPageComponent} from "./pages/entry-page/entry-page.component";
+import {NewGamePageComponent} from "./pages/new-game-page/new-game-page.component";
+import {JoinGamePageComponent} from "./pages/join-game-page/join-game-page.component";
+import {MatchPageComponent} from "./pages/match-page/match-page.component";
 
 export const routes: Routes = [
   {path: '', component:EntryPageComponent},
-  {path: 'new-game', component:NewGameComponent, pathMatch: 'full'},
-  {path: 'join-game', component:JoinGameComponent, pathMatch: 'full'},
+  {path: 'new-game', component:NewGamePageComponent, pathMatch: 'full'},
+  {path: 'join-game', component:JoinGamePageComponent, pathMatch: 'full'},
   {path: 'game', component:MatchPageComponent, pathMatch: 'full'},
-
 
 
   {path: '**', component:EntryPageComponent},

@@ -1,10 +1,10 @@
 import {Component, Input} from '@angular/core';
-import {GapTextCardComponent} from "../components/gap-text-card/gap-text-card.component";
+import {GapTextCardComponent} from "../../components/gap-text-card/gap-text-card.component";
 import {MatCardModule} from "@angular/material/card";
 import {NgForOf, NgIf} from "@angular/common";
 import {MatButtonModule} from "@angular/material/button";
-import {MatchService} from "../service/match.service";
-import {Spieler} from "../modal/spieler-model";
+import {MatchService} from "../../service/match.service";
+import {Spieler} from "../../modal/spieler-model";
 
 @Component({
   selector: 'app-cat-lord-page',
