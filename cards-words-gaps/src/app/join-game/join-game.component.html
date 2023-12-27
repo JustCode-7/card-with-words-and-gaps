@@ -1,0 +1,15 @@
+<div class="ms-3 mt-3 justify-content-center align-content-center">
+  <mat-form-field>
+  <input
+    (input)="inputHelper.validate($event)" maxlength="10" matInput type="text" required
+    [(ngModel)]="valuePlayerName" (focus)="valuePlayerName=''">
+    <button matSuffix mat-icon-button aria-label="Clear" (click)="valuePlayerName=''">
+      <mat-icon>close</mat-icon>
+    </button>
+  </mat-form-field>
+</div>
+<div class="ms-3 mt-3">
+  <button disabled="{{valuePlayerName==='' || valuePlayerName==='Bitte Namen eingeben.'}}" class="mt-3" mat-raised-button aria-label="senden" color="primary" [routerLink]="['/game']" (click)="joinGame(valuePlayerName)">
+    Los gehts!<mat-icon>send</mat-icon>
+  </button>
+</div>

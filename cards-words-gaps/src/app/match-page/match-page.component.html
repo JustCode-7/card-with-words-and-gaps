@@ -1,0 +1,8 @@
+<div *ngIf="spielertest.catLord; else catLordView">
+<!-- create or map player per name -->
+<app-player-page [playername] = spielertest.name [playercards] = spielertest.cards>
+</app-player-page>
+</div>
+<ng-template #catLordView>
+  <app-cat-lord-page [playername] = spielertest.name ></app-cat-lord-page>
+</ng-template>

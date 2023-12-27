@@ -5,8 +5,8 @@ import {Component, Input, OnInit} from "@angular/core";
 import {MatCard, MatCardModule} from "@angular/material/card";
 import {MatButton, MatButtonModule} from "@angular/material/button";
 import {MatBadgeModule} from "@angular/material/badge";
-import {SpielerKartenService} from "../service/spieler-karten.service";
-import {SpielerService} from "../service/spieler.service";
+import {SpielerKartenService} from "../../service/spieler-karten.service";
+import {SpielerService} from "../../service/spieler.service";
 
 @Component({
   selector: 'app-answer-text-card',
