@@ -9,7 +9,9 @@
   </mat-form-field>
 </div>
 <div class="ms-3 mt-3">
-  <button disabled="{{valuePlayerName==='' || valuePlayerName==='Bitte Namen eingeben.'}}" class="mt-3" mat-raised-button aria-label="senden" color="primary" [routerLink]="['/game']" (click)="joinGame(valuePlayerName)">
+  <button disabled="{{valuePlayerName==='' || valuePlayerName==='Bitte Namen eingeben.'}}"
+          class="mt-3" mat-raised-button aria-label="senden" color="primary" [routerLink]="['/game']"
+          (click)="joinGame(valuePlayerName)">
     Los gehts!<mat-icon>send</mat-icon>
   </button>
 </div>

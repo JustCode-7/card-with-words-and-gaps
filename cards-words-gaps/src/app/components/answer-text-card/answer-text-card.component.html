@@ -1,9 +1,9 @@
 <div class="container-fluid">
 <div *ngFor="let antwort of spielerAntworten; let i=index">
-<!-- Für Badges brauchst du einzelne Buttons -->
   <button mat-raised-button
           class="w-100 mb-2"
           #btn
+          [disabled]="disabled"
           id="btn{{i}}"
           color="secondary"
           (click)="selectAnswer(btn,i)">

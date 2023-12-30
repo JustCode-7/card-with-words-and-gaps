@@ -6,6 +6,7 @@ import {MatIconModule} from "@angular/material/icon";
 import {MatInputModule} from "@angular/material/input";
 import {RouterLink} from "@angular/router";
 import {InputHelperService} from "../../service/input-helper.service";
+import {Store} from "@ngxs/store";
 
 @Component({
   selector: 'app-join-game',
@@ -24,12 +25,9 @@ import {InputHelperService} from "../../service/input-helper.service";
 export class JoinGamePageComponent {
   valuePlayerName= "Bitte Namen eingeben.";
 
-  constructor(public readonly inputHelper: InputHelperService) {
+  constructor(public readonly inputHelper: InputHelperService,private readonly store:Store) {
   }
 
-  submitPlayername() {
-
-  }
 
   joinGame(valuePlayerName: string) {
       if(valuePlayerName.length > 0){

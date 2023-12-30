@@ -2,11 +2,11 @@ import {BehaviorSubject} from "rxjs";
 import {NgForOf} from "@angular/common";
 import {MatListModule} from "@angular/material/list";
 import {Component, Input, OnInit} from "@angular/core";
-import {MatCard, MatCardModule} from "@angular/material/card";
+import {MatCardModule} from "@angular/material/card";
 import {MatButton, MatButtonModule} from "@angular/material/button";
 import {MatBadgeModule} from "@angular/material/badge";
-import {SpielerKartenService} from "../../service/spieler-karten.service";
 import {SpielerService} from "../../service/spieler.service";
+import {MatchService} from "../../service/match.service";
 
 @Component({
   selector: 'app-answer-text-card',
@@ -24,22 +24,33 @@ import {SpielerService} from "../../service/spieler.service";
 export class AnswerTextCardComponent implements OnInit{
   @Input() spielerAntworten!: string[];
   answers = new BehaviorSubject([""])
+  answerCounter = 0;
+  @Input() disabled: boolean = false;
 
-  constructor(protected readonly spielerService:SpielerService) {
+  constructor(protected readonly spielerService:SpielerService, private readonly matchService:MatchService) {
   }
   ngOnInit(): void {
   this.answers.next(this.spielerAntworten)
   }
 
   selectAnswer(btn: MatButton, i: number) {
-    if(btn.color==="primary"){
-      btn.color="secondary"
-    }else {
-      btn.color="primary"
+    let gapsInTextCounter = this.matchService.currentCatLordCard.value
+      .match(new RegExp("___","g"))?.length
+    if(gapsInTextCounter === undefined){
+      gapsInTextCounter = 1
     }
-    console.log(document.getElementById("btn"+i)!.getAttributeNames())
-    document.getElementById("btn"+i)!
-      .innerText = this.spielerService.setSelectedCardNr()+" "+ document.getElementById("btn"+i)!.innerText;
-    this.spielerService.setSelectedCardNr()
+    this.answerCounter++
+    if(this.answerCounter <= gapsInTextCounter){
+      if(btn.color==="primary"){
+        btn.color="secondary"
+      }else {
+        btn.color="primary"
+      }
+      document.getElementById("btn"+i)!
+        .innerText = this.spielerService.setSelectedCardNr(this.answerCounter)+" "+ document.getElementById("btn"+i)!.innerText;
+      this.spielerService.setSelectedCardNr(this.answerCounter);
+    }
   }
+
+
 }

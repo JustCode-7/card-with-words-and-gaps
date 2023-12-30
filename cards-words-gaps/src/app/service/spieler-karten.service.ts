@@ -1,5 +1,4 @@
-import { Injectable } from '@angular/core';
-import {BehaviorSubject} from "rxjs";
+import {Injectable} from '@angular/core';
 import {Spieler} from "../modal/spieler-model";
 
 @Injectable({
@@ -7,27 +6,27 @@ import {Spieler} from "../modal/spieler-model";
 })
 export class SpielerKartenService {
   private kartenProSpieler = 10
-  answerSet= [""];
 
 
-    verteileKarten(spieler:Spieler[]) {
-    this.mischeKarten()
+    verteileKarten(spieler:Spieler[], spielerKarten: string[]) {
+    const cards = this.mischeKarten(spielerKarten)
     this.kartenProSpieler = 10;
     let tmp1 = this.kartenProSpieler
     let tmp2 = 0;
     let tempArr = [""]
-    for (let i = 1; i <= spieler.length; i++) {
+    for (let i = 0; i <= spieler.length-1; i++) {
       if(i==1){
-        tempArr = this.answerSet.slice(0,tmp1)
+        tempArr = cards.slice(0,tmp1)
       }else {
         tmp2 = tmp1 * 2;
-        tempArr = this.answerSet.slice(tmp1, tmp2)
+        tempArr = cards.slice(tmp1, tmp2)
       }
       tmp1 = tmp2;
-      spieler[i-1].cards = tempArr;
+      spieler[i].cards = tempArr;
+      console.log(spieler[i].cards)
     }
   }
-  private mischeKarten() {
-    this.answerSet.sort(() => Math.random() - 0.5)
+  private mischeKarten(spielerKarten: string[]) {
+   return spielerKarten.sort(() => Math.random() - 0.5)
   }
 }

@@ -9,6 +9,7 @@ import {MatSelectModule} from "@angular/material/select";
 import {AsyncPipe, NgForOf} from "@angular/common";
 import {BehaviorSubject} from "rxjs";
 import {InputHelperService} from "../../service/input-helper.service";
+import {MatchService} from "../../service/match.service";
 
 @Component({
   selector: 'app-new-game',
@@ -32,24 +33,18 @@ export class NewGamePageComponent {
   valuePlayerCount= new BehaviorSubject("Mitspieleranzahl");
   valueCreatorName= "Namen eingeben bitte";
 
-  constructor(public readonly inputHelper: InputHelperService) {
+  constructor(public readonly inputHelper: InputHelperService, private readonly matchService:MatchService) {
   }
 
   submitConfig(valueCreatorName: string, valuePlayerCount: string) {
     if(valueCreatorName.length > 0 && valuePlayerCount.length > 0){
-      // use Action
+      this.matchService.playerCount = parseInt(valuePlayerCount);
+      this.matchService.catlordName = valueCreatorName;
     }
     // create players(spieleranzahl + catlord(catlord-name; catloard: true)) and with dummy_names
     // create session
     // create QR with route to join-game being in session#
 
   }
-
-  setPlayerCount(option: string) {
-    console.log(option)
-    this.valuePlayerCount.next(option);
-    console.log(this.valuePlayerCount.value)
-  }
-
 
 }

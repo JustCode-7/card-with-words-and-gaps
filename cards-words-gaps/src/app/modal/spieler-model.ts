@@ -1,5 +1,5 @@
 export class Spieler {
-  name:string;
+  name: string;
   points: number;
   cards : string[];
   selectedCards: string[];

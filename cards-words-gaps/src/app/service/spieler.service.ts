@@ -1,18 +1,20 @@
-import { Injectable } from '@angular/core';
+import {Injectable} from '@angular/core';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SpielerService {
-  selectedAnswerNr : number | undefined;
-  constructor() { }
 
-  setSelectedCardNr(){
-    if(this.selectedAnswerNr === undefined){
-     return  this.selectedAnswerNr = 1
-    }else {
-    return  this.selectedAnswerNr = this.selectedAnswerNr + 1
-    }
+  setSelectedCardNr(index: number){
+    return index;
+  }
+
+  lockAllActions(){
+    // Lock all Actions on app-answer-text-card
+    this.sendReadyStatusToCatLordPage()
+  }
+
+  sendReadyStatusToCatLordPage(){
 
   }
 }

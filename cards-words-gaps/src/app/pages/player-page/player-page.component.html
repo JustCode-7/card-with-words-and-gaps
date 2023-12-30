@@ -4,5 +4,5 @@
   <button class="mt-2 float-end p-2 me-3 mb-2" mat-raised-button color="warn" (click)="playerReady()">Fertig</button>
 </div>
   <div>
-  <app-answer-text-card class="m-5 p-3"></app-answer-text-card>
+  <app-answer-text-card [disabled]="this.locked.value" [spielerAntworten]="playercards" class="m-5 p-3"></app-answer-text-card>
 </div>

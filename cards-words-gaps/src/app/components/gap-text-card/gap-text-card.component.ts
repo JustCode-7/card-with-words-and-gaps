@@ -3,6 +3,8 @@ import {MatCardModule} from "@angular/material/card";
 import {MatButtonModule} from "@angular/material/button";
 import {BehaviorSubject} from "rxjs";
 import {AsyncPipe} from "@angular/common";
+import {cardSet} from "../../modal/catlord-cards";
+import {MatchService} from "../../service/match.service";
 
 @Component({
   selector: 'app-gap-text-card',
@@ -19,12 +21,18 @@ export class GapTextCardComponent implements OnInit{
   currentCardNr = 0
   cardSet =[""]
   cardNumber= parseInt((Math.random() * this.cardSet.length - 1).toFixed());
-  currentCard?: BehaviorSubject<string> ;
+  currentCard: BehaviorSubject<string> = new BehaviorSubject<string>("") ;
+
+
+  constructor(private readonly matchService:MatchService) {
+  }
 
   ngOnInit(): void {
+    this.cardSet = cardSet;
     this.cardNumber = parseInt((Math.random() * this.cardSet.length - 1).toFixed());
     this.currentCardNr = this.cardNumber;
-    this.currentCard = new BehaviorSubject(this.cardSet[this.currentCardNr])
+    this.currentCard = new BehaviorSubject(this.matchService.game.cardset[this.currentCardNr])
+    this.matchService.currentCatLordCard.next(this.currentCard.value);
   }
 
 
@@ -43,6 +51,7 @@ export class GapTextCardComponent implements OnInit{
       this.currentCardNr = this.cardNumber;
     }
     this.currentCard?.next(this.cardSet[this.currentCardNr])
+    this.matchService.currentCatLordCard.next(this.currentCard.value);
     this.changeCardMaster();
   }
 
