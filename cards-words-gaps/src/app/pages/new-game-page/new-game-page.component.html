@@ -1,7 +1,10 @@
 <div class="ms-3 mt-3 justify-content-center align-content-center">
   <mat-form-field>
   <input
-    (input)="inputHelper.validate($event)" maxlength="10" matInput type="text" required
+    (input)="inputHelper.validate($event)"
+    maxlength="10"
+    matInput type="text"
+    required
          [(ngModel)]="valueCreatorName"
          (focus)="valueCreatorName=''"
          >
@@ -25,7 +28,10 @@
   || valueCreatorName==='Namen eingeben bitte'
   || (valuePlayerCount | async) ===''
   || (valuePlayerCount | async) ==='Löschen'
-  || (valuePlayerCount | async) ==='Mitspieleranzahl'}}" mat-raised-button aria-label="senden" color="primary" [routerLink]="['/game']" (click)="submitConfig(valueCreatorName, valuePlayerCount.value)">
+  || (valuePlayerCount | async) ==='Mitspieleranzahl'}}"
+          mat-raised-button aria-label="senden" color="primary"
+          [routerLink]="['/game']"
+          (click)="submitConfig(valueCreatorName, valuePlayerCount.value)">
     Los gehts!<mat-icon>send</mat-icon>
 </button>
 </div>

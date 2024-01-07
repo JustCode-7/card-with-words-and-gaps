@@ -5,8 +5,8 @@ import {Injectable} from '@angular/core';
 })
 export class SpielerService {
 
-  setSelectedCardNr(index: number){
-    return index;
+  setSelectedCardNr(index: number, innerText: string){
+    return {index: index, innerText: innerText};
   }
 
   lockAllActions(){

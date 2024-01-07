@@ -6,7 +6,7 @@ import {MatIconModule} from "@angular/material/icon";
 import {MatInputModule} from "@angular/material/input";
 import {RouterLink} from "@angular/router";
 import {InputHelperService} from "../../service/input-helper.service";
-import {Store} from "@ngxs/store";
+import {MatchService} from "../../service/match.service";
 
 @Component({
   selector: 'app-join-game',
@@ -25,14 +25,24 @@ import {Store} from "@ngxs/store";
 export class JoinGamePageComponent {
   valuePlayerName= "Bitte Namen eingeben.";
 
-  constructor(public readonly inputHelper: InputHelperService,private readonly store:Store) {
+  constructor(public readonly inputHelper: InputHelperService, private readonly matchService: MatchService) {
   }
 
 
   joinGame(valuePlayerName: string) {
       if(valuePlayerName.length > 0){
-        // use Action
+       const free = this.matchService
+         .game
+         .spieler
+         .find(value => value.name.toLowerCase().includes("dude"))
+        this.matchService
+          .game
+          .spieler
+          .forEach(value => {
+          if(value === free){
+            value.name = valuePlayerName;
+          }
+        })
       }
-
   }
 }

@@ -27,6 +27,10 @@ export class GapTextCardComponent implements OnInit{
   constructor(private readonly matchService:MatchService) {
   }
 
+  getCatLordname(){
+    return this.matchService.game.spieler.find(value => value.catLord)?.name
+  }
+
   ngOnInit(): void {
     this.cardSet = cardSet;
     this.cardNumber = parseInt((Math.random() * this.cardSet.length - 1).toFixed());
@@ -52,21 +56,13 @@ export class GapTextCardComponent implements OnInit{
     }
     this.currentCard?.next(this.cardSet[this.currentCardNr])
     this.matchService.currentCatLordCard.next(this.currentCard.value);
-    this.changeCardMaster();
+    this.matchService.changeCatLord();
   }
 
-  changeCardMaster() {
-    // change Master
-    this.fillSpielerCardStack()
-  }
 
 
 
   showAnswers() {
     console.log("show all")
-  }
-
-  fillSpielerCardStack() {
-    // randomly fill answer cards for every player to 10
   }
 }

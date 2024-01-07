@@ -4,7 +4,6 @@ import {MatCardModule} from "@angular/material/card";
 import {NgForOf, NgIf} from "@angular/common";
 import {MatButtonModule} from "@angular/material/button";
 import {MatchService} from "../../service/match.service";
-import {Spieler} from "../../modal/spieler-model";
 
 @Component({
   selector: 'app-cat-lord-page',
@@ -20,11 +19,9 @@ import {Spieler} from "../../modal/spieler-model";
   styleUrl: './cat-lord-page.component.scss'
 })
 export class CatLordPageComponent {
-  spielerArr: Spieler[] | undefined;
-  @Input() public playername!: string;
+  @Input() public catLordName!: string;
 
-  constructor(private readonly matchService: MatchService) {
-    this.spielerArr = matchService.spielerArr;
+  constructor(protected readonly matchService: MatchService) {
   }
 
   submitDecision() {

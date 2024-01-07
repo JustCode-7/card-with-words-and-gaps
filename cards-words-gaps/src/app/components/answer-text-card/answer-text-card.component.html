@@ -1,13 +1,24 @@
 <div class="container-fluid">
-<div *ngFor="let antwort of spielerAntworten; let i=index">
-  <button mat-raised-button
-          class="w-100 mb-2"
-          #btn
-          [disabled]="disabled"
-          id="btn{{i}}"
-          color="secondary"
-          (click)="selectAnswer(btn,i)">
-     {{ antwort }}
-  </button>
-</div>
+  <div class="d-flex flex-row justify-content-between">
+    <h2>{{ this.playername }}</h2>
+    <button class="mt-2 float-end p-2 me-3 mb-2"
+            mat-raised-button
+            color="warn" (click)="matchService.playerReady(this.playername)">
+      {{this.matchService.lockedPlayerView.value? 'Halt warte!' : 'Fertig' }}</button>
+  </div>
+  <mat-selection-list role="list" #items>
+    @for (antwort of spielerAntworten; track antwort;let i = $index) {
+      <mat-list-option (selectedChange)="checkPossibleAnswers(items, item, btn)" #item>
+        <button mat-raised-button
+                class="w-100"
+                #btn
+                [disabled]="disabled"
+                id="btn{{i}}"
+                color="secondary"
+        >
+          {{ antwort }}
+        </button>
+      </mat-list-option>
+    }
+  </mat-selection-list>
 </div>

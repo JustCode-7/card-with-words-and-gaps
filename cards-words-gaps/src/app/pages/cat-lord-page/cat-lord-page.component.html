@@ -1,9 +1,9 @@
 <app-gap-text-card class="m-5"></app-gap-text-card>
 <div class="d-flex flex-row justify-content-between">
-  <h2>{{ this.playername }}</h2>
+  <h2>{{ this.catLordName }}</h2>
   <button class="mt-2 float-end p-2 me-3 mb-2" mat-raised-button color="warn" (click)="submitDecision()">Sende Entscheidung</button>
 </div>
-<div *ngFor="let spieler of spielerArr">
+<div *ngFor="let spieler of matchService.game.spieler">
   <mat-card *ngIf="!spieler.catLord">
     <mat-card-header>
       <mat-card-title>Antwort von {{spieler.name}}</mat-card-title>

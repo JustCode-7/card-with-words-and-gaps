@@ -5,9 +5,6 @@ import {NgIf} from "@angular/common";
 import {GapTextCardComponent} from "../../components/gap-text-card/gap-text-card.component";
 import {AnswerTextCardComponent} from "../../components/answer-text-card/answer-text-card.component";
 import {MatchService} from "../../service/match.service";
-import {Game} from "../../modal/game-model";
-import {cardSet} from "../../modal/catlord-cards";
-import {answerSet} from "../../modal/answer-cards";
 
 @Component({
   selector: 'app-match-page',
@@ -31,12 +28,26 @@ export class MatchPageComponent implements OnInit{
   }
 
   ngOnInit(): void {
-    let game = new Game(cardSet, answerSet, this.matchService.initPlayerArr(this.matchService.playerCount,this.matchService.catlordName) );
-    this.matchService.initMatch(game)
+    this.matchService.initMatch()
     }
 
 
+  getCatlord() {
+    return this.matchService.game.spieler.find(value => value.catLord)!
+  }
 
+  getPlayer() {
+    return this.matchService.game.spieler.find(value => !value.catLord)!
+  }
 
-
+  checkIfCurrentPlayerIsCatlord() {
+    let isCatLord  = false;
+    const currentCatlord = this.matchService.game.spieler.find(value => value.catLord)!;
+    this.matchService.game.spieler.forEach(value => {
+      if(value === currentCatlord){
+        isCatLord = true
+      }
+    })
+    return isCatLord;
+  }
 }
