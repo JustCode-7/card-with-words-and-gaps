@@ -31,7 +31,8 @@ export class AppServer {
     }
 
     private sockets(): void {
-        this.io = new Server(this.httpServer);
+        //TODO: allow cors just for test
+        this.io = new Server(this.httpServer, {cors: {origin: '*',}});
 
     }
 
