@@ -6,7 +6,8 @@ export enum MYAction {
 }
 
 // Socket.io events
-export enum MYEvent {
+export enum SocketEvent {
   CONNECT = 'connection',
-  DISCONNECT = 'disconnect'
+  DISCONNECT = 'disconnect',
+  RECONNECT = 'reconnect'
 }

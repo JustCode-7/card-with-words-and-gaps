@@ -38,18 +38,23 @@ export class AppServer {
 
     private listen(): void {
         this.httpServer.listen(this.port, () => {
-            console.log('Running server on port %s', this.port);
+            console.log('[server]\nRunning server on port %s', this.port);
         });
 
-        this.io.on('connect', (socket: any) => {
-            console.log('Connected client on port %s.', this.port);
+        this.io.on('connection', (socket: any) => {
+            socket.join("gameRoom1");
+            console.log('[ServerRooms]');
+            socket.rooms.forEach((room: string) => console.log('Roomname: ' + room))
+            console.log('[server]\nConnected client with socketID[%s] on port %s.', socket.id, this.port);
             socket.on('message', (m: Message) => {
-                console.log('[server](message): %s', JSON.stringify(m));
+                console.log('[server]\n (socketid): %s\n (message): %s', socket.id, JSON.stringify(m));
                 this.io.emit('message', m);
             });
-
-            socket.on('disconnect', () => {
-                console.log('Client disconnected');
+            socket.on('reconnect', (socket: any) => {
+                console.log('[server]\nclient try reconnect');
+            });
+            socket.on('disconnect', (socket: any) => {
+                console.log('[server]\nclient disconnected');
             });
         });
     }

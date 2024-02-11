@@ -2,7 +2,7 @@ import {Injectable} from '@angular/core';
 import socketIo, {Socket} from 'socket.io-client';
 import {DefaultEventsMap} from '@socket.io/component-emitter';
 import {Observable} from "rxjs";
-import {MYEvent} from "../util/client-enums";
+import {SocketEvent} from "../util/client-enums";
 
 const SERVER_URL = 'http://localhost:3000';
 
@@ -31,9 +31,10 @@ export class SocketService {
     });
   }
 
-  public onEvent(event: MYEvent): Observable<any> {
+  public onEvent(event: SocketEvent): Observable<any> {
     return new Observable<Event>((observer: { next: () => any; }) => {
       this.socket!.on(event, () => observer.next());
     });
   }
+
 }

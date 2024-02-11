@@ -5,7 +5,7 @@ import {MatCardModule} from "@angular/material/card";
 import {MatButtonModule} from "@angular/material/button";
 import {GapTextCardComponent} from "./components/gap-text-card/gap-text-card.component";
 import {AnswerTextCardComponent} from "./components/answer-text-card/answer-text-card.component";
-import {MYAction, MYEvent} from "./util/client-enums";
+import {MYAction, SocketEvent} from "./util/client-enums";
 import {Message, SocketService} from "./service/socket.service";
 import {HttpClientModule} from "@angular/common/http";
 import {Spieler} from "./modal/spieler-model";
@@ -28,9 +28,9 @@ import {v4 as uuidv4} from 'uuid';
 })
 export class AppComponent implements OnInit {
   messages: Message[] = [];
-  ioConnection: any;
   user: Spieler | undefined;
   messageContent: null | undefined;
+  clientUuid = uuidv4();
 
   constructor(private socketService: SocketService) {
   }
@@ -38,25 +38,32 @@ export class AppComponent implements OnInit {
   ngOnInit(): void {
     // this.user = new Spieler("dude", 1, [], [], false)
     this.initIoConnection();
-    const uuid = uuidv4();
-    this.sendMessage("Hallo " + uuid)
+    //this.sendMessage("Hallo to Client : " + this.clientUuid)
   }
 
   private initIoConnection(): void {
-
     this.socketService.initSocket();
+    this.listenOnEvents()
 
-    this.ioConnection = this.socketService.onMessage()
+  }
+
+  private listenOnEvents(): void {
+    this.socketService.onMessage()
       .subscribe((message: Message) => {
         this.messages.push(message);
       });
 
-    this.socketService.onEvent(MYEvent.CONNECT)
+    this.socketService.onEvent(SocketEvent.CONNECT)
       .subscribe(() => {
         console.log('connected');
       });
 
-    this.socketService.onEvent(MYEvent.DISCONNECT)
+    this.socketService.onEvent(SocketEvent.RECONNECT)
+      .subscribe(() => {
+        console.log('reconnection');
+      });
+
+    this.socketService.onEvent(SocketEvent.DISCONNECT)
       .subscribe(() => {
         console.log('disconnected');
       });
