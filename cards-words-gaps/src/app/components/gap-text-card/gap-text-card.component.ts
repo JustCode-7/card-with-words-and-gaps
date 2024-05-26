@@ -1,10 +1,11 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, inject, OnInit} from '@angular/core';
 import {MatCardModule} from "@angular/material/card";
 import {MatButtonModule} from "@angular/material/button";
 import {BehaviorSubject} from "rxjs";
 import {AsyncPipe} from "@angular/common";
 import {cardSet} from "../../modal/catlord-cards";
 import {MatchService} from "../../service/match.service";
+import {SocketService} from "../../service/socket.service";
 
 @Component({
   selector: 'app-gap-text-card',
@@ -24,7 +25,8 @@ export class GapTextCardComponent implements OnInit{
   currentCard: BehaviorSubject<string> = new BehaviorSubject<string>("") ;
 
 
-  constructor(private readonly matchService:MatchService) {
+  constructor(private readonly matchService:MatchService, socketService: SocketService) {
+    inject(SocketService).sendMessage("CatLord", this.matchService.game.spieler.find(value => value !== null)!);
   }
 
   getCatLordname(){

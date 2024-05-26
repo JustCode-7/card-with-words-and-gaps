@@ -15,6 +15,21 @@
 </div>
 <div class="ms-3 mt-3 justify-content-center align-content-center">
   <mat-form-field>
+    <input
+      (input)="inputHelper.validate($event)"
+      maxlength="10"
+      matInput type="text"
+      required
+      [(ngModel)]="valueRoomID"
+      (focus)="valueRoomID=''"
+    >
+    <button matSuffix mat-icon-button aria-label="Clear" (click)="valueRoomID=''">
+      <mat-icon>close</mat-icon>
+    </button>
+  </mat-form-field>
+</div>
+<div class="ms-3 mt-3 justify-content-center align-content-center">
+  <mat-form-field>
     <mat-label>Wähle eine Spieleranzahl</mat-label>
     <mat-select #select (closed)="valuePlayerCount.next(select.value)">
       <mat-option *ngFor="let i of maximaleSpielerAnzahl"
@@ -30,7 +45,7 @@
   || (valuePlayerCount | async) ==='Löschen'
   || (valuePlayerCount | async) ==='Mitspieleranzahl'}}"
           mat-raised-button aria-label="senden" color="primary"
-          [routerLink]="['/game']"
+          [routerLink]="['/game/', 'catlord']"
           (click)="submitConfig(valueCreatorName, valuePlayerCount.value)">
     Los gehts!<mat-icon>send</mat-icon>
 </button>

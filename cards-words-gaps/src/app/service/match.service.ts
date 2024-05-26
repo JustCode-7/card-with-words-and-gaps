@@ -19,14 +19,15 @@ export class MatchService {
   constructor(private readonly spielerKartenService:SpielerKartenService, private readonly router:Router) {
   }
 
-  initMatch(){
-    this.game = new Game(cardSet, answerSet, this.initPlayerArr(this.playerCount,this.catlordName), "#12345544");
+  initMatch(roomId:string){
+    this.game = new Game(cardSet, answerSet, this.initPlayerArr(this.playerCount,this.catlordName), roomId);
     console.log(this.game)
-    this.router.url.replace(this.router.url, this.router.url+this.game.gameHash)
+
     //TODO:
     // generate gamehash + cookie + new MatchRoute with hash...
     // store set Game
     // this.store.dispatch()
+    //    this.router.url.replace(this.router.url, this.router.url+this.game.gameHash)
   }
 
 

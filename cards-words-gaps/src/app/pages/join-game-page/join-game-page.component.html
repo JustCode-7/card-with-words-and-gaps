@@ -1,7 +1,20 @@
 <div class="ms-3 mt-3 justify-content-center align-content-center">
   <mat-form-field>
+    <mat-label>Wähle einen Raum</mat-label>
+    <mat-select #select (closed)="valuePlayerRoom.next(select.value)" >
+      <mat-option *ngFor="let i of roomIds.value"
+                  value="{{i}}">{{i}}</mat-option>
+    </mat-select>
+  </mat-form-field>
+  <button class="ms-3" mat-icon-button color="accent" aria-label="Raum aktualisieren"
+          (click)="reload()">
+    <mat-icon>autorenew</mat-icon>
+  </button>
+</div>
+<div class="ms-3 mt-3 justify-content-center align-content-center">
+  <mat-form-field>
   <input
-    (input)="inputHelper.validate($event)" maxlength="10" matInput type="text" required
+    (input)="inputHelper.validate($event)" (blur)="updateRooms()" maxlength="10" matInput type="text" required
     [(ngModel)]="valuePlayerName" (focus)="valuePlayerName=''">
     <button matSuffix mat-icon-button aria-label="Clear" (click)="valuePlayerName=''">
       <mat-icon>close</mat-icon>
@@ -10,7 +23,7 @@
 </div>
 <div class="ms-3 mt-3">
   <button disabled="{{valuePlayerName==='' || valuePlayerName==='Bitte Namen eingeben.'}}"
-          class="mt-3" mat-raised-button aria-label="senden" color="primary" [routerLink]="['/game']"
+          class="mt-3" mat-raised-button aria-label="senden" color="primary"
           (click)="joinGame(valuePlayerName)">
     Los gehts!<mat-icon>send</mat-icon>
   </button>

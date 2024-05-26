@@ -10,6 +10,7 @@ import {AsyncPipe, NgForOf} from "@angular/common";
 import {BehaviorSubject} from "rxjs";
 import {InputHelperService} from "../../service/input-helper.service";
 import {MatchService} from "../../service/match.service";
+import {SocketService} from "../../service/socket.service";
 
 @Component({
   selector: 'app-new-game',
@@ -32,14 +33,19 @@ export class NewGamePageComponent {
   maximaleSpielerAnzahl =  Array.of("Löschen","1","2","3","4","5","6","7","8","9","10");
   valuePlayerCount= new BehaviorSubject("Mitspieleranzahl");
   valueCreatorName= "Namen eingeben bitte";
+  valueRoomID= "RaumNamen eingeben bitte";
 
-  constructor(public readonly inputHelper: InputHelperService, private readonly matchService:MatchService) {
+  constructor(public readonly inputHelper: InputHelperService,
+              protected readonly matchService:MatchService,
+              protected readonly socketService:SocketService) {
   }
 
   submitConfig(valueCreatorName: string, valuePlayerCount: string) {
     if(valueCreatorName.length > 0 && valuePlayerCount.length > 0){
       this.matchService.playerCount = parseInt(valuePlayerCount);
       this.matchService.catlordName = valueCreatorName;
+      this.matchService.initMatch(this.valueRoomID);
+      this.socketService.send('setRoomID', this.valueRoomID, JSON.stringify(this.matchService.game))
     }
     // create players(spieleranzahl + catlord(catlord-name; catloard: true)) and with dummy_names
     // create session

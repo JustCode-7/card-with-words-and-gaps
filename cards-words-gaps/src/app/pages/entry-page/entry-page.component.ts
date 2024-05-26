@@ -1,7 +1,8 @@
-import {Component} from '@angular/core';
+import {Component, inject} from '@angular/core';
 import {MatCardModule} from "@angular/material/card";
 import {MatButtonModule} from "@angular/material/button";
 import {RouterLink} from "@angular/router";
+import {MatchService} from "../../service/match.service";
 
 @Component({
   selector: 'app-entry-page',
@@ -17,4 +18,6 @@ import {RouterLink} from "@angular/router";
 export class EntryPageComponent {
 
 
+  protected readonly inject = inject;
+  protected readonly MatchService = MatchService;
 }

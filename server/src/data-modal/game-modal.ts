@@ -19,12 +19,21 @@ export class Spieler {
 }
 
 export class Message {
-    constructor(private from: Spieler, private content: string) {}
+    get spieler(): Spieler {
+        return this._spieler;
+    }
+
+    set spieler(value: Spieler) {
+        this._spieler = value;
+    }
+    constructor(private _spieler: Spieler, private content: string) {
+    }
 }
 
 export class AnswerMessage extends Message{
     constructor(from: Spieler, content: string) {
         super(from, content);
+
     }
 }
 

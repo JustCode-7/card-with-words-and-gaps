@@ -1,4 +1,4 @@
-import {Component, Input, OnInit} from '@angular/core';
+import {Component, Input} from '@angular/core';
 import {PlayerPageComponent} from "../player-page/player-page.component";
 import {CatLordPageComponent} from "../cat-lord-page/cat-lord-page.component";
 import {NgIf} from "@angular/common";
@@ -19,17 +19,13 @@ import {MatchService} from "../../service/match.service";
   templateUrl: './match-page.component.html',
   styleUrl: './match-page.component.scss'
 })
-export class MatchPageComponent implements OnInit{
-  @Input()
-  catLord!: string
-  @Input()
-  spielerAnzahl!: string
-  constructor(public readonly matchService:MatchService) {
-  }
+export class MatchPageComponent {
+  @Input() kindOfPlayer!: string
 
-  ngOnInit(): void {
-    this.matchService.initMatch()
-    }
+
+  constructor(public readonly matchService:MatchService) {
+    console.log(this.kindOfPlayer)
+  }
 
 
   getCatlord() {
@@ -41,13 +37,6 @@ export class MatchPageComponent implements OnInit{
   }
 
   checkIfCurrentPlayerIsCatlord() {
-    let isCatLord  = false;
-    const currentCatlord = this.matchService.game.spieler.find(value => value.catLord)!;
-    this.matchService.game.spieler.forEach(value => {
-      if(value === currentCatlord){
-        isCatLord = true
-      }
-    })
-    return isCatLord;
+    return this.kindOfPlayer === "catlord";
   }
 }

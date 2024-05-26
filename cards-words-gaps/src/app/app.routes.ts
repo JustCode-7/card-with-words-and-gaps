@@ -8,8 +8,8 @@ export const routes: Routes = [
   {path: '', component:EntryPageComponent},
   {path: 'new-game', component:NewGamePageComponent, pathMatch: 'full'},
   {path: 'join-game', component:JoinGamePageComponent, pathMatch: 'full'},
-  {path: 'game', component:MatchPageComponent, pathMatch: 'full'},
-
+  {path: 'game/:kindOfPlayer', component:MatchPageComponent, pathMatch: 'full'},
+  {path: 'game/:kindOfPlayer', component:MatchPageComponent, pathMatch: 'full'},
 
   {path: '**', component:EntryPageComponent},
 ];
