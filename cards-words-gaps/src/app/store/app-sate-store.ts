@@ -21,6 +21,7 @@ const APP_STATE_TOKEN = new StateToken<AppStateModel>('appState');
       cardset: [],
       answerset: [],
       spieler: [],
+      gameHash: ""
     }
   }
 })

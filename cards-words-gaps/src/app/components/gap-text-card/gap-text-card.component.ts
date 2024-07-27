@@ -3,9 +3,7 @@ import {MatCardModule} from "@angular/material/card";
 import {MatButtonModule} from "@angular/material/button";
 import {BehaviorSubject} from "rxjs";
 import {AsyncPipe} from "@angular/common";
-import {cardSet} from "../../modal/catlord-cards";
 import {MatchService} from "../../service/match.service";
-import {SocketService} from "../../service/socket.service";
 
 @Component({
   selector: 'app-gap-text-card',
@@ -19,49 +17,17 @@ import {SocketService} from "../../service/socket.service";
   styleUrl: './gap-text-card.component.scss'
 })
 export class GapTextCardComponent implements OnInit{
-  currentCardNr = 0
-  cardSet =[""]
-  cardNumber= parseInt((Math.random() * this.cardSet.length - 1).toFixed());
-  currentCard: BehaviorSubject<string> = new BehaviorSubject<string>("") ;
+  cardSet: BehaviorSubject<string[]> = new BehaviorSubject([''])
+  matchService:MatchService = inject(MatchService);
 
 
-  constructor(private readonly matchService:MatchService, socketService: SocketService) {
-    inject(SocketService).sendMessage("CatLord", this.matchService.game.spieler.find(value => value !== null)!);
+  ngOnInit(): void {
+    this.cardSet.next(this.matchService.game.value.cardset);
   }
 
   getCatLordname(){
-    return this.matchService.game.spieler.find(value => value.catLord)?.name
+    return this.matchService.game.value.spieler.find(value => value.catLord)?.name
   }
-
-  ngOnInit(): void {
-    this.cardSet = cardSet;
-    this.cardNumber = parseInt((Math.random() * this.cardSet.length - 1).toFixed());
-    this.currentCardNr = this.cardNumber;
-    this.currentCard = new BehaviorSubject(this.matchService.game.cardset[this.currentCardNr])
-    this.matchService.currentCatLordCard.next(this.currentCard.value);
-  }
-
-
-  nextCard() {
-    if(this.cardSet.length < 1){
-      return;
-    }
-    if(this.cardSet.length === 1){
-      this.currentCardNr = 1;
-    }
-    this.cardSet.splice(this.currentCardNr,1);
-    this.cardNumber = parseInt((Math.random() * this.cardSet.length - 1).toFixed());
-    this.currentCardNr = this.cardNumber;
-    if(this.cardSet[this.currentCardNr] === undefined){
-      this.cardNumber = parseInt((Math.random() * this.cardSet.length - 1).toFixed());
-      this.currentCardNr = this.cardNumber;
-    }
-    this.currentCard?.next(this.cardSet[this.currentCardNr])
-    this.matchService.currentCatLordCard.next(this.currentCard.value);
-    this.matchService.changeCatLord();
-  }
-
-
 
 
   showAnswers() {

@@ -1,8 +1,0 @@
-<div *ngIf="checkIfCurrentPlayerIsCatlord(); else playerView">
-<!-- create or map player per name -->
-    <app-cat-lord-page [catLordName] = getCatlord().name ></app-cat-lord-page>
-</div>
-<ng-template #playerView>
-  <app-player-page [player] = getPlayer()>
-  </app-player-page>
-</ng-template>

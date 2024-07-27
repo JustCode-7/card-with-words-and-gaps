@@ -8,29 +8,36 @@ import {Game} from "../modal/game-model";
 
 const SERVER_URL = 'http://localhost:3000';
 
-export interface Message {
-
-}
-
 @Injectable({
   providedIn: 'root'
 })
 export class SocketService {
 
   private socket: Socket<DefaultEventsMap, DefaultEventsMap> | undefined;
-  messageContent: null | undefined;
 
   public initSocket(): void {
     this.socket = socketIo(SERVER_URL);
   }
 
-  public send(event: string, message: Message, game?: string): void {
-    this.socket!.emit(event, message, game);
+  public sendRoomID(event: string, roomid:string): void {
+    this.socket!.emit(event,roomid);
+  }
+
+  public sendGameWithRoomID(event: string,roomid:string, game: Game): void {
+    this.socket!.emit(event,roomid,game);
+  }
+
+  public sendUpdateGame(event: string, game: Game): void {
+    this.socket!.emit(event,game);
+  }
+
+  public sendGetGame(event: string, roomid:string): void {
+    this.socket!.emit(event,roomid);
   }
 
   public getGame(): Observable<Game> {
     return new Observable<Game>((observer: { next: (arg0: Game) => void; }) => {
-      this.socket!.on('game', (game: string) => observer.next(JSON.parse(game)));
+      this.socket!.on('game', (game: Game) => observer.next(game));
     });
   }
 
@@ -40,29 +47,14 @@ export class SocketService {
     });
   }
 
-  public onMessage(): Observable<Message> {
-    return new Observable<Message>((observer: { next: (arg0: Message) => void; }) => {
-      this.socket!.on('message', (data: Message) => observer.next(data));
-    });
-  }
-
   public onEvent(event: SocketEvent): Observable<any> {
     return new Observable<Event>((observer: { next: () => any; }) => {
       this.socket!.on(event, () => observer.next());
     });
   }
 
-  public sendMessage(message: string, user: Spieler): void {
-    if (!message) {
-      return;
-    }
-
-    this.messageContent = null;
-  }
-
   public sendNotification(params: any, action: MYAction, user:Spieler): void {
-    let message: Message;
-
+    let message = {};
     if (action === MYAction.JOINED) {
       message = {
         from: user,

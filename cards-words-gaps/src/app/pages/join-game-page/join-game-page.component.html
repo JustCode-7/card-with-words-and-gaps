@@ -1,7 +1,7 @@
 <div class="ms-3 mt-3 justify-content-center align-content-center">
   <mat-form-field>
     <mat-label>Wähle einen Raum</mat-label>
-    <mat-select #select (closed)="valuePlayerRoom.next(select.value)" >
+    <mat-select #roomId (closed)="valuePlayerRoom.next(roomId.value)" >
       <mat-option *ngFor="let i of roomIds.value"
                   value="{{i}}">{{i}}</mat-option>
     </mat-select>
@@ -24,7 +24,7 @@
 <div class="ms-3 mt-3">
   <button disabled="{{valuePlayerName==='' || valuePlayerName==='Bitte Namen eingeben.'}}"
           class="mt-3" mat-raised-button aria-label="senden" color="primary"
-          (click)="joinGame(valuePlayerName)">
+          (click)="joinGame(valuePlayerName,roomId.value)">
     Los gehts!<mat-icon>send</mat-icon>
   </button>
 </div>

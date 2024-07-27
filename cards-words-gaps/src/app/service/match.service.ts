@@ -1,27 +1,49 @@
-import {Injectable} from '@angular/core';
+import {inject, Injectable} from '@angular/core';
 import {Game} from "../modal/game-model";
 import {Spieler} from "../modal/spieler-model";
 import {SpielerKartenService} from "./spieler-karten.service";
 import {answerSet} from "../modal/answer-cards";
-import {BehaviorSubject} from "rxjs";
-import {Router} from "@angular/router";
+import {BehaviorSubject, distinctUntilChanged} from "rxjs";
 import {cardSet} from "../modal/catlord-cards";
+import {SocketService} from "./socket.service";
+import {SocketEvent} from "../util/client-enums";
 
 @Injectable({
   providedIn: 'root'
 })
 export class MatchService {
-  game!: Game;
+  spielerKartenService:SpielerKartenService = inject(SpielerKartenService);
+  socketService: SocketService =  inject(SocketService);
+  game: BehaviorSubject<Game> = new BehaviorSubject<Game>(new Game([],[],[],""));
   playerCount: number = 1;
   catlordName: string = "lord";
   currentCatLordCard = new BehaviorSubject<string>("");
   lockedPlayerView: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
-  constructor(private readonly spielerKartenService:SpielerKartenService, private readonly router:Router) {
-  }
+  spielerListe: BehaviorSubject<Spieler[]> = new BehaviorSubject([new Spieler("dummy", 1, [], [], false)]);
+  private currentCardNr: number = 1
+
 
   initMatch(roomId:string){
-    this.game = new Game(cardSet, answerSet, this.initPlayerArr(this.playerCount,this.catlordName), roomId);
-    console.log(this.game)
+    this.game.next(new Game(cardSet, answerSet, this.initPlayerArr(this.playerCount,this.catlordName), roomId, this.getRandomCurrentCatlordCard()));
+    console.log("INIT:"+ this.game.value)
+    this.socketService.sendGameWithRoomID('setGame', roomId, this.game.value)
+    console.log(this.game.value)
+
+    this.game.pipe(distinctUntilChanged()).subscribe((game) => {
+      if(game.spieler.length === 0 && game === this.game.value){
+        console.log("Just Default Game available or nothing to update")
+        return
+      }
+      this.socketService.sendUpdateGame('updateGame', this.game.value)
+    })
+    this.socketService.getGame().pipe(distinctUntilChanged())
+      .subscribe((gameFromServer) => {
+        if(gameFromServer.spieler.length === 0 && gameFromServer === this.game.value){
+          console.log("Just Default Game available or nothing to update")
+          return
+        }
+        this.game.next(gameFromServer)
+      })
 
     //TODO:
     // generate gamehash + cookie + new MatchRoute with hash...
@@ -29,6 +51,8 @@ export class MatchService {
     // this.store.dispatch()
     //    this.router.url.replace(this.router.url, this.router.url+this.game.gameHash)
   }
+
+
 
 
   initPlayerArr(anzahl: number, catlordname:string):Spieler[]{
@@ -41,19 +65,6 @@ export class MatchService {
     return spielerArr;
   }
 
-  changeCatLord() {
-    const catlordPlayer = this.game.spieler.find((spieler) => spieler.catLord)
-    const catlordPlayerIndex = this.game.spieler.indexOf(catlordPlayer!)
-    this.game.spieler.forEach((value, index)=> {
-      if(index === catlordPlayerIndex){
-        value.catLord = false
-      }
-      if(index === catlordPlayerIndex+1){
-        value.catLord = true
-      }})
-    // change Master
-    this.fillSpielerCardStack()
-  }
 
   fillSpielerCardStack() {
     // randomly fill answer cards for every player to 10
@@ -84,5 +95,75 @@ export class MatchService {
     }
   }
 
+  generateRandomCardNummber(cardSet: string[]) {
+    this.currentCardNr = parseInt((Math.random() * cardSet.length - 1).toFixed());
+    return this.currentCardNr;
+  }
 
+  private getRandomCurrentCatlordCard() {
+    this.currentCatLordCard.next(cardSet[this.generateRandomCardNummber(cardSet)]);
+    return this.currentCatLordCard.value;
+  }
+
+  nextCard() {
+    let catloardCardset: any[]  = [];
+    let cardNumber = 0;
+      this.socketService.getGame().subscribe((game) =>{
+        catloardCardset =  game.cardset;
+    })
+
+    if(catloardCardset.length < 1){
+      return;
+    }
+    if(catloardCardset.length === 1){
+      cardNumber = 1;
+    }
+    catloardCardset.splice(this.currentCardNr,1);
+    cardNumber = parseInt((Math.random() * catloardCardset.length - 1).toFixed());
+    this.currentCardNr = cardNumber;
+    if(catloardCardset[this.currentCardNr] === undefined){
+      cardNumber = parseInt((Math.random() * catloardCardset.length - 1).toFixed());
+      this.currentCardNr = cardNumber;
+    }
+    this.currentCatLordCard?.next(catloardCardset[this.currentCardNr])
+    this.changeCatLord();
+  }
+
+  changeCatLord() {
+    const catlordPlayer = this.game.value.spieler.find((spieler) => spieler.catLord)
+    const catlordPlayerIndex = this.game.value.spieler.indexOf(catlordPlayer!)
+    this.game.value.spieler.forEach((value, index)=> {
+      if(index === catlordPlayerIndex){
+        value.catLord = false
+      }
+      if(index === catlordPlayerIndex+1){
+        value.catLord = true
+      }})
+    // change Master
+    this.fillSpielerCardStack()
+  }
+
+  initIoConnection(): void {
+    this.socketService.initSocket();
+    this.listenOnEvents()
+
+  }
+
+  private listenOnEvents(): void {
+
+    this.socketService.onEvent(SocketEvent.CONNECT)
+      .subscribe(() => {
+        console.log('connected');
+      });
+
+    this.socketService.onEvent(SocketEvent.RECONNECT)
+      .subscribe(() => {
+        console.log('reconnection');
+      });
+
+    this.socketService.onEvent(SocketEvent.DISCONNECT)
+      .subscribe(() => {
+        console.log('disconnected');
+      });
+  }
 }

@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, inject, OnInit} from '@angular/core';
 import {FormsModule} from "@angular/forms";
 import {MatButtonModule} from "@angular/material/button";
 import {MatFormFieldModule} from "@angular/material/form-field";
@@ -12,7 +12,7 @@ import {MatSelectModule} from "@angular/material/select";
 import {NgForOf} from "@angular/common";
 import {BehaviorSubject} from "rxjs";
 import {SocketService} from "../../service/socket.service";
-import {Game} from "../../modal/game-model";
+import {Spieler} from "../../modal/spieler-model";
 
 @Component({
   selector: 'app-join-game',
@@ -35,22 +35,22 @@ export class JoinGamePageComponent implements OnInit {
   valuePlayerName = "Bitte Namen eingeben.";
   roomIds = new BehaviorSubject<string[]>(Array.of("Löschen"));
   valuePlayerRoom = new BehaviorSubject("PlayerRoom");
-  game: Game | undefined;
+  socketService: SocketService =  inject(SocketService);
+  matchService: MatchService = inject(MatchService);
 
 
   constructor(public readonly inputHelper: InputHelperService,
-              private readonly matchService: MatchService,
-              private readonly socketService: SocketService,
               private readonly router:Router) {
   }
 
   ngOnInit(): void {
+    this.matchService.initIoConnection();
     this.updateRooms();
   }
 
 
   protected updateRooms() {
-    this.socketService.send('getRoomID', 'giveMeRoomID');
+    this.socketService.sendRoomID('getRoomID', 'giveMeRoomID');
     this.socketService.getRoomID().subscribe(values => {
       values.forEach(value => {
         if(!this.roomIds.value.some(currentValue => currentValue === value)){
@@ -60,34 +60,35 @@ export class JoinGamePageComponent implements OnInit {
     })
   }
 
-  joinGame(valuePlayerName: string) {
-    this.socketService.send('joinRoomID', this.valuePlayerRoom.value)
-    this.socketService.getGame().subscribe(value => {
-      this.matchService.game = value;
-      console.log(value)
-
-      if(valuePlayerName.length > 0 && this.matchService.game !== undefined){
-        const free = this.matchService
-          .game
-          .spieler
-          .find(value => value.name.toLowerCase().includes("dude"))
-
-        this.matchService
-          .game
-          .spieler
-          .forEach(player => {
-            if(player === free){
-              player.name = valuePlayerName;
-              console.log(player)
-            }
-          })
-        this.router.navigate(['/game','player'])
+  joinGame(valuePlayerName: string, roomid: string) {
+    this.socketService.sendRoomID('joinRoomID', roomid)
+    console.log("Joind Room: "+roomid)
+    this.socketService.getGame().subscribe({
+      next: gamefromBE => {
+        if (valuePlayerName.length > 0 && gamefromBE !== undefined) {
+          const free = gamefromBE.spieler.find((value:Spieler) => value.name.toLowerCase().includes("dude"))
+          console.log("Free Bot"+free?.name)
+          gamefromBE
+            .spieler
+            .forEach((player: Spieler) => {
+              if (player === free) {
+                player.name = valuePlayerName;
+                console.log("Player JOINED")
+                console.log(player)
+              }
+            })
+        }
+        this.matchService.game.next(gamefromBE);
+        this.socketService.sendUpdateGame('updateGame', this.matchService.game.value)
+        console.log(this.matchService.game.value)
       }
     });
 
+
+    this.router.navigate(['/game',roomid, valuePlayerName])
   }
 
   reload() {
-    this.ngOnInit();
+    this.updateRooms();
   }
 }

@@ -1,6 +1,6 @@
 import {createServer} from 'http';
 import {Server} from 'socket.io';
-import {Game, Message} from "./data-modal/game-modal";
+import {Game} from "./data-modal/game-modal";
 import express, {Express} from 'express';
 
 export class AppServer {
@@ -68,29 +68,44 @@ export class AppServer {
             socket.emit('roomID', this.rooms);
         });
 
-        socket.on('setRoomID',(roomID: string, game:string) => {
+        socket.on('setGame',(roomID: string, game:Game) => {
             console.log(this.getLocalDateTime() + ' [server]-> (socketid): %s\n (RoomID): %s', socket.id, roomID);
             this.io.in(socket.id).socketsLeave(socket.rooms.values().next().value);
             this.rooms.push(roomID);
-            this.game = JSON.parse(game);
-            socket.emit('game', JSON.stringify(this.game));
+            console.log(this.getLocalDateTime() + ' [server]-> SET GAME'+ JSON.stringify(game));
+            this.game = game;
+            socket.emit('game',this.game);
         });
+
+        socket.on('getGame',(roomID: string) => {
+            console.log(this.getLocalDateTime() + ' [server]-> (socketid): %s\n (RoomID): %s', socket.id, roomID);
+            this.io.in(socket.id).socketsLeave(socket.rooms.values().next().value);
+            this.rooms.push(roomID);
+            console.log(this.getLocalDateTime() + ' [server]-> GET GAME'+ JSON.stringify(this.game));
+            socket.emit('game',this.game);
+        });
+
+        socket.on('updateGame',(game:Game) => {
+            console.log(this.getLocalDateTime() + ' [server]-> (socketid): %s\n -> Call UpdateGame', socket.id);
+            console.log(this.getLocalDateTime() + ' [server]-> UPDATE GAME'+ JSON.stringify(game));
+            if(game.spieler.length !== 0 && this.game !== game){
+                this.game = game;
+            }
+        });
+
         socket.on('getRoomID', () => {
             console.log(this.getLocalDateTime() + ' [server]-> (socketid): %s\n (RoomID): %s', socket.id, socket.rooms);
             socket.emit('roomID', this.rooms);
         });
+
         socket.on('joinRoomID', async (roomID: string) => {
             this.io.in(socket.id).socketsLeave(socket.rooms.values().next().value);
             socket.join(roomID);
             console.log(this.getLocalDateTime() + ' [server]-> joint (socketid): %s\n (RoomID): %s', socket.id, roomID);
-            socket.emit('game', JSON.stringify(this.game));
+            socket.emit('game', this.game);
             await this.getAllSocketsOfRoom();
         });
 
-        socket.on('message', (m: Message) => {
-            console.log(this.getLocalDateTime() + ' [server]-> (socketid): %s\n (spieler): %s', socket.id, JSON.stringify(m.spieler));
-            // this.io.to(this.defaultRoomID).emit('message', m.spieler);
-        });
         socket.on('reconnect', (socket: any) => {
             console.log(this.getLocalDateTime() + ' [server]->  socket with id %s try reconnect', socket.id);
         });

@@ -45,7 +45,7 @@
   || (valuePlayerCount | async) ==='Löschen'
   || (valuePlayerCount | async) ==='Mitspieleranzahl'}}"
           mat-raised-button aria-label="senden" color="primary"
-          [routerLink]="['/game/', 'catlord']"
+          [routerLink]="['/game', valueRoomID, valueCreatorName,'catlord']"
           (click)="submitConfig(valueCreatorName, valuePlayerCount.value)">
     Los gehts!<mat-icon>send</mat-icon>
 </button>
