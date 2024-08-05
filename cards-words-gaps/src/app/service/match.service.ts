@@ -8,9 +8,7 @@ import {cardSet} from "../modal/catlord-cards";
 import {SocketService} from "./socket.service";
 import {SocketEvent} from "../util/client-enums";
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable()
 export class MatchService {
   spielerKartenService:SpielerKartenService = inject(SpielerKartenService);
   socketService: SocketService =  inject(SocketService);
