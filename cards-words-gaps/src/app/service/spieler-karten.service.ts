@@ -1,9 +1,7 @@
 import {Injectable} from '@angular/core';
 import {Spieler} from "../modal/spieler-model";
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable()
 export class SpielerKartenService {
   private kartenProSpieler = 10
   verteilteKarten= [[""]];

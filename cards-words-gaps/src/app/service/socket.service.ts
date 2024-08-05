@@ -8,9 +8,7 @@ import {Game} from "../modal/game-model";
 
 const SERVER_URL = 'http://localhost:3000';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable()
 export class SocketService {
 
   private socket: Socket<DefaultEventsMap, DefaultEventsMap> | undefined;

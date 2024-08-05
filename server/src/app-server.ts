@@ -1,6 +1,6 @@
 import {createServer} from 'http';
 import {Server} from 'socket.io';
-import {Game} from "./data-modal/game-modal";
+import {Game} from "./data-model/game-model.js";
 import express, {Express} from 'express';
 
 export class AppServer {
