@@ -5,7 +5,7 @@ import {MatButtonModule} from "@angular/material/button";
 import {NgForOf} from "@angular/common";
 import {BehaviorSubject} from "rxjs";
 import {MatchService} from "../../service/match.service";
-import {Spieler} from "../../modal/spieler-model";
+import {Spieler} from "../../model/spieler-model";
 
 @Component({
   selector: 'app-player-page',

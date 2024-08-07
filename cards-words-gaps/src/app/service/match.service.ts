@@ -1,18 +1,18 @@
 import {inject, Injectable} from '@angular/core';
-import {Game} from "../modal/game-model";
-import {Spieler} from "../modal/spieler-model";
+import {Game} from "../model/game-model";
+import {Spieler} from "../model/spieler-model";
 import {SpielerKartenService} from "./spieler-karten.service";
-import {answerSet} from "../modal/answer-cards";
+import {answerSet} from "../data/answer-cards";
 import {BehaviorSubject, distinctUntilChanged} from "rxjs";
-import {cardSet} from "../modal/catlord-cards";
+import {cardSet} from "../data/catlord-cards";
 import {SocketService} from "./socket.service";
 import {SocketEvent} from "../util/client-enums";
 
-@Injectable()
+@Injectable({providedIn: 'root'})
 export class MatchService {
-  spielerKartenService:SpielerKartenService = inject(SpielerKartenService);
-  socketService: SocketService =  inject(SocketService);
-  game: BehaviorSubject<Game> = new BehaviorSubject<Game>(new Game([],[],[],""));
+  spielerKartenService: SpielerKartenService = inject(SpielerKartenService);
+  socketService: SocketService = inject(SocketService);
+  game: BehaviorSubject<Game> = new BehaviorSubject<Game>(new Game([], [], [], ""));
   playerCount: number = 1;
   catlordName: string = "lord";
   currentCatLordCard = new BehaviorSubject<string>("");
@@ -21,14 +21,14 @@ export class MatchService {
   private currentCardNr: number = 1
 
 
-  initMatch(roomId:string){
-    this.game.next(new Game(cardSet, answerSet, this.initPlayerArr(this.playerCount,this.catlordName), roomId, this.getRandomCurrentCatlordCard()));
-    console.log("INIT:"+ this.game.value)
+  initMatch(roomId: string) {
+    this.game.next(new Game(cardSet, answerSet, this.initPlayerArr(this.playerCount, this.catlordName), roomId, this.getRandomCurrentCatlordCard()));
+    console.log("INIT:" + this.game.value)
     this.socketService.sendGameWithRoomID('setGame', roomId, this.game.value)
     console.log(this.game.value)
 
     this.game.pipe(distinctUntilChanged()).subscribe((game) => {
-      if(game.spieler.length === 0 && game === this.game.value){
+      if (game.spieler.length === 0 && game === this.game.value) {
         console.log("Just Default Game available or nothing to update")
         return
       }
@@ -36,7 +36,7 @@ export class MatchService {
     })
     this.socketService.getGame().pipe(distinctUntilChanged())
       .subscribe((gameFromServer) => {
-        if(gameFromServer.spieler.length === 0 && gameFromServer === this.game.value){
+        if (gameFromServer.spieler.length === 0 && gameFromServer === this.game.value) {
           console.log("Just Default Game available or nothing to update")
           return
         }
@@ -51,13 +51,11 @@ export class MatchService {
   }
 
 
-
-
-  initPlayerArr(anzahl: number, catlordname:string):Spieler[]{
+  initPlayerArr(anzahl: number, catlordname: string): Spieler[] {
     let spielerArr = [];
-    spielerArr.push(new Spieler(catlordname,0,[],[],true))
-    for (let i = 1; i <= anzahl ; i++) {
-      spielerArr.push(new Spieler("Dude"+i,0,[],[],false))
+    spielerArr.push(new Spieler(catlordname, 0, [], [], true))
+    for (let i = 1; i <= anzahl; i++) {
+      spielerArr.push(new Spieler("Dude" + i, 0, [], [], false))
     }
     this.spielerKartenService.verteileKarten(spielerArr, answerSet);
     return spielerArr;
@@ -67,12 +65,14 @@ export class MatchService {
   fillSpielerCardStack() {
     // randomly fill answer cards for every player to 10
   }
+
   refillPlayerAnswersToTen() {
     this.spielerKartenService.verteilteKarten.map(verteilteKarten => {
       verteilteKarten.filter(value => value !== "")
         .forEach(cardString => this.removeFromCardSet(cardString))
     })
   }
+
   private removeFromCardSet(cardString: string) {
     //TODO: tempArr mit dem AnswerCards im Spiel,
     // vergleichen und nicht vorhandene auffüllen.
@@ -86,9 +86,9 @@ export class MatchService {
     //TODO: lock all on app-answer-text-card, if answers selected
     // set PlayerState to Ready, commit answers
 
-    if (!this.lockedPlayerView.value){
+    if (!this.lockedPlayerView.value) {
       this.lockedPlayerView.next(true);
-    }else {
+    } else {
       this.lockedPlayerView.next(false);
     }
   }
@@ -104,22 +104,22 @@ export class MatchService {
   }
 
   nextCard() {
-    let catloardCardset: any[]  = [];
+    let catloardCardset: any[] = [];
     let cardNumber = 0;
-      this.socketService.getGame().subscribe((game) =>{
-        catloardCardset =  game.cardset;
+    this.socketService.getGame().subscribe((game) => {
+      catloardCardset = game.cardset;
     })
 
-    if(catloardCardset.length < 1){
+    if (catloardCardset.length < 1) {
       return;
     }
-    if(catloardCardset.length === 1){
+    if (catloardCardset.length === 1) {
       cardNumber = 1;
     }
-    catloardCardset.splice(this.currentCardNr,1);
+    catloardCardset.splice(this.currentCardNr, 1);
     cardNumber = parseInt((Math.random() * catloardCardset.length - 1).toFixed());
     this.currentCardNr = cardNumber;
-    if(catloardCardset[this.currentCardNr] === undefined){
+    if (catloardCardset[this.currentCardNr] === undefined) {
       cardNumber = parseInt((Math.random() * catloardCardset.length - 1).toFixed());
       this.currentCardNr = cardNumber;
     }
@@ -130,21 +130,20 @@ export class MatchService {
   changeCatLord() {
     const catlordPlayer = this.game.value.spieler.find((spieler) => spieler.catLord)
     const catlordPlayerIndex = this.game.value.spieler.indexOf(catlordPlayer!)
-    this.game.value.spieler.forEach((value, index)=> {
-      if(index === catlordPlayerIndex){
+    this.game.value.spieler.forEach((value, index) => {
+      if (index === catlordPlayerIndex) {
         value.catLord = false
       }
-      if(index === catlordPlayerIndex+1){
+      if (index === catlordPlayerIndex + 1) {
         value.catLord = true
-      }})
+      }
+    })
     // change Master
     this.fillSpielerCardStack()
   }
 
   initIoConnection(): void {
-    this.socketService.initSocket();
     this.listenOnEvents()
-
   }
 
   private listenOnEvents(): void {
