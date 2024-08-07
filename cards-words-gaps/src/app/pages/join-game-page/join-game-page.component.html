@@ -1,30 +1,47 @@
-<div class="ms-3 mt-3 justify-content-center align-content-center">
+<form [formGroup]="form" (ngSubmit)="onSubmit()">
   <mat-form-field>
     <mat-label>Wähle einen Raum</mat-label>
-    <mat-select #roomId (closed)="valuePlayerRoom.next(roomId.value)" >
-      <mat-option *ngFor="let i of roomIds.value"
-                  value="{{i}}">{{i}}</mat-option>
+    <mat-select formControlName="room">
+      <mat-option *ngFor="let room of rooms()"
+                  value="{{room}}">
+        {{ room }}
+      </mat-option>
     </mat-select>
   </mat-form-field>
-  <button class="ms-3" mat-icon-button color="accent" aria-label="Raum aktualisieren"
-          (click)="reload()">
-    <mat-icon>autorenew</mat-icon>
+  <!--  <button class="ms-3"-->
+  <!--          mat-icon-button-->
+  <!--          color="accent"-->
+  <!--          aria-label="Raum aktualisieren"-->
+  <!--          (click)="reload()"-->
+  <!--  >-->
+  <!--    <mat-icon>autorenew</mat-icon>-->
+  <!--  </button>-->
+</form>
+
+<div>
+  <mat-form-field>
+    <mat-label>Raum</mat-label>
+    <input matInput [formControl]="newRoomControl" required maxlength="32">
+  </mat-form-field>
+  <button class="ms-3"
+          mat-icon-button
+          color="accent"
+          aria-label="Raum aktualisieren"
+          (click)="createRoom()"
+  >
+    <mat-icon>plus</mat-icon>
+    Create Room
   </button>
 </div>
-<div class="ms-3 mt-3 justify-content-center align-content-center">
-  <mat-form-field>
-  <input
-    (input)="inputHelper.validate($event)" (blur)="updateRooms()" maxlength="10" matInput type="text" required
-    [(ngModel)]="valuePlayerName" (focus)="valuePlayerName=''">
-    <button matSuffix mat-icon-button aria-label="Clear" (click)="valuePlayerName=''">
-      <mat-icon>close</mat-icon>
-    </button>
-  </mat-form-field>
-</div>
-<div class="ms-3 mt-3">
-  <button disabled="{{valuePlayerName==='' || valuePlayerName==='Bitte Namen eingeben.'}}"
-          class="mt-3" mat-raised-button aria-label="senden" color="primary"
-          (click)="joinGame(valuePlayerName,roomId.value)">
-    Los gehts!<mat-icon>send</mat-icon>
+
+
+<div>
+  <button [disabled]="form.invalid"
+          mat-raised-button
+          aria-label="Spiel beitreten"
+          color="primary"
+  >
+    <mat-icon>rocket_launch</mat-icon>
+    Spiel Beitreten!
   </button>
 </div>
