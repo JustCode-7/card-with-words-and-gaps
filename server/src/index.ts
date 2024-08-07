@@ -20,9 +20,9 @@ io.on('connection', (socket) => {
         socket.to(data.room).emit("room",)
     })
 
-    socket.on('create-room', (data) => {
-        socket.join(data.room)
-        createRoom(data.room)
+    socket.on('create-room', (room: string) => {
+        socket.join(room)
+        createRoom(room)
         socket.emit("room-list", getRooms())
     })
 

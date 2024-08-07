@@ -8,7 +8,6 @@ import {MatOptionModule} from "@angular/material/core";
 import {MatSelectModule} from "@angular/material/select";
 import {NgForOf} from "@angular/common";
 import {SocketService} from "../../service/socket.service";
-import {toSignal} from "@angular/core/rxjs-interop";
 
 @Component({
   selector: 'app-join-game',
@@ -30,7 +29,7 @@ export class JoinGamePageComponent implements OnInit, OnDestroy {
 
   private socketService = inject(SocketService);
 
-  rooms = toSignal(this.socketService.rooms$);
+  rooms = this.socketService.rooms$;
 
   form = new FormGroup({
     room: new FormControl("", [Validators.required]),

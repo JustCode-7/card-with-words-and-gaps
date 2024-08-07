@@ -1,12 +1,12 @@
 // TODO shared
-interface Participant {
+interface Player {
     id: number;
     name: string;
 }
 
-const rooms: Map<String, Participant[]> = new Map();
+const rooms: Map<String, Player[]> = new Map();
 
-export function joinRoom(room: string, participant: Participant) {
+export function joinRoom(room: string, participant: Player) {
 
     const existingRoom = rooms.get(room);
     if (existingRoom != undefined) {

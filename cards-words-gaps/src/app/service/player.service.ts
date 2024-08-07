@@ -1,5 +1,6 @@
 import {Injectable} from '@angular/core';
 import {v4 as uuidv4} from 'uuid';
+import {Player} from "../model/Player";
 
 @Injectable({providedIn: 'root'})
 export class PlayerService {
@@ -14,7 +15,7 @@ export class PlayerService {
     localStorage.setItem('playerName', name);
   }
 
-  public getPlayer() {
+  public getPlayer(): Player {
     return {
       id: localStorage.getItem('playerId')!,
       name: localStorage.getItem('playerName')!,

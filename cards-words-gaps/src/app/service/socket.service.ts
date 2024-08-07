@@ -1,6 +1,6 @@
-import {inject, Injectable} from '@angular/core';
+import {inject, Injectable, signal} from '@angular/core';
 import {io, Socket} from 'socket.io-client';
-import {BehaviorSubject, Observable} from "rxjs";
+import {Observable} from "rxjs";
 import {MYAction, SocketEvent} from "../util/client-enums";
 import {Spieler} from "../model/spieler-model";
 import {Game} from "../model/game-model";
@@ -17,15 +17,14 @@ export class SocketService {
   private socket: Socket = io(SERVER_URL);
   private playerService = inject(PlayerService);
 
-  public rooms$ = new BehaviorSubject<string[]>([]);
+  public rooms$ = signal<string[]>([]);
 
   private roomListener(rooms: string[]) {
-    this.rooms$.next(rooms);
+    this.rooms$.set(rooms);
   }
 
-  public onRoomListener(): Observable<string[]> {
-    this.socket.on("room-list", this.roomListener);
-    return this.rooms$.asObservable();
+  public onRoomListener(): void {
+    this.socket.on("room-list", this.roomListener.bind(this));
   }
 
   public offRoomListener() {

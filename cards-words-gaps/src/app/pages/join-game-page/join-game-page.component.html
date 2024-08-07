@@ -24,12 +24,11 @@
     <input matInput [formControl]="newRoomControl" required maxlength="32">
   </mat-form-field>
   <button class="ms-3"
-          mat-icon-button
+          mat-button
           color="accent"
           aria-label="Raum aktualisieren"
-          (click)="createRoom()"
-  >
-    <mat-icon>plus</mat-icon>
+          (click)="createRoom()">
+    <mat-icon>add</mat-icon>
     Create Room
   </button>
 </div>
