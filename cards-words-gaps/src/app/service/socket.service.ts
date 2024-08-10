@@ -1,4 +1,4 @@
-import {inject, Injectable, signal} from '@angular/core';
+import {inject, Injectable} from '@angular/core';
 import {io, Socket} from 'socket.io-client';
 import {Observable} from "rxjs";
 import {MYAction, SocketEvent} from "../util/client-enums";
@@ -6,6 +6,7 @@ import {Spieler} from "../model/spieler-model";
 import {Game} from "../model/game-model";
 import {PlayerService} from "./player.service";
 import {Player} from "../model/Player";
+import {DataService} from "./data.service";
 
 
 const SERVER_URL = 'http://localhost:3000';
@@ -16,11 +17,10 @@ export class SocketService {
 
   private socket: Socket = io(SERVER_URL);
   private playerService = inject(PlayerService);
+  private dataService = inject(DataService);
 
-  public rooms$ = signal<string[]>([]);
-
-  private roomListener(rooms: string[]) {
-    this.rooms$.set(rooms);
+  private roomListener(roomList: string[]) {
+    this.dataService.roomListSignal.set(roomList);
   }
 
   public onRoomListener(): void {
@@ -28,7 +28,7 @@ export class SocketService {
   }
 
   public offRoomListener() {
-    this.socket.off("room-list", this.roomListener);
+    this.socket.off("room-list", this.roomListener.bind(this));
   }
 
   public createRoom(room: string) {

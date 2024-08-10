@@ -19,7 +19,7 @@ import {MatchService} from "../../service/match.service";
   templateUrl: './cat-lord-page.component.html',
   styleUrl: './cat-lord-page.component.scss'
 })
-export class CatLordPageComponent{
+export class CatLordPage {
   @Input() public catLordName!: string;
   matchService: MatchService = inject(MatchService);
 

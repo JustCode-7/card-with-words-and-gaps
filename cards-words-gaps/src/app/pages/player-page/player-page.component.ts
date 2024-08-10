@@ -10,16 +10,16 @@ import {Spieler} from "../../model/spieler-model";
 @Component({
   selector: 'app-player-page',
   standalone: true,
-    imports: [
-        AnswerTextCardComponent,
-        GapTextCardComponent,
-        MatButtonModule,
-        NgForOf
-    ],
+  imports: [
+    AnswerTextCardComponent,
+    GapTextCardComponent,
+    MatButtonModule,
+    NgForOf
+  ],
   templateUrl: './player-page.component.html',
   styleUrl: './player-page.component.scss'
 })
-export class PlayerPageComponent implements OnInit {
+export class PlayerPage implements OnInit {
   @Input('playername') playername!: string;
   locked = new BehaviorSubject(false);
   matchService: MatchService = inject(MatchService);
@@ -30,7 +30,7 @@ export class PlayerPageComponent implements OnInit {
     this.matchService.socketService.getGame().subscribe(game => {
       game.spieler.find(spieler => {
         if (!spieler.catLord && spieler.name === this.playername) {
-          console.log("Player found: "+spieler.name)
+          console.log("Player found: " + spieler.name)
           this.player.next(spieler);
         }
       })
