@@ -47,7 +47,7 @@ import {Router} from "@angular/router";
   `,
   styles: ``
 })
-export class PlayerNamePageComponent implements OnInit {
+export class PlayerNamePage implements OnInit {
   private playerService = inject(PlayerService);
   private router = inject(Router);
 

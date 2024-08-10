@@ -1,25 +1,53 @@
 // TODO shared
 interface Player {
-    id: number;
+    id: string;
     name: string;
 }
 
-const rooms: Map<String, Player[]> = new Map();
+// TODO shared
+interface Room {
+    roomId: string;
+    createdTimestampMilliseconds: number;
+    players: Player[];
+}
 
-export function joinRoom(room: string, participant: Player) {
+const rooms: Map<string, Room> = new Map();
 
-    const existingRoom = rooms.get(room);
-    if (existingRoom != undefined) {
-        rooms.set(room, [...existingRoom, participant]);
-    } else {
-        rooms.set(room, [participant])
+export function joinRoom(roomId: string, player: Player) {
+
+    const existingRoom = rooms.get(roomId);
+    if (existingRoom === undefined) {
+        throw new Error(`room ${roomId} does not exist`);
     }
+
+    const updatedRoom = {
+        ...existingRoom,
+        players: [
+            ...existingRoom.players,
+            player,
+        ]
+    }
+    rooms.set(roomId, updatedRoom);
+
 }
 
-export function createRoom(room: string) {
-    rooms.set(room, [])
+export function createRoom(roomId: string) {
+    const newRoom: Room = {
+        roomId: roomId,
+        createdTimestampMilliseconds: Date.now(),
+        players: [],
+    }
+    rooms.set(roomId, newRoom)
 }
 
-export function getRooms(): string[] {
+export function getRoomIds(): string[] {
     return [...rooms.keys()] as string[];
+}
+
+export function getRoomById(roomId: string): Room {
+    const room = rooms.get(roomId)
+    if (room === undefined) {
+        throw new Error(`room '${roomId}' not found`);
+    }
+    return room;
 }
