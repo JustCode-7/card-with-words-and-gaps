@@ -27,8 +27,10 @@ import {RoomCreateComponent} from "../../components/room-create/room-create.comp
     RoomCreateComponent,
   ],
   template: `
-    <app-room-list/>
-    <app-room-create/>
+    <div class="container">
+      <app-room-list/>
+      <app-room-create/>
+    </div>
   `,
   styles: ``
 })

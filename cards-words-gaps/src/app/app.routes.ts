@@ -4,11 +4,14 @@ import {CatLordPage} from "./pages/cat-lord-page/cat-lord-page.component";
 import {PlayerPage} from "./pages/player-page/player-page.component";
 import {PlayerNamePage} from "./pages/player-name-page/player-name-page.component";
 import {roomListResolver} from "./resolver/room-list.resolver";
+import {GamePage} from "./pages/game-page/game-page.component";
 
 
 export const routes: Routes = [
   {path: '', component: PlayerNamePage},
-  {path: 'join-game', component: RoomOverviewPage, resolve: {roomList: roomListResolver}, pathMatch: 'full'},
+  {path: 'join-game', component: RoomOverviewPage, resolve: {roomList: roomListResolver}},
+  {path: 'game/:room', component: GamePage},
+
   {path: 'game/:roomname/:playername/catlord', component: CatLordPage, pathMatch: 'full'},
   {path: 'game/:roomname/:playername', component: PlayerPage, pathMatch: 'full'},
 
