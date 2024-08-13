@@ -3,6 +3,7 @@ import {MatButtonModule} from "@angular/material/button";
 import {MatIconModule} from "@angular/material/icon";
 import {DataService} from "../../service/data.service";
 import {MatCardModule} from "@angular/material/card";
+import {RouterLink} from "@angular/router";
 
 @Component({
   selector: 'app-room-list',
@@ -10,7 +11,8 @@ import {MatCardModule} from "@angular/material/card";
   imports: [
     MatButtonModule,
     MatIconModule,
-    MatCardModule
+    MatCardModule,
+    RouterLink,
   ],
   template: `
     <h1>List of existing Rooms</h1>
@@ -18,13 +20,14 @@ import {MatCardModule} from "@angular/material/card";
       <mat-card>
         <mat-card-content>
           {{ room }}
-          <button mat-button
-                  color="primary"
-                  aria-label="Join"
+          <a mat-raised-button
+             color="primary"
+             aria-label="Join"
+             [routerLink]="['/game', room]"
           >
             <mat-icon>rocket_launch</mat-icon>
             Join
-          </button>
+          </a>
         </mat-card-content>
       </mat-card>
     } @empty {
