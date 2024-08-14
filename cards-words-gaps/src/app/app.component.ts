@@ -5,7 +5,6 @@ import {MatCardModule} from "@angular/material/card";
 import {MatButtonModule} from "@angular/material/button";
 import {GapTextCardComponent} from "./components/gap-text-card/gap-text-card.component";
 import {AnswerTextCardComponent} from "./components/answer-text-card/answer-text-card.component";
-import {HttpClientModule} from "@angular/common/http";
 
 @Component({
   selector: 'app-root',
@@ -17,6 +16,10 @@ import {HttpClientModule} from "@angular/common/http";
     MatButtonModule,
     GapTextCardComponent,
     AnswerTextCardComponent,
+
+// TODO: `HttpClientModule` should not be imported into a component directly.
+// Please refactor the code to add `provideHttpClient()` call to the provider list in the
+// application bootstrap logic and remove the `HttpClientModule` import from this component.
     HttpClientModule
   ],
   templateUrl: './app.component.html',
