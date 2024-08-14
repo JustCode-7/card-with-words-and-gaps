@@ -4,10 +4,12 @@
     <button class="mt-2 float-end p-2 me-3 mb-2"
             mat-raised-button
             color="warn" (click)="matchService.playerReady(this.playername)">
-      {{this.matchService.lockedPlayerView.value? 'Halt warte!' : 'Fertig' }}</button>
+      {{ this.matchService.lockedPlayerView.value ? 'Halt warte!' : 'Fertig' }}
+    </button>
   </div>
-  <mat-selection-list role="list" #items>
-    @for (antwort of spielerAntworten; track antwort;let i = $index) {
+  <h2>Please pick your cards</h2>
+  <mat-selection-list #items>
+    @for (antwort of spielerAntworten; track antwort; let i = $index) {
       <mat-list-option (selectedChange)="checkPossibleAnswers(items, item, btn)" #item>
         <button mat-raised-button
                 class="w-100"
