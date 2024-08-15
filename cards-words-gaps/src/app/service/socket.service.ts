@@ -5,7 +5,7 @@ import {MYAction, SocketEvent} from "../util/client-enums";
 import {Spieler} from "../model/spieler-model";
 import {Game} from "../model/game-model";
 import {PlayerService} from "./player.service";
-import {Player} from "../model/Player";
+import {Player} from "../model/player";
 import {DataService} from "./data.service";
 
 

@@ -17,10 +17,10 @@ import {RouterLink} from "@angular/router";
   template: `
     <h1>List of existing Rooms</h1>
     @for (room of rooms(); track room) {
-      <mat-card>
+      <mat-card appearance="outlined">
         <mat-card-content>
           {{ room }}
-          <a mat-raised-button
+          <a mat-stroked-button
              color="primary"
              aria-label="Join"
              [routerLink]="['/game', room]"

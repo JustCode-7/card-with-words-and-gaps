@@ -1,6 +1,6 @@
 import {Component, inject, Input, OnInit} from '@angular/core';
 import {AnswerTextCardComponent} from "../../components/answer-text-card/answer-text-card.component";
-import {GapTextCardComponent} from "../../components/gap-text-card/gap-text-card.component";
+import {CardGapTextComponent} from "../../components/card-gap-text/card-gap-text.component";
 import {MatButtonModule} from "@angular/material/button";
 import {NgForOf} from "@angular/common";
 import {BehaviorSubject} from "rxjs";
@@ -12,7 +12,7 @@ import {Spieler} from "../../model/spieler-model";
   standalone: true,
   imports: [
     AnswerTextCardComponent,
-    GapTextCardComponent,
+    CardGapTextComponent,
     MatButtonModule,
     NgForOf
   ],

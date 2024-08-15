@@ -29,7 +29,7 @@ import {SocketService} from "../../service/socket.service";
           }
         </mat-form-field>
         <button class="ms-3"
-                mat-button
+                mat-stroked-button
                 [disabled]="form.invalid"
                 color="accent"
                 aria-label="Create Room"
