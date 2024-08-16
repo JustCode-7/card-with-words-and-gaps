@@ -27,7 +27,6 @@ import {CardGapTextComponent} from "../../components/card-gap-text/card-gap-text
         (onFirstChoice)="firstCard.set($event)"
         (onSecondChoice)="secondCard.set($event)"
       />
-      <app-answer-text-card [spielerAntworten]="['Santa', 'Batman']"/>
     </div>
   `,
   styles: ``

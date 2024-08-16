@@ -12,7 +12,7 @@ import {Card} from "../../model/card";
     MatButtonModule
   ],
   template: `
-    <h2>Please select your cards</h2>
+    <h2>Please pick your cards</h2>
     @for (card of cards(); track card.id) {
       <div class="highlight-on-hover d-flex w-100 justify-content-between align-items-baseline">
         {{ card.text }}

@@ -1,7 +1,46 @@
 import {createServer} from 'http';
 import {Server} from 'socket.io';
-import {Game} from "./data-model/game-model.js";
 import express, {Express} from 'express';
+
+class Spieler {
+    name: string;
+    points: number;
+    cards: string[];
+    selectedCards: string[];
+    catLord: boolean;
+
+    constructor(name: string,
+                points: number,
+                cards: string[],
+                selectedCards: string[],
+                catLord: boolean) {
+        this.name = name;
+        this.points = 0;
+        this.cards = cards;
+        this.selectedCards = selectedCards;
+        this.catLord = catLord;
+    }
+}
+
+class Game {
+    cardset: string[] = []
+    answerset: string[] = []
+    spieler: Spieler[] = []
+    gameHash: string
+    currentCatlordCard: string = ""
+
+    constructor(cardset: string[],
+                answerset: string[],
+                spieler: Spieler[],
+                gameHash: string,
+                currentCatlordCard: string = "") {
+        this.cardset = cardset;
+        this.answerset = answerset;
+        this.spieler = spieler;
+        this.gameHash = gameHash;
+        this.currentCatlordCard = currentCatlordCard;
+    }
+}
 
 export class AppServer {
     public static readonly PORT: number = 3000;
@@ -39,16 +78,14 @@ export class AppServer {
     }
 
     private getLocalDateTime() {
-        return new Date().toDateString() +" | "+new Date().toLocaleTimeString();
+        return new Date().toDateString() + " | " + new Date().toLocaleTimeString();
     }
-
 
 
     private async listen(): Promise<void> {
         this.io.listen(this.port, () => {
             console.log(this.getLocalDateTime() + ' [server]-> Running server on port %s', this.port);
         });
-
 
 
         this.io.on('connection', async (socket: any) => {
@@ -63,32 +100,32 @@ export class AppServer {
 
 
     private registerEvents(socket: any) {
-        socket.on('connect',() => {
+        socket.on('connect', () => {
             console.log(this.getLocalDateTime() + 'a new client connected %s', socket.id);
             socket.emit('roomID', this.rooms);
         });
 
-        socket.on('setGame',(roomID: string, game:Game) => {
+        socket.on('setGame', (roomID: string, game: Game) => {
             console.log(this.getLocalDateTime() + ' [server]-> (socketid): %s\n (RoomID): %s', socket.id, roomID);
             this.io.in(socket.id).socketsLeave(socket.rooms.values().next().value);
             this.rooms.push(roomID);
-            console.log(this.getLocalDateTime() + ' [server]-> SET GAME'+ JSON.stringify(game));
+            console.log(this.getLocalDateTime() + ' [server]-> SET GAME' + JSON.stringify(game));
             this.game = game;
-            socket.emit('game',this.game);
+            socket.emit('game', this.game);
         });
 
-        socket.on('getGame',(roomID: string) => {
+        socket.on('getGame', (roomID: string) => {
             console.log(this.getLocalDateTime() + ' [server]-> (socketid): %s\n (RoomID): %s', socket.id, roomID);
             this.io.in(socket.id).socketsLeave(socket.rooms.values().next().value);
             this.rooms.push(roomID);
-            console.log(this.getLocalDateTime() + ' [server]-> GET GAME'+ JSON.stringify(this.game));
-            socket.emit('game',this.game);
+            console.log(this.getLocalDateTime() + ' [server]-> GET GAME' + JSON.stringify(this.game));
+            socket.emit('game', this.game);
         });
 
-        socket.on('updateGame',(game:Game) => {
+        socket.on('updateGame', (game: Game) => {
             console.log(this.getLocalDateTime() + ' [server]-> (socketid): %s\n -> Call UpdateGame', socket.id);
-            console.log(this.getLocalDateTime() + ' [server]-> UPDATE GAME'+ JSON.stringify(game));
-            if(game.spieler.length !== 0 && this.game !== game){
+            console.log(this.getLocalDateTime() + ' [server]-> UPDATE GAME' + JSON.stringify(game));
+            if (game.spieler.length !== 0 && this.game !== game) {
                 this.game = game;
             }
         });
@@ -117,7 +154,7 @@ export class AppServer {
     private async getAllSocketsOfRoom() {
         for (const room of this.rooms) {
             const sockets = await this.io.in(room).fetchSockets();
-            if(sockets.length !== 0){
+            if (sockets.length !== 0) {
                 console.log(`socket from Room:  ${room} - START: für %s Sockets`, sockets.length);
                 for (const socket of sockets) {
                     console.log(`Socket-ID: ${socket.id}`);
