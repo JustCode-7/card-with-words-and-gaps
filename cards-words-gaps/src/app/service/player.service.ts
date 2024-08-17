@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {v4 as uuidv4} from 'uuid';
-import {Player} from "../model/Player";
+import {Player} from "../model/player";
 
 @Injectable({providedIn: 'root'})
 export class PlayerService {

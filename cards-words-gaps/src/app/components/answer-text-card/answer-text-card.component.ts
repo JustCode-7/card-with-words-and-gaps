@@ -1,7 +1,7 @@
 import {BehaviorSubject} from "rxjs";
 import {AsyncPipe, NgForOf} from "@angular/common";
 import {MatListModule, MatListOption, MatSelectionList} from "@angular/material/list";
-import {Component, Input, OnInit} from "@angular/core";
+import {Component, inject, Input, OnInit} from "@angular/core";
 import {MatCardModule} from "@angular/material/card";
 import {MatButton, MatButtonModule} from "@angular/material/button";
 import {MatBadgeModule} from "@angular/material/badge";
@@ -21,20 +21,22 @@ import {MatchService} from "../../service/match.service";
   templateUrl: './answer-text-card.component.html',
   styleUrl: './answer-text-card.component.scss'
 })
-export class AnswerTextCardComponent implements OnInit{
+export class AnswerTextCardComponent implements OnInit {
+
+  matchService = inject(MatchService);
+
   @Input() spielerAntworten!: string[];
-  answers = new BehaviorSubject([""])
-  answerCounter = 0;
   @Input() disabled: boolean = false;
-  gapsInTextCounter = 1;
   @Input() playername!: string;
 
-  constructor(protected readonly matchService:MatchService) {
-  }
+  answers = new BehaviorSubject([""])
+  answerCounter = 0;
+  gapsInTextCounter = 1;
+
   ngOnInit(): void {
-  this.answers.next(this.spielerAntworten);
-  this.gapsInTextCounter = this.matchService.currentCatLordCard.value
-      .match(new RegExp("___","g"))?.length ?? 1;
+    this.answers.next(this.spielerAntworten);
+    this.gapsInTextCounter = this.matchService.currentCatLordCard.value
+      .match(/___/g)?.length ?? 1;
   }
 
   private changeBtnColor(btn: MatButton) {
@@ -49,18 +51,18 @@ export class AnswerTextCardComponent implements OnInit{
 
   checkPossibleAnswers(items: MatSelectionList, item: MatListOption, btn: MatButton) {
 
-    if (items.selectedOptions.selected.length > this.gapsInTextCounter){
+    if (items.selectedOptions.selected.length > this.gapsInTextCounter) {
       item._setSelected(false)
     }
-    if (items.selectedOptions.selected.length <= this.gapsInTextCounter){
+    if (items.selectedOptions.selected.length <= this.gapsInTextCounter) {
       this.changeBtnColor(btn)
     }
     this.saveAnswer(btn, item)
   }
 
   private saveAnswer(btn: MatButton, item: MatListOption) {
-    if(item.selected){
-      if(this.gapsInTextCounter < this.answerCounter){
+    if (item.selected) {
+      if (this.gapsInTextCounter < this.answerCounter) {
 
       }
       console.log(btn._elementRef.nativeElement.innerText + " --" + this.answerCounter)

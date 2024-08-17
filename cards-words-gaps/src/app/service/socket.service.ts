@@ -5,7 +5,7 @@ import {MYAction, SocketEvent} from "../util/client-enums";
 import {Spieler} from "../model/spieler-model";
 import {Game} from "../model/game-model";
 import {PlayerService} from "./player.service";
-import {Player} from "../model/Player";
+import {Player} from "../model/player";
 import {DataService} from "./data.service";
 
 
@@ -19,6 +19,7 @@ export class SocketService {
   private playerService = inject(PlayerService);
   private dataService = inject(DataService);
 
+
   private roomListener(roomList: string[]) {
     this.dataService.roomListSignal.set(roomList);
   }
@@ -31,14 +32,18 @@ export class SocketService {
     this.socket.off("room-list", this.roomListener.bind(this));
   }
 
+
   public createRoom(room: string) {
     this.socket.emit("create-room", room);
   }
 
-  public joinRoom(roomName: string) {
+  public joinRoom(room: string) {
     const player: Player = this.playerService.getPlayer();
-    console.log("joining room", roomName, player);
-    this.socket.emit("join-room", roomName, player);
+    console.log("joining room", room, player);
+    this.socket.emit("join-room", {room, player});
+
+    // for debug
+    this.socket.on('join-room', data => console.log('[join-room] received', data));
   }
 
   // +++++++++++++++++++++++++++++++++++++++
