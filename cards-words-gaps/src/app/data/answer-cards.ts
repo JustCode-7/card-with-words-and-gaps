@@ -62,7 +62,7 @@ export const answerSet = [
   "Impotenz",
   "Männliche Rückenbehaarung",
   "Eine Erektion, die mehrere Stunden anhält",
-  "PenisneidPenisneid",
+  "Penisneid",
   "Sex im Fahrstuhl",
   "Sharknado",
   "Ein toter Anhalter im Kofferraum",
