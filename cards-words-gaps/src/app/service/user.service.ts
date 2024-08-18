@@ -3,7 +3,7 @@ import {v4 as uuidv4} from 'uuid';
 import {Player} from "../model/player";
 
 @Injectable({providedIn: 'root'})
-export class PlayerService {
+export class UserService {
 
   constructor() {
     if (!localStorage.getItem('playerId')) {
@@ -15,7 +15,7 @@ export class PlayerService {
     localStorage.setItem('playerName', name);
   }
 
-  public getPlayer(): Player {
+  public getUser(): Player {
     return {
       id: localStorage.getItem('playerId')!,
       name: localStorage.getItem('playerName')!,

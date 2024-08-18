@@ -4,9 +4,8 @@ import {Observable} from "rxjs";
 import {MYAction, SocketEvent} from "../util/client-enums";
 import {Spieler} from "../model/spieler-model";
 import {Game} from "../model/game-model";
-import {PlayerService} from "./player.service";
+import {UserService} from "./user.service";
 import {Player} from "../model/player";
-import {DataService} from "./data.service";
 
 
 const SERVER_URL = 'http://localhost:3000';
@@ -15,34 +14,18 @@ const SERVER_URL = 'http://localhost:3000';
 @Injectable({providedIn: 'root'})
 export class SocketService {
 
-  private socket: Socket = io(SERVER_URL);
-  private playerService = inject(PlayerService);
-  private dataService = inject(DataService);
-
-
-  private roomListener(roomList: string[]) {
-    this.dataService.roomListSignal.set(roomList);
-  }
-
-  public onRoomListener(): void {
-    this.socket.on("room-list", this.roomListener.bind(this));
-  }
-
-  public offRoomListener() {
-    this.socket.off("room-list", this.roomListener.bind(this));
-  }
-
+  public socket: Socket = io(SERVER_URL);
+  private userService = inject(UserService);
 
   public createRoom(room: string) {
     this.socket.emit("create-room", room);
   }
 
-  public joinRoom(room: string) {
-    const player: Player = this.playerService.getPlayer();
-    console.log("joining room", room, player);
-    this.socket.emit("join-room", {room, player});
+  public joinRoom(roomId: string) {
+    const player: Player = this.userService.getUser();
+    console.log("joining room", roomId, player);
+    this.socket.emit("join-room", {roomId, player});
 
-    // for debug
     this.socket.on('join-room', data => console.log('[join-room] received', data));
   }
 

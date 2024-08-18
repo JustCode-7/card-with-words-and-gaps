@@ -1,7 +1,7 @@
 import express from "express";
 import {createServer} from "http";
 import {Server} from "socket.io";
-import {createRoom, getRoomById, getRoomIds, joinRoom} from "./rooms.js";
+import {createRoom, getRoomById, getRoomIds, joinRoom, roomExists} from "./services/room.state.js";
 import cors from "cors";
 import {drawAnswerCard, initCardMapFor} from "./services/card.state.js";
 import {Player} from "./model/player.js";
@@ -19,37 +19,71 @@ app.get("/rooms", (req, res) => {
     res.send(getRoomIds())
 })
 
+app.get("/room/:roomId/players", (req, res) => {
+    const roomId = req.params.roomId
+    if (!roomExists(roomId)) {
+        res.sendStatus(404)
+        return
+    }
+    const players = getRoomById(roomId)!.players
+    res.send(players)
+})
+
 
 interface JoinRoomEvent {
-    room: string; // uuid v4
+    roomId: string; // uuid v4
     player: Player
 }
 
 io.on('connection', (socket) => {
-    console.log('a user connected')
+    console.debug('a user connected', socket.id)
 
-    socket.on('join-room', ({room, player}: JoinRoomEvent) => {
-        console.log(`Player ${player.id}/${player.name} joined room ${room}`)
+    socket.on('create-room', (roomId: string) => {
+        if (roomExists(roomId)) {
+            console.warn(`room '${roomId}' already exists`)
+            socket.emit('create-room', {
+                createRoomSucceeded: false,
+                msg: `Failed to create room '${roomId}'`
+            })
+            return;
+        }
 
-        socket.join(room)
-        joinRoom(room, player)
-        socket.to(room).emit("room-players", getRoomById(room).players)
-
-        // TODO draw cards, setup player, maybe start game page (aka lobby)? to initialize proper data
-        const answerCard = drawAnswerCard(room)
-        socket.emit('answer-card', answerCard)
-        socket.emit('join-room', `Hello ${player.name}, you successfully joined room ${room}`)
-    })
-
-    socket.on('create-room', (room: string) => {
-        socket.join(room)
-        createRoom(room)
-        initCardMapFor(room)
+        socket.join(roomId)
+        createRoom(roomId)
+        initCardMapFor(roomId)
         socket.emit("room-list", getRoomIds())
     })
 
+    socket.on('join-room', ({roomId, player}: JoinRoomEvent) => {
+        if (!roomExists(roomId) || player.id == null || player.name == null) {
+            socket.emit('join-room', {
+                joinRoomSucceeded: false,
+                msg: `Failed to join room '${roomId}'`
+            })
+            console.warn(`Player ${player.id}/${player.name} failed to join ${roomId}`)
+            return;
+        }
+
+        joinRoom(roomId, player);
+        socket.join(roomId)
+        socket.to(roomId).emit("room-players", getRoomById(roomId)!.players)
+        console.log(`Player ${player.id}/${player.name} joined room ${roomId}`)
+    })
+
+    socket.on('game-events', ({roomId, player}) => {
+
+        // TODO draw cards, setup player, maybe start game page (aka lobby)? to initialize proper data
+        const answerCard = drawAnswerCard(roomId)
+        socket.emit('answer-card', answerCard)
+        socket.emit('join-room', {
+            joinRoomSucceeded: true,
+            msg: `Hello ${player.name}, you successfully joined room ${roomId}`
+        })
+
+    })
+
     socket.on('disconnect', () => {
-        console.log('user disconnected')
+        console.debug('user disconnected')
     });
 });
 

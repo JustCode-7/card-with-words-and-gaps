@@ -1,5 +1,6 @@
 import {inject, Injectable} from '@angular/core';
-import { HttpClient } from "@angular/common/http";
+import {HttpClient} from "@angular/common/http";
+import {Player} from "../model/player";
 
 @Injectable({providedIn: 'root'})
 export class BackendService {
@@ -9,5 +10,9 @@ export class BackendService {
 
   getRoomIdList() {
     return this.http.get<string[]>(`${this.serverUrl}/rooms`)
+  }
+
+  getPlayers(roomId: string) {
+    return this.http.get<Player[]>(`${this.serverUrl}/room/${roomId}/players`)
   }
 }
