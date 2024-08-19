@@ -4,7 +4,6 @@ import {RouterOutlet} from '@angular/router';
 import {MatCardModule} from "@angular/material/card";
 import {MatButtonModule} from "@angular/material/button";
 import {CardGapTextComponent} from "./components/card-gap-text/card-gap-text.component";
-import {AnswerTextCardComponent} from "./components/answer-text-card/answer-text-card.component";
 
 @Component({
   selector: 'app-root',
@@ -15,22 +14,10 @@ import {AnswerTextCardComponent} from "./components/answer-text-card/answer-text
     MatCardModule,
     MatButtonModule,
     CardGapTextComponent,
-    AnswerTextCardComponent,
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
 export class AppComponent {
-
-  //
-  // @HostListener('window:beforeunload', ['$event'])
-  // public beforeUnloadHandler(event: any) {
-  //   event.preventDefault();
-  // }
-  //
-  // @HostListener('window:onload', ['$event'])
-  // public onload(event: any) {
-  //   event.preventDefault();
-  // }
 
 }

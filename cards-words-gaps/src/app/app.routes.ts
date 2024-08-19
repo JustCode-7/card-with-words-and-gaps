@@ -1,7 +1,5 @@
 import {Routes} from '@angular/router';
 import {JoinRoomPage} from "./pages/join-room-page/join-room-page.component";
-import {CatLordPage} from "./pages/cat-lord-page/cat-lord-page.component";
-import {PlayerPage} from "./pages/player-page/player-page.component";
 import {PlayerNamePage} from "./pages/player-name-page/player-name-page.component";
 import {joinRoomResolver} from "./resolver/join-room.resolver";
 import {GamePage} from "./pages/game-page/game-page.component";
@@ -15,11 +13,6 @@ export const routes: Routes = [
     resolve: {joinRoom: joinRoomResolver},
     component: GamePage,
   },
-
-  // old stuff ...
-  {path: 'game/:roomname/:playername/catlord', component: CatLordPage, pathMatch: 'full'},
-  {path: 'game/:roomname/:playername', component: PlayerPage, pathMatch: 'full'},
-
 
   // redirect unknown route (404)
   {path: '**', redirectTo: ''},
