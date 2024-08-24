@@ -1,5 +1,5 @@
 import {Component, computed, inject, signal} from '@angular/core';
-import {ActivatedRoute} from "@angular/router";
+import {ActivatedRoute, RouterOutlet} from "@angular/router";
 import {CardSelectionListComponent} from "../../components/card-selection-list/card-selection-list.component";
 import {Card, emptyCard} from "../../model/card";
 import {CardGapTextComponent} from "../../components/card-gap-text/card-gap-text.component";
@@ -11,12 +11,13 @@ import {PlayerListComponent} from "../../components/player-list/player-list.comp
   imports: [
     CardSelectionListComponent,
     CardGapTextComponent,
-    PlayerListComponent
+    PlayerListComponent,
+    RouterOutlet
   ],
   template: `
     <div class="container">
       <h1>Cats against humanity // Room: {{ route.snapshot.paramMap.get('room') }}</h1>
-      <app-player-list/>
+      <router-outlet/>
       <app-card-gap-text
         [gapCard]="gapCard()"
         [showSecondGap]="hasSecondGap()"

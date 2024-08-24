@@ -25,9 +25,9 @@ import {Subscription} from "rxjs";
           <a mat-stroked-button
              color="primary"
              aria-label="Join"
-             [routerLink]="['/game', room]"
+             [routerLink]="['/game', room, 'waiting-room']"
           >
-            <mat-icon>rocket_launch</mat-icon>
+            <mat-icon>login</mat-icon>
             Join
           </a>
         </mat-card-content>
@@ -46,18 +46,17 @@ export class JoinRoomListComponent implements OnInit, OnDestroy {
 
   rooms = signal<string[]>([])
 
-  private roomListener(roomList: string[]) {
-    this.rooms.set(roomList);
-  }
-
   ngOnInit(): void {
     this.sub = this.backend.getRoomIdList().subscribe(rooms => this.rooms.set(rooms));
     this.socketService.socket.on("room-list", this.roomListener.bind(this))
-
   }
 
   ngOnDestroy() {
     this.sub?.unsubscribe()
     this.socketService.socket.off("room-list", this.roomListener.bind(this))
+  }
+
+  private roomListener(roomList: string[]) {
+    this.rooms.set(roomList);
   }
 }

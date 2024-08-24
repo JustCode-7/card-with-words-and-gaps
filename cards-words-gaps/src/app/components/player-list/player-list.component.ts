@@ -1,16 +1,15 @@
-import {Component, inject, OnDestroy, OnInit, signal} from '@angular/core';
+import {Component, inject, OnDestroy, OnInit, output, signal} from '@angular/core';
 import {SocketService} from "../../service/socket.service";
 import {Player} from "../../model/player";
 import {BackendService} from "../../service/backend.service";
 import {ActivatedRoute} from "@angular/router";
 import {Subscription} from "rxjs";
 import {UserService} from "../../service/user.service";
-import {MatIconModule} from "@angular/material/icon";
 
 @Component({
   selector: 'app-player-list',
   standalone: true,
-  imports: [MatIconModule],
+  imports: [],
   template: `
     <h2>Players</h2>
     <ul>
@@ -28,22 +27,27 @@ import {MatIconModule} from "@angular/material/icon";
   styles: ``
 })
 export class PlayerListComponent implements OnInit, OnDestroy {
-  players = signal([{name: "abc", id: '1'}, {name: "def", id: 2}]);
+  players = signal<Player[]>([])
+  user = inject(UserService).getUser()
+  onPlayerCount = output<number>()
+
   private socket = inject(SocketService)
   private backend = inject(BackendService)
   private route = inject(ActivatedRoute)
-  user = inject(UserService).getUser()
 
   private sub: Subscription | undefined
 
   private roomPlayerListener(players: Player[]) {
-    console.log(players);
     this.players.set(players)
+    this.onPlayerCount.emit(players.length)
   }
 
   ngOnInit() {
-    const roomId = this.route.snapshot.paramMap.get('room')!
-    this.sub = this.backend.getPlayers(roomId).subscribe(players => this.players.set(players))
+    const roomId = this.route.snapshot.parent?.paramMap.get('room')!
+    this.sub = this.backend.getPlayers(roomId).subscribe(players => {
+      this.players.set(players)
+      this.onPlayerCount.emit(players.length)
+    })
     this.socket.socket.on('room-players', this.roomPlayerListener.bind(this));
   }
 

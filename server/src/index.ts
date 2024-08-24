@@ -15,8 +15,18 @@ app.get("/", (req, res) => {
     res.send("Server is alive")
 })
 
-app.get("/rooms", (req, res) => {
+app.get("/room", (req, res) => {
     res.send(getRoomIds())
+})
+
+app.get("/room/:roomId", (req, res) => {
+    const roomId = req.params.roomId
+    if (!roomExists(roomId)) {
+        res.sendStatus(404)
+        return
+    }
+    const room = getRoomById(roomId)
+    res.send(room)
 })
 
 app.get("/room/:roomId/players", (req, res) => {
@@ -48,10 +58,10 @@ io.on('connection', (socket) => {
             return;
         }
 
-        socket.join(roomId)
         createRoom(roomId)
         initCardMapFor(roomId)
-        socket.emit("room-list", getRoomIds())
+        socket.emit("room-list", getRoomIds()) // to sender
+        socket.broadcast.emit("room-list", getRoomIds()) // to everyone but the sender
     })
 
     socket.on('join-room', ({roomId, player}: JoinRoomEvent) => {
@@ -70,6 +80,12 @@ io.on('connection', (socket) => {
         console.log(`Player ${player.id}/${player.name} joined room ${roomId}`)
     })
 
+    socket.on('start-game', (roomId: string) => {
+        console.log('received start-game command', roomId)
+        socket.emit("start-game")
+        socket.to(roomId).emit("start-game")
+    })
+
     socket.on('game-events', ({roomId, player}) => {
 
         // TODO draw cards, setup player, maybe start game page (aka lobby)? to initialize proper data
@@ -83,7 +99,7 @@ io.on('connection', (socket) => {
     })
 
     socket.on('disconnect', () => {
-        console.debug('user disconnected')
+        console.debug('user disconnected', socket.id)
     });
 });
 
