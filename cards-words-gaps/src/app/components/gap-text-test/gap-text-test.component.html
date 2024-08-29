@@ -4,9 +4,13 @@
       <mat-card-title>
         @for (part of lueckentextArr; track part) {
           @if (gapCount.value === 0) {
-            {{ part.text }} <code class="text-primary"> {{ part.gap }} </code>
+            {{ part.text }}
+            <button [id]="'gapbtn'+$index" mat-raised-button
+                    (click)="markFirstFreeAnswer()"> {{ part.gap }}
+            </button>
           } @else if (lueckentextArr.indexOf(part) < lueckentextArr.length - 1) {
-            {{ part.text }} <code class="text-primary"> {{ part.gap }} </code>
+            {{ part.text }}
+            <button mat-raised-button (click)="markFirstFreeAnswer()"> {{ part.gap }}</button>
           } @else {
             {{ part.text }}
           }
@@ -22,8 +26,9 @@
   </mat-card>
 
   <div class="d-flex flex-column w-100 py-3">
-    @for (answer of this.answerset; track answer) {
-      <button (click)="pickAnswerAndFillIntoGaps(answer)" [color]="answer.selected  ? 'primary' : ''" class="mb-2"
+    @for (answer of answerset; track answer) {
+      <button [id]="'answerbtn'+$index" (click)="pickAnswerAndFillIntoGaps(answer)"
+              [color]="lalal(answer)" class="mb-2"
               mat-raised-button>{{ answer.answer }}
       </button>
     }

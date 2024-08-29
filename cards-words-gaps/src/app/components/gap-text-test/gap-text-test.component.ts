@@ -9,6 +9,7 @@ import {AsyncPipe} from "@angular/common";
 interface Answer {
   answer: string;
   selected: boolean
+  index?: number
 }
 
 @Component({
@@ -24,7 +25,7 @@ interface Answer {
 })
 export class GapTextTestComponent implements OnInit {
   matchService: MatchService = inject(MatchService);
-  answerset = [{answer: '', selected: false}];
+  answerset: Answer[] = [{answer: '', selected: false}];
   gaptext = new BehaviorSubject('')
   lueckentextArr = [{text: '', gap: ''}];
   protected gapCount = new BehaviorSubject(1);
@@ -78,9 +79,17 @@ export class GapTextTestComponent implements OnInit {
 
   pickAnswerAndFillIntoGaps(answer: Answer) {
     this.fillSelectedAnswerIntoGap(answer);
-    answer.selected = true;
+    if (!this.answerset.some((value) => value.selected)) {
+      answer.selected = !answer.selected;
+      answer.index = 1;
+    } else {
+      answer.selected = !answer.selected;
+      answer.index = this.answerset.filter((value) => value.selected).length;
+    }
+
+
     this.answerset.forEach((value) => {
-      if (value.answer !== answer.answer) {
+      if (value.answer !== answer.answer && value.index! < 1) {
         value.selected = false;
       }
     });
@@ -139,6 +148,23 @@ export class GapTextTestComponent implements OnInit {
       if (!this.answerset.some((answer) => answer.answer === tempRandomAnswer.answer)) {
         this.answerset.push(tempRandomAnswer);
       }
+    }
+  }
+
+  markFirstFreeAnswer() {
+    document.getElementById('answerbtn0')?.focus();
+  }
+
+  lalal(answer: Answer) {
+    switch (answer.index) {
+      case 1:
+        return 'primary';
+      case 2:
+        return 'accent';
+      case 3:
+        return 'warn';
+      default:
+        return '';
     }
   }
 }
