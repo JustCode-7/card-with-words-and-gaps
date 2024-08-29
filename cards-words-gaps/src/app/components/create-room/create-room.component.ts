@@ -8,7 +8,7 @@ import {SocketService} from "../../service/socket.service";
 
 
 @Component({
-  selector: 'app-room-create',
+  selector: 'app-create-room',
   standalone: true,
   imports: [
     ReactiveFormsModule,
@@ -18,12 +18,12 @@ import {SocketService} from "../../service/socket.service";
     MatInputModule
   ],
   template: `
-    <h2>Einen neuen Raum erstellen:</h2>
+    <h3>Einen neuen Raum erstellen:</h3>
     <div>
       <form [formGroup]="form">
         <mat-form-field>
           <mat-label>Raum</mat-label>
-          <input matInput formControlName="room" required maxlength="32" pattern="[a-zA-Z0-9-]*">
+          <input matInput formControlName="room" required maxlength="32">
           @if (form.controls.room.invalid) {
             <mat-error>Name must match regex [a-zA-Z0-9-]*</mat-error>
           }
@@ -43,10 +43,13 @@ import {SocketService} from "../../service/socket.service";
   `,
   styles: ``
 })
-export class RoomCreateComponent {
+export class CreateRoomComponent {
 
   form = new FormGroup({
-    room: new FormControl('', [Validators.required, Validators.maxLength(32), Validators.pattern('[a-zA-Z0-9-]*')]),
+    room: new FormControl(
+      '',
+      [Validators.required, Validators.maxLength(32), Validators.pattern(/[a-zA-Z0-9-]*/)],
+    ),
   })
 
   private socketService = inject(SocketService);
@@ -54,7 +57,8 @@ export class RoomCreateComponent {
   createRoom() {
     if (this.form.valid) {
       const room = this.form.value.room!;
-      this.socketService.createRoom(room);
+
+      this.socketService.socket.emit("create-room", room);
     }
   }
 

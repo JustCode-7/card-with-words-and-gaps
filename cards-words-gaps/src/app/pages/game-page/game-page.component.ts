@@ -1,21 +1,23 @@
 import {Component, computed, inject, signal} from '@angular/core';
-import {ActivatedRoute} from "@angular/router";
-import {AnswerTextCardComponent} from "../../components/answer-text-card/answer-text-card.component";
+import {ActivatedRoute, RouterOutlet} from "@angular/router";
 import {CardSelectionListComponent} from "../../components/card-selection-list/card-selection-list.component";
 import {Card, emptyCard} from "../../model/card";
 import {CardGapTextComponent} from "../../components/card-gap-text/card-gap-text.component";
+import {PlayerListComponent} from "../../components/player-list/player-list.component";
 
 @Component({
   selector: 'app-game-page',
   standalone: true,
   imports: [
-    AnswerTextCardComponent,
     CardSelectionListComponent,
-    CardGapTextComponent
+    CardGapTextComponent,
+    PlayerListComponent,
+    RouterOutlet
   ],
   template: `
     <div class="container">
       <h1>Cats against humanity // Room: {{ route.snapshot.paramMap.get('room') }}</h1>
+      <router-outlet/>
       <app-card-gap-text
         [gapCard]="gapCard()"
         [showSecondGap]="hasSecondGap()"

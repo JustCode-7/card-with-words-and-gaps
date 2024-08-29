@@ -11,25 +11,24 @@ import {Card} from "../../model/card";
     MatButtonModule
   ],
   template: `
-    <div class="container">
-      <mat-card appearance="outlined">
-        <mat-card-content>
-          {{ firstPart() }}
+    <h2>Catlord Card</h2>
+    <mat-card appearance="outlined">
+      <mat-card-content>
+        {{ firstPart() }}
 
-          <code class="border border-white">1</code>
-          <span class="border border-white m-1 p-1">{{ firstCard().text }}</span>
+        <code class="border border-white">1</code>
+        <span class="border border-white m-1 p-1">{{ firstCard().text }}</span>
 
-          {{ secondPart() }}
+        {{ secondPart() }}
 
-          @if (showSecondGap()) {
-            <code class="border border-white">2</code>
-            <span class="border border-white m-1 p-1">{{ secondCard().text }}</span>
+        @if (showSecondGap()) {
+          <code class="border border-white">2</code>
+          <span class="border border-white m-1 p-1">{{ secondCard().text }}</span>
 
-            {{ thirdPart() }}
-          }
-        </mat-card-content>
-      </mat-card>
-    </div>
+          {{ thirdPart() }}
+        }
+      </mat-card-content>
+    </mat-card>
   `,
   styles: ``
 })

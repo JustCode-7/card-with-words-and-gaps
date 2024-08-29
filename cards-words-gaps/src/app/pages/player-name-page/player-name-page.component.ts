@@ -3,7 +3,7 @@ import {MatButtonModule} from "@angular/material/button";
 import {MatFormFieldModule} from "@angular/material/form-field";
 import {MatInputModule} from "@angular/material/input";
 import {FormControl, FormGroup, ReactiveFormsModule, Validators} from "@angular/forms";
-import {PlayerService} from "../../service/player.service";
+import {UserService} from "../../service/user.service";
 import {MatIconModule} from "@angular/material/icon";
 import {Router} from "@angular/router";
 
@@ -49,7 +49,7 @@ import {Router} from "@angular/router";
   styles: ``
 })
 export class PlayerNamePage implements OnInit {
-  private playerService = inject(PlayerService);
+  private playerService = inject(UserService);
   private router = inject(Router);
 
   form: FormGroup = new FormGroup({
@@ -57,7 +57,7 @@ export class PlayerNamePage implements OnInit {
   })
 
   ngOnInit() {
-    const {name} = this.playerService.getPlayer();
+    const {name} = this.playerService.getUser();
     this.form.patchValue({name})
   }
 
