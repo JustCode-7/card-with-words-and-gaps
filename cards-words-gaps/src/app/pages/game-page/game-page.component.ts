@@ -18,17 +18,17 @@ import {PlayerListComponent} from "../../components/player-list/player-list.comp
     <div class="container">
       <h1>Cats against humanity // Room: {{ route.snapshot.paramMap.get('room') }}</h1>
       <router-outlet/>
-      <app-card-gap-text
-        [gapCard]="gapCard()"
-        [showSecondGap]="hasSecondGap()"
-        [firstCard]="firstCard()"
-        [secondCard]="secondCard()"
-      />
-      <app-card-selection-list
-        [showButtonTwo]="hasSecondGap()"
-        (onFirstChoice)="firstCard.set($event)"
-        (onSecondChoice)="secondCard.set($event)"
-      />
+      <!--      <app-card-gap-text-->
+      <!--        [gapCard]="gapCard()"-->
+      <!--        [showSecondGap]="hasSecondGap()"-->
+      <!--        [firstCard]="firstCard()"-->
+      <!--        [secondCard]="secondCard()"-->
+      <!--      />-->
+      <!--      <app-card-selection-list-->
+      <!--        [showButtonTwo]="hasSecondGap()"-->
+      <!--        (onFirstChoice)="firstCard.set($event)"-->
+      <!--        (onSecondChoice)="secondCard.set($event)"-->
+      <!--      />-->
     </div>
   `,
   styles: ``

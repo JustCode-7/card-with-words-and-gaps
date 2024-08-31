@@ -6,6 +6,7 @@ import cors from "cors";
 import {drawAnswerCard, initCardMapFor} from "./services/card.state.js";
 import {initGameObjects} from "./services/game-initalizer.service.js";
 import {JoinRoomEvent} from "./model/event.js";
+import {getPlayerCardMap} from "./services/player-card.state.js";
 
 export const app = express();
 app.use(cors()) // TODO CORS security
@@ -40,6 +41,11 @@ app.get("/room/:roomId/players", (req, res) => {
     res.send(players)
 })
 
+app.get("/player-card/", (req, res) => {
+
+    console.log(getPlayerCardMap())
+    res.send(getPlayerCardMap())
+})
 
 io.on('connection', (socket) => {
     console.debug('a user connected', socket.id)
@@ -79,6 +85,7 @@ io.on('connection', (socket) => {
     socket.on('start-game', (roomId: string) => {
         console.log('received start-game command', roomId)
         initGameObjects(roomId)
+        console.log('game objects initialized', getPlayerCardMap())
         socket.emit("start-game") // start game for sender
         socket.to(roomId).emit("start-game")
     })
