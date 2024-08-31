@@ -7,6 +7,7 @@ import {Card} from "../model/card.js";
 interface CardState {
     remainingAnswerCards: Card[];
     remainingGapCards: Card[];
+    currentGapCard?: Card | undefined;
 }
 
 const map: Map<string, CardState> = new Map();
@@ -58,4 +59,18 @@ function drawCard(room: string, cardsAccessorFn: (c: CardState) => Card[]): Card
         throw new Error('No answerCards remaining');
     }
     return card
+}
+
+/**
+ * Set the current gap card for the room
+ * @param room  to set the gap card for
+ * @param gapCard to set
+ */
+export function setGapCard(room: string, gapCard: Card) {
+    const cardState = map.get(room);
+    if (cardState === undefined) {
+        console.error(`cardState for room '${room}' not found`);
+        return;
+    }
+    cardState.currentGapCard = gapCard;
 }

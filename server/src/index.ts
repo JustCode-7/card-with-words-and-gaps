@@ -4,8 +4,8 @@ import {Server} from "socket.io";
 import {createRoom, getRoomById, getRoomIds, joinRoom, roomExists} from "./services/room.state.js";
 import cors from "cors";
 import {drawAnswerCard, initCardMapFor} from "./services/card.state.js";
-import {Player} from "./model/player.js";
-import {getCatLord, setCatLord} from "./services/catlord.state.js";
+import {initGameObjects} from "./services/game-initalizer.service.js";
+import {JoinRoomEvent} from "./model/event.js";
 
 export const app = express();
 app.use(cors()) // TODO CORS security
@@ -40,38 +40,6 @@ app.get("/room/:roomId/players", (req, res) => {
     res.send(players)
 })
 
-
-interface JoinRoomEvent {
-    roomId: string; // uuid v4
-    player: Player
-}
-
-function setNextCatlord(roomId: string) {
-    const catlord = getCatLord(roomId)
-    if (catlord === undefined) {
-        const players = getRoomById(roomId)?.players
-        if (players === undefined) {
-            throw new Error('No players in room')
-        }
-        const nextCatlord = players[0].id
-        setCatLord(roomId, nextCatlord)
-    } else {
-        const players = getRoomById(roomId)?.players
-        if (players === undefined) {
-            throw new Error('No players in room')
-        }
-        const catlordIndex = players.findIndex(player => player.id === catlord)
-        const nextCatlord = players[(catlordIndex + 1) % players.length].id
-        setCatLord(roomId, nextCatlord)
-    }
-}
-
-function initGameObjects(roomId: string) {
-    //TODO init game objects
-    setNextCatlord(roomId)
-    //setGapCard(roomId)
-    //assignAnswerCards(roomId)
-}
 
 io.on('connection', (socket) => {
     console.debug('a user connected', socket.id)
