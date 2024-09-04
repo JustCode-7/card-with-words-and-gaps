@@ -74,3 +74,13 @@ export function setGapCard(room: string, gapCard: Card) {
     }
     cardState.currentGapCard = gapCard;
 }
+
+
+export function getCards(roomId: string): CardState | undefined {
+    return map.get(roomId);
+}
+
+export function getGapCard(roomId: string): Card | undefined {
+    const cardState = map.get(roomId)!
+    return cardState.currentGapCard
+}

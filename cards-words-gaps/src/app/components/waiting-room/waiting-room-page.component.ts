@@ -58,5 +58,4 @@ export class WaitingRoomComponent implements OnInit, OnDestroy {
     this.router.navigate(['..'], {relativeTo: this.route})
   }
 
-
 }

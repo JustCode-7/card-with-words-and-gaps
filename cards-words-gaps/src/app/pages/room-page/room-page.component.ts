@@ -6,7 +6,7 @@ import {CardGapTextComponent} from "../../components/card-gap-text/card-gap-text
 import {PlayerListComponent} from "../../components/player-list/player-list.component";
 
 @Component({
-  selector: 'app-game-page',
+  selector: 'app-room-page',
   standalone: true,
   imports: [
     CardSelectionListComponent,
@@ -33,7 +33,7 @@ import {PlayerListComponent} from "../../components/player-list/player-list.comp
   `,
   styles: ``
 })
-export class GamePage {
+export class RoomPage {
   route = inject(ActivatedRoute);
 
   firstCard = signal<Card>({...emptyCard, text: '___'})
