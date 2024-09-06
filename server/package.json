@@ -7,7 +7,7 @@
   "scripts": {
     "build": "tsc",
     "runServer": "node dist/index.js",
-    "start": "npm run build && npm run runServer"
+    "startServer": "npm run build && npm run runServer"
   },
   "dependencies": {
     "cors": "^2.8.5",
