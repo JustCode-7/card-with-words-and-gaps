@@ -1,12 +1,14 @@
 import express from "express";
 import {createServer} from "http";
 import {Server} from "socket.io";
-import {createRoom, getRoomById, getRoomIds, joinRoom, roomExists} from "./services/room.state.js";
+import {createRoom, getPlayer, getRoomById, getRoomIds, joinRoom, roomExists} from "./services/room.state.js";
 import cors from "cors";
-import {drawAnswerCard, initCardMapFor} from "./services/card.state.js";
+import {drawAnswerCard, getCards, getGapCard, initCardMapFor} from "./services/card.state.js";
 import {initGameObjects} from "./services/game-initalizer.service.js";
 import {JoinRoomEvent} from "./model/event.js";
-import {getPlayerCardMap} from "./services/player-card.state.js";
+import {getPlayerCards} from "./services/player-card.state.js";
+import {serializeMap} from "./util/serialize-map.util.js";
+import {getCatlord} from "./services/catlord.state.js";
 
 export const app = express();
 app.use(cors()) // TODO CORS security
@@ -41,10 +43,43 @@ app.get("/room/:roomId/players", (req, res) => {
     res.send(players)
 })
 
-app.get("/player-card/", (req, res) => {
+app.get("/room/:roomId/catlord", (req, res) => {
+    const roomId = req.params.roomId
+    if (!roomExists(roomId)) {
+        res.sendStatus(404)
+        return
+    }
+    const playerId = getCatlord(roomId)!
+    const payload = {catlord: getPlayer(roomId, playerId)}
+    res.send(payload)
+})
 
-    console.log(getPlayerCardMap())
-    res.send(getPlayerCardMap())
+app.get("/room/:roomId/gap-card", (req, res) => {
+    const roomId = req.params.roomId
+    if (!roomExists(roomId)) {
+        res.sendStatus(404)
+        return
+    }
+    const payload = {gapCard: getGapCard(roomId)}
+    res.send(payload)
+})
+
+app.get("/room/:roomId/cards", (req, res) => {
+    const roomId = req.params.roomId
+    if (!roomExists(roomId)) {
+        res.sendStatus(404)
+        return
+    }
+    res.send(getCards(roomId))
+})
+
+app.get("/room/:roomId/player-cards", (req, res) => {
+    const roomId = req.params.roomId
+    if (!roomExists(roomId)) {
+        res.sendStatus(404)
+        return
+    }
+    res.send(serializeMap(getPlayerCards(roomId)))
 })
 
 io.on('connection', (socket) => {
@@ -85,7 +120,6 @@ io.on('connection', (socket) => {
     socket.on('start-game', (roomId: string) => {
         console.log('received start-game command', roomId)
         initGameObjects(roomId)
-        console.log('game objects initialized', getPlayerCardMap())
         socket.emit("start-game") // start game for sender
         socket.to(roomId).emit("start-game")
     })

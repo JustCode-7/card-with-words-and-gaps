@@ -33,13 +33,14 @@ import {Card} from "../../model/card";
   styles: ``
 })
 export class CardGapTextComponent {
+
   gapCard = input<Card>({id: '', text: 'This is just a placeholder for ___ .'})
-  showSecondGap = input<boolean>(false)
+  firstCard = input<Card>({id: '', text: '___'})
+  secondCard = input<Card>({id: '', text: '___'})
 
   firstPart = computed(() => this.gapCard().text.split('___')[0]);
   secondPart = computed(() => this.gapCard().text.split('___')[1]);
-  thirdPart = computed(() => this.gapCard().text.split('___')[2]);
+  showSecondGap = computed<boolean>(() => this.gapCard().text.split('___').length === 3)
+  thirdPart = computed(() => this.showSecondGap() && this.gapCard().text.split('___')[2]);
 
-  firstCard = input<Card>({id: '', text: '___'})
-  secondCard = input<Card>({id: '', text: '___'})
 }

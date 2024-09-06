@@ -16,7 +16,9 @@ export function setCards(roomId: string, playerId: string, cards: Card[]) {
 }
 
 export function addCard(roomId: string, playerId: string, card: Card) {
-    getOrInitMap(roomId).set(playerId, [card])
+    const map = getOrInitMap(roomId);
+    const existingCards = map.get(playerId) ?? []
+    map.set(playerId, [...existingCards, card])
 }
 
 export function removeCard(roomId: string, playerId: string, card: Card) {
@@ -28,6 +30,6 @@ export function removeCard(roomId: string, playerId: string, card: Card) {
     playerCardState.get(roomId)?.set(playerId, filtered)
 }
 
-export function getPlayerCardMap() {
-    return playerCardState
+export function getPlayerCards(roomId: string) {
+    return playerCardState.get(roomId)
 }

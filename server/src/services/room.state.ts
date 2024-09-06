@@ -61,3 +61,8 @@ export function joinRoom(roomId: string, player: Player) {
     }
     roomState.set(roomId, updatedRoom);
 }
+
+export function getPlayer(roomId: string, playerId: string): Player | undefined {
+    const room = roomState.get(roomId);
+    return room?.players.find(it => it.id == playerId)
+}
