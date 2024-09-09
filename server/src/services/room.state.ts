@@ -1,6 +1,6 @@
 // TODO shared
 import {Player} from "../model/player.js";
-import {Room} from "../model/room.js";
+import {Room, RoomState} from "../model/room.js";
 
 const roomState: Map<string, Room> = new Map();
 
@@ -25,7 +25,8 @@ export function createRoom(roomId: string) {
     const newRoom: Room = {
         roomId: roomId,
         createdTimestampMilliseconds: Date.now(),
-        players: []
+        players: [],
+        state: RoomState.Waiting
     }
     roomState.set(roomId, newRoom)
     console.debug(`created room ${roomId}`)

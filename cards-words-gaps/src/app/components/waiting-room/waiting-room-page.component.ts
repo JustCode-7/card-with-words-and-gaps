@@ -1,4 +1,4 @@
-import {Component, inject, OnDestroy, OnInit, signal} from '@angular/core';
+import {Component, inject, OnDestroy, OnInit} from '@angular/core';
 import {PlayerListComponent} from "../player-list/player-list.component";
 import {MatButton} from "@angular/material/button";
 import {SocketService} from "../../service/socket.service";
@@ -14,16 +14,8 @@ import {MatIcon} from "@angular/material/icon";
     MatIcon
   ],
   template: `
-    <app-player-list (onPlayerCount)="playerCount.set($event)"/>
-    <p>
-      @if (playerCount() < minimumRequiredPlayers) {
-        Waiting for {{ minimumRequiredPlayers - playerCount() }} more players to join ...
-      } @else {
-        Ready to play. The more the merrier.
-      }
-    </p>
+    <p>Are you ready to start the game?</p>
     <button mat-stroked-button
-            [disabled]="playerCount() < minimumRequiredPlayers"
             (click)="startGame()"
     >
       <mat-icon>rocket_launch</mat-icon>
@@ -33,8 +25,6 @@ import {MatIcon} from "@angular/material/icon";
   styles: ``
 })
 export class WaitingRoomComponent implements OnInit, OnDestroy {
-  readonly minimumRequiredPlayers = 1
-  playerCount = signal<number>(0)
 
   private socketService = inject(SocketService)
   private router = inject(Router)

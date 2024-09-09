@@ -1,4 +1,4 @@
-import {Component, inject, OnDestroy, OnInit, output, signal} from '@angular/core';
+import {Component, inject, OnDestroy, OnInit, signal} from '@angular/core';
 import {SocketService} from "../../service/socket.service";
 import {Player} from "../../model/player";
 import {BackendService} from "../../service/backend.service";
@@ -29,7 +29,6 @@ import {UserService} from "../../service/user.service";
 export class PlayerListComponent implements OnInit, OnDestroy {
   players = signal<Player[]>([])
   user = inject(UserService).getUser()
-  onPlayerCount = output<number>()
 
   private socket = inject(SocketService)
   private backend = inject(BackendService)
@@ -37,16 +36,10 @@ export class PlayerListComponent implements OnInit, OnDestroy {
 
   private sub: Subscription | undefined
 
-  private roomPlayerListener(players: Player[]) {
-    this.players.set(players)
-    this.onPlayerCount.emit(players.length)
-  }
-
   ngOnInit() {
-    const roomId = this.route.snapshot.parent?.paramMap.get('room')!
+    const roomId = this.route.snapshot.paramMap.get('room')!
     this.sub = this.backend.getPlayers(roomId).subscribe(players => {
       this.players.set(players)
-      this.onPlayerCount.emit(players.length)
     })
     this.socket.socket.on('room-players', this.roomPlayerListener.bind(this));
   }
@@ -54,6 +47,10 @@ export class PlayerListComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.socket.socket.off('room-players', this.roomPlayerListener.bind(this));
     this.sub?.unsubscribe()
+  }
+
+  private roomPlayerListener(players: Player[]) {
+    this.players.set(players)
   }
 
 }
