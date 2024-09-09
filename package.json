@@ -1,0 +1,12 @@
+{
+  "name": "cards-with-words-and-gaps",
+  "workspaces": [
+    "./packages/*"
+  ],
+  "scripts": {
+    "postinstall": "npm run compile:shared",
+    "compile:shared": "npm run compile --workspace @cards-with-words-and-gaps/shared",
+    "start:ui": "npm run start --workspace ui",
+    "start:server": "npm run start --workspace server"
+  }
+}
