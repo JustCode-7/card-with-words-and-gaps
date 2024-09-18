@@ -3,6 +3,7 @@ import {HttpClient} from "@angular/common/http";
 import {Player} from "@cards-with-words-and-gaps/shared/dist/model/player";
 import {Card} from "@cards-with-words-and-gaps/shared/dist/model/card";
 import {Room} from "@cards-with-words-and-gaps/shared/dist/model/room";
+import {PlayerSubmissionStatusDto} from "@cards-with-words-and-gaps/shared/dist/dto/player-submission-status.dto";
 
 interface CatlordPayload {
   catlord: Player
@@ -28,6 +29,10 @@ export class BackendService {
 
   getPlayers(roomId: string) {
     return this.http.get<Player[]>(`${this.serverUrl}/room/${roomId}/players`)
+  }
+
+  getPlayerSubmissionStatus(roomId: string) {
+    return this.http.get<PlayerSubmissionStatusDto>(`${this.serverUrl}/room/${roomId}/player-submission-status`)
   }
 
   getCatlord(roomId: string) {

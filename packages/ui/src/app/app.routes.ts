@@ -3,7 +3,7 @@ import {JoinRoomPage} from "./pages/join-room-page/join-room-page.component";
 import {PlayerNamePage} from "./pages/player-name-page/player-name-page.component";
 import {joinRoomResolver} from "./resolver/join-room.resolver";
 import {RoomPage} from "./pages/room-page/room-page.component";
-import {WaitingRoomComponent} from "./components/waiting-room/waiting-room-page.component";
+import {WaitingRoomComponent} from "./components/waiting-room-page.component";
 import {canActivateGameGuard} from "./guard/room-exists.guard";
 import {Error404Page} from "./pages/404/error-404-page.component";
 import {GameComponent} from "./components/game/game.component";

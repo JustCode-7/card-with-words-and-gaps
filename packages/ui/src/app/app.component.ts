@@ -3,7 +3,7 @@ import {CommonModule} from '@angular/common';
 import {RouterOutlet} from '@angular/router';
 import {MatCardModule} from "@angular/material/card";
 import {MatButtonModule} from "@angular/material/button";
-import {CardGapTextComponent} from "./components/card-gap-text/card-gap-text.component";
+import {GapCardComponent} from "./components/game/gap-card.component";
 
 @Component({
   selector: 'app-root',
@@ -13,7 +13,7 @@ import {CardGapTextComponent} from "./components/card-gap-text/card-gap-text.com
     RouterOutlet,
     MatCardModule,
     MatButtonModule,
-    CardGapTextComponent,
+    GapCardComponent,
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'

@@ -1,4 +1,4 @@
-export const gapCards = [
+export const GAP_CARDS = [
     "Alles ist besser mit ___.",
     "Warum tut mir alles weh? ___",
     "Wegen eines PR-Debakels bietet Aldi nun nicht mehr ___ an.",

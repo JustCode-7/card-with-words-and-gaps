@@ -3,8 +3,8 @@ import {MatButtonModule} from "@angular/material/button";
 import {MatIconModule} from "@angular/material/icon";
 import {MatCardModule} from "@angular/material/card";
 import {RouterLink} from "@angular/router";
-import {BackendService} from "../../service/backend.service";
-import {SocketService} from "../../service/socket.service";
+import {BackendService} from "../service/backend.service";
+import {SocketService} from "../service/socket.service";
 import {Subscription} from "rxjs";
 
 @Component({

@@ -1,24 +1,28 @@
 import {Component, inject, OnDestroy, OnInit, signal} from '@angular/core';
-import {SocketService} from "../../service/socket.service";
-import {BackendService} from "../../service/backend.service";
-import {ActivatedRoute} from "@angular/router";
+import {SocketService} from "../service/socket.service";
+import {BackendService} from "../service/backend.service";
 import {Subscription} from "rxjs";
-import {UserService} from "../../service/user.service";
+import {UserService} from "../service/user.service";
 import {Player} from "@cards-with-words-and-gaps/shared/dist/model/player";
+import {MatIconModule} from "@angular/material/icon";
+import {MatTooltipModule} from "@angular/material/tooltip";
+import {ActivatedRoute} from "@angular/router";
 
 @Component({
   selector: 'app-player-list',
   standalone: true,
-  imports: [],
+  imports: [
+    MatIconModule,
+    MatTooltipModule,
+  ],
   template: `
-    <h2>Players</h2>
+    <h4>Players</h4>
     <ul>
       @for (player of players(); track player.id) {
         <li>
+          {{ player.name }}
           @if (player.id == user.id) {
-            <strong>{{ player.name }}</strong> (this is me)
-          } @else {
-            {{ player.name }}
+            <mat-icon matTooltip="You">person</mat-icon>
           }
         </li>
       }
@@ -28,16 +32,17 @@ import {Player} from "@cards-with-words-and-gaps/shared/dist/model/player";
 })
 export class PlayerListComponent implements OnInit, OnDestroy {
   players = signal<Player[]>([])
+
   user = inject(UserService).getUser()
 
-  private socket = inject(SocketService)
-  private backend = inject(BackendService)
   private route = inject(ActivatedRoute)
+  private backend = inject(BackendService)
+  private socket = inject(SocketService)
 
   private sub: Subscription | undefined
 
   ngOnInit() {
-    const roomId = this.route.snapshot.paramMap.get('room')!
+    const roomId = this.route.snapshot.parent?.paramMap.get('room')!
     this.sub = this.backend.getPlayers(roomId).subscribe(players => {
       this.players.set(players)
     })

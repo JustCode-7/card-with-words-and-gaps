@@ -3,12 +3,15 @@ import {createServer} from "http";
 import {Server} from "socket.io";
 import {createRoom, getPlayer, getRoomById, getRoomIds, joinRoom, roomExists} from "./services/room.state.js";
 import cors from "cors";
-import {drawAnswerCard, getCards, getGapCard, initCardMapFor} from "./services/card.state.js";
+import {drawAnswerCard, getCardDeck, initCardMapFor} from "./services/card-deck.state.js";
 import {initGameObjects} from "./services/game-initalizer.service.js";
 import {getPlayerCards} from "./services/player-card.state.js";
 import {getCatlord} from "./services/catlord.state.js";
 import {serializeMap} from "@cards-with-words-and-gaps/shared/dist/util/serialize-map.util.js";
 import {JoinRoomEvent} from "@cards-with-words-and-gaps/shared/dist/model/event.js";
+import {getGapCard} from "./services/gap-card.state.js";
+import {getPlayersWithSubmittedAnswer} from "./services/players-with-submitted-answers.state.js";
+import {PlayerSubmissionStatusDto} from "@cards-with-words-and-gaps/shared/dist/dto/player-submission-status.dto.js";
 
 export const app = express();
 app.use(cors()) // TODO CORS security
@@ -43,6 +46,24 @@ app.get("/room/:roomId/players", (req, res) => {
     res.send(players)
 })
 
+app.get("/room/:roomId/player-submission-status", (req, res) => {
+    const roomId = req.params.roomId
+    if (!roomExists(roomId)) {
+        res.sendStatus(404)
+        return
+    }
+
+    const playerCount = getRoomById(roomId)?.players.length ?? 0
+    const playersWithSubmittedAnswer = getPlayersWithSubmittedAnswer(roomId) ?? []
+    const remainingPlayers = playerCount - playersWithSubmittedAnswer.length
+
+    const payload: PlayerSubmissionStatusDto = {
+        remainingPlayerCount: remainingPlayers,
+        playersWithSubmittedAnswer: playersWithSubmittedAnswer
+    }
+    res.send(payload)
+})
+
 app.get("/room/:roomId/catlord", (req, res) => {
     const roomId = req.params.roomId
     if (!roomExists(roomId)) {
@@ -70,7 +91,7 @@ app.get("/room/:roomId/cards", (req, res) => {
         res.sendStatus(404)
         return
     }
-    res.send(getCards(roomId))
+    res.send(getCardDeck(roomId))
 })
 
 app.get("/room/:roomId/player-cards", (req, res) => {
@@ -88,10 +109,6 @@ io.on('connection', (socket) => {
     socket.on('create-room', (roomId: string) => {
         if (roomExists(roomId)) {
             console.warn(`room '${roomId}' already exists`)
-            socket.emit('create-room', {
-                createRoomSucceeded: false,
-                msg: `Failed to create room '${roomId}'`
-            })
             return;
         }
 
@@ -103,10 +120,6 @@ io.on('connection', (socket) => {
 
     socket.on('join-room', ({roomId, player}: JoinRoomEvent) => {
         if (!roomExists(roomId) || player.id == null || player.name == null) {
-            socket.emit('join-room', {
-                joinRoomSucceeded: false,
-                msg: `Failed to join room '${roomId}'`
-            })
             console.warn(`Player ${player.id}/${player.name} failed to join ${roomId}`)
             return;
         }
@@ -118,6 +131,7 @@ io.on('connection', (socket) => {
     })
 
     socket.on('start-game', (roomId: string) => {
+        if (!roomExists(roomId)) return;
         console.log('received start-game command', roomId)
         initGameObjects(roomId)
         socket.emit("start-game") // start game for sender

@@ -1,7 +1,7 @@
 import {Component, inject, OnDestroy, OnInit} from '@angular/core';
-import {PlayerListComponent} from "../player-list/player-list.component";
+import {PlayerListComponent} from "./player-list.component";
 import {MatButton} from "@angular/material/button";
-import {SocketService} from "../../service/socket.service";
+import {SocketService} from "../service/socket.service";
 import {ActivatedRoute, Router} from "@angular/router";
 import {MatIcon} from "@angular/material/icon";
 
@@ -14,6 +14,7 @@ import {MatIcon} from "@angular/material/icon";
     MatIcon
   ],
   template: `
+    <app-player-list/>
     <p>Are you ready to start the game?</p>
     <button mat-stroked-button
             (click)="startGame()"
@@ -26,26 +27,26 @@ import {MatIcon} from "@angular/material/icon";
 })
 export class WaitingRoomComponent implements OnInit, OnDestroy {
 
-  private socketService = inject(SocketService)
-  private router = inject(Router)
   private route = inject(ActivatedRoute)
-
-  startGame() {
-    const roomId = this.route.snapshot.parent?.paramMap.get('room')!
-    this.socketService.socket.emit('start-game', roomId)
-  }
+  private socket = inject(SocketService)
+  private router = inject(Router)
 
   ngOnInit(): void {
-    this.socketService.socket.on('start-game', this.startGameListener.bind(this))
+    this.socket.socket.on('start-game', this.startGameListener.bind(this))
   }
 
   ngOnDestroy(): void {
-    this.socketService.socket.off('start-game', this.startGameListener.bind(this))
+    this.socket.socket.off('start-game', this.startGameListener.bind(this))
   }
 
   private startGameListener() {
     console.log('received start game command')
     this.router.navigate(['..'], {relativeTo: this.route})
+  }
+
+  startGame() {
+    const roomId = this.route.snapshot.parent?.paramMap.get('room')!
+    this.socket.socket.emit('start-game', roomId)
   }
 
 }

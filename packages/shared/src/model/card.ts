@@ -3,4 +3,6 @@ export interface Card {
     text: string
 }
 
-export const emptyCard: Card = {id: '', text: ''}
+export function emptyCard() {
+    return {id: '', text: ''}
+}

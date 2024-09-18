@@ -1,7 +1,8 @@
-import {drawAnswerCard, drawGapCard, setGapCard} from "./card.state.js";
+import {drawAnswerCard, drawGapCard} from "./card-deck.state.js";
 import {getRoomById} from "./room.state.js";
 import {addCard} from "./player-card.state.js";
 import {getCatlord, setCatLord} from "./catlord.state.js";
+import {setGapCard} from "./gap-card.state.js";
 
 export function initGameObjects(roomId: string) {
     setNextCatlord(roomId)

@@ -1,21 +1,26 @@
-import {answerCards} from "../data/answer-cards.js";
-import {gapCards} from "../data/gap-cards.js";
+import {ANSWER_CARDS} from "../data/answer-cards.data.js";
+import {GAP_CARDS} from "../data/gap-cards.data.js";
 import {v4 as uuidv4} from 'uuid';
 import {Card} from "@cards-with-words-and-gaps/shared/dist/model/card.js";
 import {shuffle} from "@cards-with-words-and-gaps/shared/dist/util/shuffle.util.js";
 
-interface CardState {
+interface CardDeckState {
+    answerCards: Card[];
     remainingAnswerCards: Card[];
+    gapCards: Card[];
     remainingGapCards: Card[];
-    currentGapCard?: Card | undefined;
 }
 
-const map: Map<string, CardState> = new Map();
+const map: Map<string, CardDeckState> = new Map();
 
 export function initCardMapFor(room: string) {
-    const cardState: CardState = {
-        remainingAnswerCards: shuffle(answerCards).map(toCard),
-        remainingGapCards: shuffle(gapCards).map(toCard),
+    const answerCards = ANSWER_CARDS.map(toCard)
+    const gapCards = GAP_CARDS.map(toCard)
+    const cardState: CardDeckState = {
+        answerCards: answerCards,
+        gapCards: gapCards,
+        remainingAnswerCards: shuffle(answerCards),
+        remainingGapCards: shuffle(gapCards),
     };
     map.set(room, cardState);
 }
@@ -49,7 +54,7 @@ export function drawGapCard(room: string): Card {
  * @param room to perform the action on
  * @param cardsAccessorFn function to access the desired array
  */
-function drawCard(room: string, cardsAccessorFn: (c: CardState) => Card[]): Card {
+function drawCard(room: string, cardsAccessorFn: (c: CardDeckState) => Card[]): Card {
     const cardState = map.get(room)
     if (cardState === undefined) {
         throw new Error(`Room '${room}' not found`);
@@ -61,26 +66,15 @@ function drawCard(room: string, cardsAccessorFn: (c: CardState) => Card[]): Card
     return card
 }
 
-/**
- * Set the current gap card for the room
- * @param room  to set the gap card for
- * @param gapCard to set
- */
-export function setGapCard(room: string, gapCard: Card) {
-    const cardState = map.get(room);
-    if (cardState === undefined) {
-        console.error(`cardState for room '${room}' not found`);
-        return;
-    }
-    cardState.currentGapCard = gapCard;
-}
 
-
-export function getCards(roomId: string): CardState | undefined {
+export function getCardDeck(roomId: string): CardDeckState | undefined {
     return map.get(roomId);
 }
 
-export function getGapCard(roomId: string): Card | undefined {
-    const cardState = map.get(roomId)!
-    return cardState.currentGapCard
+export function getAnswerCardById(room: string, cardId: string): Card | undefined {
+    return map.get(room)?.answerCards.find(card => card.id === cardId)
+}
+
+export function getGapCardById(room: string, cardId: string): Card | undefined {
+    return map.get(room)?.gapCards.find(card => card.id === cardId)
 }

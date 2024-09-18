@@ -2,6 +2,7 @@ import {inject, Injectable} from '@angular/core';
 import {io, Socket} from 'socket.io-client';
 import {UserService} from "./user.service";
 import {Player} from "@cards-with-words-and-gaps/shared/dist/model/player";
+import {JoinRoomEvent} from "@cards-with-words-and-gaps/shared/dist/model/event";
 
 
 const SERVER_URL = 'http://localhost:3000';
@@ -19,10 +20,9 @@ export class SocketService {
 
   public joinRoom(roomId: string) {
     const player: Player = this.userService.getUser();
-    console.log("joining room", roomId);
-    this.socket.emit("join-room", {roomId, player});
 
-    this.socket.on('join-room', data => console.log('[join-room] received', data));
+    const payload: JoinRoomEvent = {roomId, player}
+    this.socket.emit("join-room", payload);
   }
 
 

@@ -1,4 +1,4 @@
-export const answerCards = [
+export const ANSWER_CARDS = [
     "Ein gebleichtes Arschloch",
     "Ein Mikropenis",
     "Ein Hirntumor",
