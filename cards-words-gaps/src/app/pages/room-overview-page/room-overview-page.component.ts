@@ -6,7 +6,6 @@ import {MatIconModule} from "@angular/material/icon";
 import {MatInputModule} from "@angular/material/input";
 import {MatOptionModule} from "@angular/material/core";
 import {MatSelectModule} from "@angular/material/select";
-import {NgForOf} from "@angular/common";
 import {SocketService} from "../../service/socket.service";
 import {RoomListComponent} from "../../components/room-list/room-list.component";
 import {RoomCreateComponent} from "../../components/room-create/room-create.component";
@@ -22,7 +21,6 @@ import {RoomCreateComponent} from "../../components/room-create/room-create.comp
     MatInputModule,
     MatOptionModule,
     MatSelectModule,
-    NgForOf,
     RoomListComponent,
     RoomCreateComponent,
   ],

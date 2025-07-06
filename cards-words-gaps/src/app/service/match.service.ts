@@ -42,12 +42,6 @@ export class MatchService {
         }
         this.game.next(gameFromServer)
       })
-
-    //TODO:
-    // generate gamehash + cookie + new MatchRoute with hash...
-    // store set Game
-    // this.store.dispatch()
-    //    this.router.url.replace(this.router.url, this.router.url+this.game.gameHash)
   }
 
 
