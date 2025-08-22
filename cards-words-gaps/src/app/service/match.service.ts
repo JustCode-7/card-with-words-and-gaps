@@ -22,10 +22,28 @@ export class MatchService {
 
 
   initMatch(roomId: string) {
-    this.game.next(new Game(cardSet, answerSet, this.initPlayerArr(this.playerCount, this.catlordName), roomId, this.getRandomCurrentCatlordCard()));
-    console.log("INIT:" + this.game.value)
-    this.socketService.sendGameWithRoomID('setGame', roomId, this.game.value)
-    console.log(this.game.value)
+    // First, try to get an existing game for this room
+    this.socketService.sendGetGame('getGame', roomId);
+
+    // If this client is the host, initialize a new game with the player as catlord
+    if (this.socketService.isHost.value) {
+      const playerName = localStorage.getItem('playerName') || this.catlordName;
+
+      // Create a new game with the host as catlord
+      const newGame = new Game(
+        cardSet,
+        answerSet,
+        this.initPlayerArr(this.playerCount, playerName),
+        roomId,
+        this.getRandomCurrentCatlordCard()
+      );
+
+      console.log("INIT new game as host:" + newGame);
+      this.game.next(newGame);
+      this.socketService.sendGameWithRoomID('setGame', roomId, newGame);
+    }
+
+    console.log("Current game state:", this.game.value);
 
     this.game.pipe(distinctUntilChanged()).subscribe((game) => {
       if (game.spieler.length === 0 && game === this.game.value) {
@@ -69,7 +87,7 @@ export class MatchService {
 
   private removeFromCardSet(cardString: string) {
     //TODO: tempArr mit dem AnswerCards im Spiel,
-    // vergleichen und nicht vorhandene auffüllen.
+    // vergleichen und nicht vorhandene auff&#252;llen.
     // Wenn keine mehr da, gespielte Karten mischen und neu mverteilen
     console.log(cardString);
   }
@@ -93,32 +111,53 @@ export class MatchService {
   }
 
   private getRandomCurrentCatlordCard() {
-    this.currentCatLordCard.next(cardSet[this.generateRandomCardNummber(cardSet)]);
-    return this.currentCatLordCard.value;
+    // Use a deterministic method to select the initial card
+    // This ensures all players will get the same initial card
+    const timestamp = Date.now();
+    this.currentCardNr = timestamp % cardSet.length;
+    const initialCard = cardSet[this.currentCardNr];
+    this.currentCatLordCard.next(initialCard);
+    return initialCard;
   }
 
   nextCard() {
-    let catloardCardset: any[] = [];
-    let cardNumber = 0;
-    this.socketService.getGame().subscribe((game) => {
-      catloardCardset = game.cardset;
-    })
+    // Get the current game state
+    const currentGame = this.game.value;
+    const catloardCardset = [...currentGame.cardset]; // Create a copy to avoid modifying the original
 
     if (catloardCardset.length < 1) {
       return;
     }
-    if (catloardCardset.length === 1) {
-      cardNumber = 1;
+
+    // Remove the current card from the set
+    if (this.currentCardNr >= 0 && this.currentCardNr < catloardCardset.length) {
+      catloardCardset.splice(this.currentCardNr, 1);
     }
-    catloardCardset.splice(this.currentCardNr, 1);
-    cardNumber = parseInt((Math.random() * catloardCardset.length - 1).toFixed());
+
+    // Select a new card using a deterministic method (based on timestamp)
+    // This ensures all players will get the same card
+    const timestamp = Date.now();
+    const cardNumber = timestamp % catloardCardset.length;
     this.currentCardNr = cardNumber;
+
+    // Make sure we have a valid card
     if (catloardCardset[this.currentCardNr] === undefined) {
-      cardNumber = parseInt((Math.random() * catloardCardset.length - 1).toFixed());
-      this.currentCardNr = cardNumber;
+      this.currentCardNr = 0; // Default to first card if invalid
     }
-    this.currentCatLordCard?.next(catloardCardset[this.currentCardNr])
+
+    // Update the current card
+    const newCard = catloardCardset[this.currentCardNr];
+    this.currentCatLordCard.next(newCard);
+
+    // Update the game state with the new card
+    currentGame.currentCatlordCard = newCard;
+    currentGame.cardset = catloardCardset;
+
+    // Change the catlord
     this.changeCatLord();
+
+    // Broadcast the updated game state to all players
+    this.socketService.sendUpdateGame('updateGame', currentGame);
   }
 
   changeCatLord() {
@@ -156,5 +195,46 @@ export class MatchService {
       .subscribe(() => {
         console.log('disconnected');
       });
+  }
+
+  getCurrentCatLord(): Spieler | undefined {
+    return this.game.value.spieler.find(player => player.catLord);
+  }
+
+  isPlayerCatLord(playername: string): boolean {
+    const currentCatLord = this.getCurrentCatLord();
+    return currentCatLord?.name === playername;
+  }
+
+  createRoom(creatorName: string): string {
+    const roomId = this.generateRoomId();
+    const initialPlayers = this.initPlayerArr(0, creatorName);
+    const newGame = new Game(cardSet, [], initialPlayers, roomId);
+    this.game.next(newGame);
+    return roomId;
+  }
+
+  joinRoom(roomId: string, playerName: string): boolean {
+    const currentGame = this.game.value;
+    if (currentGame.gameHash !== roomId) {
+      return false;
+    }
+
+    // Check if player already exists
+    const existingPlayer = currentGame.spieler.find(p => p.name === playerName);
+    if (existingPlayer) {
+      return true; // Player rejoining
+    }
+
+    // Add new player
+    const newPlayer = new Spieler(playerName, 0, [], [], false);
+    currentGame.spieler.push(newPlayer);
+    this.spielerKartenService.verteileKarten([newPlayer], answerSet);
+    this.game.next(currentGame);
+    return true;
+  }
+
+  private generateRoomId(): string {
+    return Math.random().toString(36).substring(2, 8).toUpperCase();
   }
 }
