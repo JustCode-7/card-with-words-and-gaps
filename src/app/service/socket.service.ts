@@ -270,6 +270,11 @@ export class SocketService {
 
   private connectToServer(): void {
     const url = this.serverUrl.value;
+    // Nur verbinden, wenn eine URL gesetzt ist und wir nicht im reinen P2P-Modus sind
+    if (!url || url === 'http://localhost:4200' || url === window.location.origin) {
+      console.log("No external server URL set, operating in P2P/Local mode.");
+      return;
+    }
     console.log(`Connecting to server at ${url}`);
     this.socket = io(url);
     this.setupSocketListeners();
