@@ -122,7 +122,7 @@ export class SocketService {
   }
 
   public getGame(): Observable<Game> {
-    return new Observable<Game>((observer: { next: (arg0: Game) => void; }) => {
+    return new Observable<Game>((observer) => {
       // Listen for game updates from the server
       if (this.socket) {
         this.socket.on('game', (game: Game) => {
@@ -140,16 +140,16 @@ export class SocketService {
   }
 
   public getRoomID(): Observable<string[]> {
-    return new Observable<string[]>((observer: { next: (arg0: string[]) => void; }) => {
+    return new Observable<string[]>((observer) => {
       if (!this.socket) return;
       this.socket.on('roomID', (rooms: string[]) => observer.next(rooms));
     });
   }
 
   public onEvent(event: SocketEvent): Observable<any> {
-    return new Observable<Event>((observer: { next: () => any; }) => {
+    return new Observable<any>((observer) => {
       if (!this.socket) return;
-      this.socket.on(event, () => observer.next());
+      this.socket.on(event, () => observer.next(true));
     });
   }
 
