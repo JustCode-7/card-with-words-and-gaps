@@ -103,12 +103,13 @@ export class RoomCreateComponent {
     const offer = await this.webrtcService.createOffer(room);
     this.sessionCode.set(offer);
 
-    // Join-Link erstellen
+    // Join-Link erstellen (mit Hash-Unterstützung für GitHub Pages)
     const url = new URL(window.location.href);
-    url.searchParams.set('offer', offer);
-    this.joinLink.set(url.toString());
+    const baseUrl = url.origin + url.pathname;
+    const joinLink = `${baseUrl}#/join-game?offer=${offer}`;
+    this.joinLink.set(joinLink);
 
-    const qr = await this.webrtcService.generateQRCode(url.toString());
+    const qr = await this.webrtcService.generateQRCode(joinLink);
     this.qrCodeDataUrl.set(qr);
 
     // Socket.io (optional parallel oder als Fallback)
