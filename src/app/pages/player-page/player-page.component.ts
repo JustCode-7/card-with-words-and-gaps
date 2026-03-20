@@ -13,18 +13,18 @@ import {Router} from "@angular/router";
 import {Game} from "../../model/game-model";
 
 @Component({
-    selector: 'app-player-page',
-    imports: [
-        AnswerTextCardComponent,
-        MatButtonModule,
-        MatChipsModule,
-        MatCardModule,
-        MatProgressSpinnerModule,
-        AsyncPipe,
-        NgIf
-    ],
-    templateUrl: './player-page.component.html',
-    styleUrl: './player-page.component.scss'
+  selector: 'app-player-page',
+  imports: [
+    AnswerTextCardComponent,
+    MatButtonModule,
+    MatChipsModule,
+    MatCardModule,
+    MatProgressSpinnerModule,
+    AsyncPipe,
+    NgIf
+  ],
+  templateUrl: './player-page.component.html',
+  styleUrl: './player-page.component.scss'
 })
 export class PlayerPage implements OnInit, OnDestroy {
   @Input('playername') playername!: string;
@@ -35,7 +35,7 @@ export class PlayerPage implements OnInit, OnDestroy {
   socketService: SocketService = inject(SocketService);
   router: Router = inject(Router);
 
-  player: BehaviorSubject<Spieler> = new BehaviorSubject(new Spieler(this.playername, 1, [], [], false));
+  player: BehaviorSubject<Spieler> = new BehaviorSubject(new Spieler('', this.playername, 1, [], [], false));
   private subscriptions: Subscription[] = [];
 
   ngOnInit(): void {
@@ -45,12 +45,16 @@ export class PlayerPage implements OnInit, OnDestroy {
     this.matchService.initMatch(this.roomname);
 
     // Subscribe to matchService.game updates (which is updated by socketService)
+    const currentPlayerId = this.socketService.getPlayerId();
+
     this.subscriptions.push(
       this.matchService.game.subscribe((game: Game) => {
         if (!game || !game.gameHash) return;
 
-        // Find the player in the game
-        const playerInGame = game.spieler.find((spieler: Spieler) => spieler.name === this.playername);
+        // Find the player in the game via ID (preferred) or Name
+        const playerInGame = game.spieler.find((spieler: Spieler) =>
+          spieler.id === currentPlayerId || (spieler.name === this.playername && !spieler.id)
+        );
 
         if (playerInGame) {
           console.log("Player found in game state: " + playerInGame.name);

@@ -125,12 +125,11 @@ export class ServerService {
     // damit die neue Spielerliste dort enthalten ist.
     const game = this.games.get(roomId);
     if (game) {
-      const playersInRoom = this.rooms.get(roomId)?.players || [];
+      // Prüfen, ob der Spieler bereits im Spiel-Objekt ist (Vermeidung von Dubletten via ID)
+      const existingInGame = game.spieler.find((s: any) => s.id === player.id);
 
-      // Nur Spieler hinzufügen, die noch nicht im Game sind
-      const newPlayers = playersInRoom.filter(p => !game.spieler.find((s: any) => s.name === p.name));
-
-      newPlayers.forEach(p => {
+      if (!existingInGame) {
+        console.log(`[SERVER] Adding new player ${player.name} (${player.id}) to game state`);
         // Dem neuen Spieler Karten zuweisen, falls welche da sind
         let playerCards: string[] = [];
         if (game.answerset && game.answerset.length >= 10) {
@@ -138,14 +137,23 @@ export class ServerService {
         }
 
         game.spieler.push({
-          name: p.name,
+          id: player.id,
+          name: player.name,
           points: 0,
           cards: playerCards,
           selectedCards: [],
           catLord: false,
           ready: false
         });
-      });
+      } else {
+        console.log(`[SERVER] Player ${player.name} (${player.id}) already exists, updating info`);
+        // Namen aktualisieren, falls er sich geändert hat
+        existingInGame.name = player.name;
+        // Falls der existierende Spieler keine Karten hat
+        if (existingInGame.cards.length === 0 && game.answerset && game.answerset.length >= 10) {
+          existingInGame.cards = game.answerset.splice(0, 10);
+        }
+      }
 
       this.games.set(roomId, game);
     }

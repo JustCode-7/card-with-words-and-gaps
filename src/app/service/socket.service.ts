@@ -213,6 +213,10 @@ export class SocketService {
     this.socket.emit('notification', message);
   }
 
+  public getPlayerId(): string {
+    return this.playerService.getPlayer().id;
+  }
+
   public setP2PRoomId(roomId: string) {
     this.currentP2PRoomId = roomId;
   }

@@ -46,7 +46,7 @@ export class MatchService {
           const newGame = new Game(
             [...cardSet],
             [...answerSet],
-            [new Spieler(playerName, 0, [], [], true)],
+            [new Spieler(player.id, playerName, 0, [], [], true)],
             roomId,
             ""
           );
@@ -68,7 +68,7 @@ export class MatchService {
         const placeholderGame = new Game(
           [],
           [],
-          [new Spieler(playerName, 0, [], [], false)],
+          [new Spieler(player.id, playerName, 0, [], [], false)],
           roomId,
           ""
         );
@@ -119,9 +119,10 @@ export class MatchService {
 
   initPlayerArr(anzahl: number, catlordname: string): Spieler[] {
     let spielerArr = [];
-    spielerArr.push(new Spieler(catlordname, 0, [], [], true))
+    // Hier nutzen wir einen Dummy-Id-Generierung oder ziehen die echten Ids (in P2P eher seltener genutzt hier)
+    spielerArr.push(new Spieler("host-id", catlordname, 0, [], [], true))
     for (let i = 1; i <= anzahl; i++) {
-      spielerArr.push(new Spieler("Dude" + i, 0, [], [], false))
+      spielerArr.push(new Spieler("dude-id-" + i, "Dude" + i, 0, [], [], false))
     }
     this.spielerKartenService.verteileKarten(spielerArr, answerSet);
     return spielerArr;
