@@ -1,0 +1,42 @@
+<div class="container text-center py-4">
+  <h1>Willkommen zum <code>Banana Kittens</code> Kartenspiel</h1>
+
+  <div class="row justify-content-center mt-4">
+    <div class="col-md-6 col-lg-4 shadow-sm ps-2 pe-4 rounded bg-dark border">
+      <h3>Wie heisst du?</h3>
+      <form (ngSubmit)="onSubmit()" [formGroup]="form">
+        <mat-form-field class="w-100">
+          <mat-label>Name</mat-label>
+          <input formControlName="name"
+                 matInput maxlength="32"
+                 required
+                 type="text"
+          />
+          @if (form.controls['name'].dirty && form.controls['name'].invalid) {
+            <mat-error>Please provide a name</mat-error>
+          }
+        </mat-form-field>
+
+        <button [disabled]="form.invalid"
+                class="w-100 mt-2 py-2"
+                color="primary"
+                mat-raised-button
+                type="submit"
+        >
+          Weiter zum Spiel
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </form>
+
+      <hr class="my-4">
+
+      <div class="qr-container">
+        <p class="small mb-2">Teile das Spiel mit anderen:</p>
+        @if (appQrCodeUrl()) {
+          <img [src]="appQrCodeUrl()" alt="App QR Code" class="img-fluid qr-image border rounded p-2">
+        }
+        <p class="mt-2 small font-weight-bold">Scan mich zum Mitspielen!</p>
+      </div>
+    </div>
+  </div>
+</div>

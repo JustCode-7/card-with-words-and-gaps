@@ -30,7 +30,12 @@ export class SocketService {
 
   constructor() {
     // Initialize the socket connection
-    this.connectToServer();
+    // connectToServer wird nur aufgerufen, wenn wir NICHT auf GitHub Pages sind
+    if (!window.location.origin.includes('github.io')) {
+      this.connectToServer();
+    } else {
+      console.log("GitHub Pages mode: Initial socket connection skipped.");
+    }
 
     // Listen for WebRTC messages
     this.webrtcService.message$.subscribe(msg => {

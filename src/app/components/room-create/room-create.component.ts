@@ -59,7 +59,6 @@ import {MatTooltip} from "@angular/material/tooltip";
       padding: 1rem;
       border: 1px solid #dee2e6;
       border-radius: 0.5rem;
-      background-color: #fff;
     }
 
     .bg-success-subtle {

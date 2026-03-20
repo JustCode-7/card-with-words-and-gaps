@@ -18,14 +18,15 @@
   </div>
 
   @if (sessionCode()) {
-    <div class="d-flex flex-column mt-4 p-3 border rounded bg-dark shadow-sm overflow-hidden">
+    <div
+      class="col-md-6 col-lg-4 shadow-sm ps-2 pe-4 rounded bg-dark border align-self-center mt-4">
       <h3 class="mb-3 text-primary">WebRTC: Peer-to-Peer Verbindung aufbauen</h3>
 
       <div class="step-box mb-4">
         <h4 class="h6 font-weight-bold">Schritt 1: Einladungs-Link teilen</h4>
         <p class="small">Dein Mitspieler muss diesen Link öffnen oder den QR-Code scannen.</p>
         <div class="text-center my-3">
-          <img [src]="qrCodeDataUrl()" alt="QR Code" class="w-75 vh-100  border p-2 bg-white rounded">
+          <img [src]="qrCodeDataUrl()" alt="QR Code" class="img-fluid qr-image border rounded p-2">
         </div>
         <mat-form-field class="w-100">
           <mat-label>Einladungs-Link</mat-label>
@@ -38,7 +39,7 @@
 
       <div class="step-box mb-4">
         <h4 class="h6 font-weight-bold">Schritt 2: Antwort vom Gast empfangen</h4>
-        <p class="small text-muted">Sobald dein Mitspieler den Link öffnet, wird er dir einen "Antwort-Code" zeigen.
+        <p class="small">Sobald dein Mitspieler den Link öffnet, wird er dir einen "Antwort-Code" zeigen.
           Füge ihn hier ein:</p>
         <mat-form-field class="w-100">
           <mat-label>Antwort-Code einfügen</mat-label>
