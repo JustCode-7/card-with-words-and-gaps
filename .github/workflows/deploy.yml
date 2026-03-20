@@ -24,7 +24,7 @@ jobs:
         run: npm ci
 
       - name: Build Angular app (production) for GitHub Pages
-        run: npm run build -- --configuration production --base-href=/cards-words-gaps/ --deploy-url=/cards-words-gaps/
+        run: npm run build -- --configuration production --base-href=/card-with-words-and-gaps/ --deploy-url=/card-with-words-and-gaps/
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4

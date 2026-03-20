@@ -7,8 +7,8 @@
     "backend": "node server.js",
     "dev": "concurrently \"npm run backend\" \"npm start\"",
     "build": "ng build",
-    "build:prod": "ng build -- --configuration production --base-href=/cards-words-gaps/ --deploy-url=/cards-words-gaps/",
-    "deploy": "npm run build:prod && npx angular-cli-ghpages --dir=dist/cards-words-gaps",
+    "build:prod": "ng build -- --configuration production --base-href=/card-with-words-and-gaps/ --deploy-url=/card-with-words-and-gaps/",
+    "deploy": "npm run build:prod && npx angular-cli-ghpages --dir=dist/card-with-words-and-gaps",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },
