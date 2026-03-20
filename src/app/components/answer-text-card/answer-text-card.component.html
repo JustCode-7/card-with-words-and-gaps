@@ -1,0 +1,45 @@
+<div class="container-fluid">
+  <div class="py-3 px-3">
+    <mat-card appearance="outlined" class="bg-gradient bg-success">
+      <mat-card-header>
+        <mat-card-title>
+          @for (part of lueckentextArr; track part) {
+            @if (gapCount.value === 0) {
+              {{ part.text }}
+              <button (click)="markFirstFreeAnswer()" [id]="'gapbtn'+$index"
+                      mat-raised-button> {{ part.gap }}
+              </button>
+            } @else if (lueckentextArr.indexOf(part) < lueckentextArr.length - 1) {
+              {{ part.text }}
+              <button (click)="markFirstFreeAnswer()" mat-raised-button> {{ part.gap }}</button>
+            } @else {
+              {{ part.text }}
+            }
+
+          }
+        </mat-card-title>
+      </mat-card-header>
+    </mat-card>
+
+    <div class="d-flex flex-column w-100 py-3">
+      @for (answer of answerset; track answer) {
+        <button (click)="pickAnswerAndFillIntoGaps(answer)"
+                [color]="changeButtonColorDependingOnAnswerpickCounter(answer)"
+                [id]="'answerbtn'+$index" class="mb-2"
+                mat-raised-button>{{ answer.answer }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <div class="d-flex flex-row justify-content-between">
+    <h2>{{ this.playername }}</h2>
+    <button (click)="submitAnswers()"
+            [disabled]="matchService.game.value.roundStatus !== 'WAITING_FOR_ANSWERS'"
+            class="mt-2 float-end p-2 me-3 mb-2"
+            color="warn"
+            mat-raised-button>
+      {{ matchService.game.value.roundStatus !== 'WAITING_FOR_ANSWERS' ? 'Warten auf Catlord' : 'Fertig' }}
+    </button>
+  </div>
+</div>
