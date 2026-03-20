@@ -81,10 +81,12 @@ export class AnswerTextCardComponent implements OnInit {
       .sort((a, b) => (a.index || 0) - (b.index || 0))
       .map(a => a.answer);
 
-    if (selected.length === this.gapCount() || (this.gapCount() === 0 && selected.length === 1)) {
+    const required = Math.max(1, this.gapCount());
+
+    if (selected.length === required) {
       this.matchService.playerReady(this.playername, selected);
     } else {
-      alert(`Bitte wähle genau ${this.gapCount() || 1} Karte(n) aus.`);
+      alert(`Bitte wähle genau ${required} Karte(n) aus.`);
     }
   }
 
@@ -97,23 +99,45 @@ export class AnswerTextCardComponent implements OnInit {
   }
 
   pickAnswerAndFillIntoGaps(answer: Answer) {
-    this.fillSelectedAnswerIntoGap(answer);
-    const currentAnswers = this.answerset();
-    if (!currentAnswers.some((value) => value.selected)) {
-      answer.selected = !answer.selected;
-      answer.index = 1;
-    } else {
-      answer.selected = !answer.selected;
-      answer.index = currentAnswers.filter((value) => value.selected).length;
+    if (answer.selected) {
+      // Deselect
+      answer.selected = false;
+      const indexToRemove = answer.index;
+      answer.index = 0;
+
+      // Find the gap that contains this answer and reset it
+      const gapIndex = this.lueckentextArr.findIndex(g => g.gap === answer.answer);
+      if (gapIndex !== -1) {
+        this.lueckentextArr[gapIndex].gap = '___';
+      }
+
+      // Re-index remaining selected answers
+      const currentAnswers = this.answerset();
+      currentAnswers
+        .filter(a => a.selected && a.index! > (indexToRemove || 0))
+        .forEach(a => a.index!--);
+
+      this.answerset.set([...currentAnswers]);
+      return;
     }
 
+    // Select logic
+    const currentAnswers = this.answerset();
+    const selectedCount = currentAnswers.filter(a => a.selected).length;
+    const maxAllowed = Math.max(1, this.gapCount());
 
-    currentAnswers.forEach((value) => {
-      if (value.answer !== answer.answer && value.index! < 1) {
-        value.selected = false;
-      }
-    });
-    this.answerset.set([...currentAnswers]);
+    if (selectedCount >= maxAllowed) {
+      // If we are already at the limit, the logic in fillSelectedAnswerIntoGap
+      // will handle replacing the last one.
+      // But we need to make sure we don't increment the index further if it's a replacement
+      this.fillSelectedAnswerIntoGap(answer);
+      answer.selected = true;
+      answer.index = maxAllowed;
+    } else {
+      this.fillSelectedAnswerIntoGap(answer);
+      answer.selected = true;
+      answer.index = currentAnswers.filter((value) => value.selected).length;
+    }
   }
 
   /**
@@ -171,29 +195,50 @@ export class AnswerTextCardComponent implements OnInit {
   }
 
   private ifThereAGapJustFillInto(answer: Answer) {
-    if (this.lueckentextArr.some((value) => value.gap === '___')) {
-      let founded = this.lueckentextArr.find((value) => value.gap === '___');
-      this.lueckentextArr[this.lueckentextArr.indexOf(founded!)].gap = answer.answer;
+    const gapIdx = this.lueckentextArr.findIndex(value => value.gap === '___');
+    if (gapIdx !== -1) {
+      this.lueckentextArr[gapIdx].gap = answer.answer;
     }
   }
 
   private whenNoGapLeftChangeLastNotChanged(answer: Answer) {
     if (this.lueckentextArr.every((value) => value.gap !== '___')) {
       if (this.gapCount() > 1) {
-        let founded = this.lueckentextArr.find((value, index) =>
+        let foundedIdx = this.lueckentextArr.findIndex((value, index) =>
           value.gap !== answer.answer && this.lastpickedAnswerIndex !== index
         );
-        this.lastpickedAnswerIndex = this.lueckentextArr.indexOf(founded!);
-        if (founded && this.lueckentextArr[this.lueckentextArr.indexOf(founded)].gap) {
-          this.lastpickedAnswerIndex = this.lueckentextArr.indexOf(founded);
-          this.lueckentextArr[this.lueckentextArr.indexOf(founded)].gap = answer.answer;
+        if (foundedIdx !== -1) {
+          this.lastpickedAnswerIndex = foundedIdx;
+          const oldAnswerText = this.lueckentextArr[foundedIdx].gap;
+
+          // Deselect the old answer in the answerset
+          const currentAnswers = this.answerset();
+          const oldAnswer = currentAnswers.find(a => a.answer === oldAnswerText);
+          if (oldAnswer) {
+            oldAnswer.selected = false;
+            oldAnswer.index = 0;
+          }
+
+          this.lueckentextArr[foundedIdx].gap = answer.answer;
+          this.answerset.set([...currentAnswers]);
         }
       } else {
         // if there is only one gap-value fill it
-        let founded = this.lueckentextArr.find((value) =>
+        let foundedIdx = this.lueckentextArr.findIndex((value) =>
           value.gap !== answer.answer);
-        if (founded && this.lueckentextArr[this.lueckentextArr.indexOf(founded)].gap) {
-          this.lueckentextArr[this.lueckentextArr.indexOf(founded)].gap = answer.answer;
+        if (foundedIdx !== -1) {
+          const oldAnswerText = this.lueckentextArr[foundedIdx].gap;
+
+          // Deselect the old answer
+          const currentAnswers = this.answerset();
+          const oldAnswer = currentAnswers.find(a => a.answer === oldAnswerText);
+          if (oldAnswer) {
+            oldAnswer.selected = false;
+            oldAnswer.index = 0;
+          }
+
+          this.lueckentextArr[foundedIdx].gap = answer.answer;
+          this.answerset.set([...currentAnswers]);
         }
       }
     }
