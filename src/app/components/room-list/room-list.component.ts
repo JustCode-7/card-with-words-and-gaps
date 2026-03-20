@@ -108,9 +108,22 @@ export class RoomListComponent implements OnInit {
   private matchService = inject(MatchService);
 
   ngOnInit(): void {
+    const player = this.playerService.getPlayer();
+
     // Check for offer in URL
     this.route.queryParams.subscribe(params => {
       const offer = params['offer'];
+
+      // Falls kein Name gesetzt ist, leiten wir zur Startseite um
+      // und behalten den Offer-Code bei.
+      if (!player.name || player.name === 'undefined') {
+        if (offer) {
+          console.warn("[DEBUG_LOG] Kein Name gesetzt. Umleitung zur Startseite mit Offer-Code.");
+          this.router.navigate(['/'], {queryParams: {offer}});
+          return;
+        }
+      }
+
       if (offer) {
         this.offerCodeControl.setValue(offer);
         this.generateAnswer();

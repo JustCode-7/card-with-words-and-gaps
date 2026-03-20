@@ -1,20 +1,16 @@
-<ng-container *ngIf="(matchService.game | async) as game">
-  @if (game.currentCatlordCard) {
-    <app-answer-text-card [disabled]="this.matchService.lockedPlayerView.value"
-                          [playername]="playername"
-                          [spielerAntworten]="(player | async)?.cards || []"
-                          class="m-5 p-3"></app-answer-text-card>
-  } @else {
-    <div class="container mt-5 text-center">
-      <mat-card appearance="outlined">
-        <mat-card-content>
-          <h2>Warte auf den Spielstart...</h2>
-          <p>Der Host wird das Spiel starten, sobald genügend Spieler da sind.</p>
-          <div class="mt-3">
-            <mat-spinner style="margin:0 auto;"></mat-spinner>
-          </div>
-        </mat-card-content>
-      </mat-card>
-    </div>
-  }
-</ng-container>
+@if ((matchService.gameSignal())?.isStarted) {
+  <app-answer-text-card [playername]="playername"
+                        class="p-3"></app-answer-text-card>
+} @else {
+  <div class="container mt-5 text-center">
+    <mat-card appearance="outlined">
+      <mat-card-content>
+        <h2>Warte auf den Spielstart...</h2>
+        <p>Der Host wird das Spiel starten, sobald genügend Spieler da sind.</p>
+        <div class="mt-3">
+          <mat-spinner style="margin:0 auto;"></mat-spinner>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+}

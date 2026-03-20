@@ -129,6 +129,10 @@ export class SocketService {
       this.serverService.updateGame(game);
       // IMMER via WebRTC an alle Gäste senden
       this.webrtcService.sendMessage({event: 'game', data: game});
+    } else {
+      // Wenn wir ein Gast sind, schicken wir das Update via WebRTC an den Host
+      console.log("[DEBUG_LOG] Guest: Sending game update to host via WebRTC");
+      this.webrtcService.sendMessage({event: 'game', data: game});
     }
 
     // Falls wir doch in einem echten Socket-Netzwerk sind, emittieren wir auch dort
@@ -267,11 +271,20 @@ export class SocketService {
 
   private handleWebRTCMessage(msg: any) {
     if (msg.event === 'game') {
-      // Gast erhält Spiel-Update vom Host
-      if (!this.isHost.value) {
-        // console.log("[DEBUG_LOG] Guest: Game update received via WebRTC", msg.data);
-        this.serverService.updateGame(msg.data);
-        this.p2pGameUpdate$.next(msg.data);
+      // Wenn wir eine Nachricht empfangen, aktualisieren wir unseren lokalen State
+      console.log(`[DEBUG_LOG] P2P: Received game update. Host: ${this.isHost.value}`);
+      // Force reference update to trigger signals/effects
+      const gameCopy = JSON.parse(JSON.stringify(msg.data));
+      this.serverService.updateGame(gameCopy);
+      this.p2pGameUpdate$.next(gameCopy);
+
+      // Wenn wir der Host sind, müssen wir dieses Update an ALLE anderen Gäste broadcasten
+      if (this.isHost.value) {
+        console.log("[DEBUG_LOG] Host: Received P2P game update, broadcasting to all peers");
+        this.webrtcService.sendMessage({
+          event: 'game',
+          data: gameCopy
+        });
       }
     } else if (msg.event === 'request-game' && this.isHost.value) {
       const {roomId} = msg.data;
@@ -286,7 +299,7 @@ export class SocketService {
     } else if (msg.event === 'join-room' && this.isHost.value) {
       // Wenn wir der Host sind, registrieren wir den beigetretenen P2P-Spieler
       const {roomId, player} = msg.data;
-      console.log(`[DEBUG_LOG] Host: P2P player ${player.name} joining room ${roomId}`);
+      console.log(`[DEBUG_LOG] Host: P2P player ${player.name} (${player.id}) joining room ${roomId}`);
 
       // Den Spieler im ServerService hinzufügen
       this.serverService.addPlayerToRoom(roomId, player);
@@ -295,12 +308,14 @@ export class SocketService {
       const updatedGame = this.serverService.getGame(roomId);
       if (updatedGame) {
         console.log(`[DEBUG_LOG] Host: game updated, now has ${updatedGame.spieler.length} players`);
-        this.p2pGameUpdate$.next(updatedGame);
+        // Force reference update to trigger signals/effects
+        const gameCopy = JSON.parse(JSON.stringify(updatedGame));
+        this.p2pGameUpdate$.next(gameCopy);
 
         // Alle Gäste mit dem aktuellen Spielstatus informieren (Broadcast)
         this.webrtcService.sendMessage({
           event: 'game',
-          data: updatedGame
+          data: gameCopy
         });
       }
     }

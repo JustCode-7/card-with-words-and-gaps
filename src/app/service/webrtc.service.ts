@@ -15,11 +15,6 @@ export class WebRTCService {
   };
 
   constructor() {
-    // Für lokale Tests (Simulation via BroadcastChannel) setzen wir den Status sofort auf connected
-    if (window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')) {
-      console.warn("[TEST_SIM] WebRTC: Forcing status to connected for simulation");
-      this.connectionStatus.next('connected');
-    }
   }
 
   // HOST Side
@@ -47,6 +42,7 @@ export class WebRTCService {
 
   async handleAnswer(compressedAnswer: string) {
     console.warn(`[DEBUG_LOG] WebRTC: Handling answer...`);
+
     const sdp = LZString.decompressFromEncodedURIComponent(compressedAnswer);
     if (sdp && this.pendingConnectionId) {
       const pc = this.peerConnections.get(this.pendingConnectionId);
@@ -65,6 +61,7 @@ export class WebRTCService {
   // CLIENT Side
   async createAnswer(compressedOffer: string): Promise<{ answer: string, roomId: string }> {
     console.warn(`[DEBUG_LOG] WebRTC: Creating answer...`);
+
     const offerPacketString = LZString.decompressFromEncodedURIComponent(compressedOffer);
     if (!offerPacketString) throw new Error("Invalid offer");
 

@@ -8,16 +8,20 @@ import {cardSet} from "../data/catlord-cards";
 import {SocketService} from "./socket.service";
 import {SocketEvent} from "../util/client-enums";
 import {PlayerService} from "./player.service";
+import {toSignal} from "@angular/core/rxjs-interop";
 
 @Injectable({providedIn: 'root'})
 export class MatchService {
   spielerKartenService: SpielerKartenService = inject(SpielerKartenService);
   socketService: SocketService = inject(SocketService);
-  game: BehaviorSubject<Game> = new BehaviorSubject<Game>(new Game([], [], [], ""));
+  game: BehaviorSubject<Game> = new BehaviorSubject<Game>(new Game([], [], [], "", "", 'WAITING_FOR_ANSWERS', false, false));
+
+  // Game as signal for better reactivity in components
+  gameSignal = toSignal(this.game, {initialValue: this.game.value});
+
   playerCount: number = 1;
   catlordName: string = "lord";
   currentCatLordCard = new BehaviorSubject<string>("");
-  lockedPlayerView: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
   spielerListe: BehaviorSubject<Spieler[]> = new BehaviorSubject([new Spieler("dummy-id", "dummy", 1, [], [], false)]);
   playerService = inject(PlayerService);
   private currentCardNr: number = 1
@@ -48,7 +52,10 @@ export class MatchService {
             [...answerSet],
             [new Spieler(player.id, playerName, 0, [], [], true)],
             roomId,
-            ""
+            "",
+            'WAITING_FOR_ANSWERS',
+            false,
+            false
           );
 
           console.log("INIT new game as host (waiting):", newGame);
@@ -70,7 +77,10 @@ export class MatchService {
           [],
           [new Spieler(player.id, playerName, 0, [], [], false)],
           roomId,
-          ""
+          "",
+          'WAITING_FOR_ANSWERS',
+          false,
+          false
         );
         this.game.next(placeholderGame);
       }
@@ -143,7 +153,7 @@ export class MatchService {
   playerReady(playername: string, selectedCards: string[] = []) {
     console.log(playername + " is Ready with cards: " + selectedCards);
     const currentGame = this.game.value;
-    const player = currentGame.spieler.find(p => p.name === playername);
+    const player = currentGame.spieler.find(p => p.id === this.socketService.getPlayerId() || p.name === playername);
     if (player) {
       player.ready = true;
       player.selectedCards = selectedCards;
@@ -158,7 +168,7 @@ export class MatchService {
         currentGame.answersRevealed = false;
       }
 
-      this.game.next(currentGame);
+      this.game.next({...currentGame});
       // Everyone needs to be able to signal they are ready
       this.socketService.sendUpdateGame('updateGame', currentGame);
     }
@@ -167,7 +177,7 @@ export class MatchService {
   revealAnswers() {
     const currentGame = this.game.value;
     currentGame.answersRevealed = true;
-    this.game.next(currentGame);
+    this.game.next({...currentGame});
     this.socketService.sendUpdateGame('updateGame', currentGame);
   }
 
@@ -180,7 +190,7 @@ export class MatchService {
       currentGame.roundStatus = 'ROUND_FINISHED';
       (currentGame as any).winnerOfLastRound = winnerName;
 
-      this.game.next(currentGame);
+      this.game.next({...currentGame});
       this.socketService.sendUpdateGame('updateGame', currentGame);
     }
   }
@@ -229,7 +239,7 @@ export class MatchService {
     }
 
     currentGame.roundStatus = 'WAITING_FOR_ANSWERS';
-    this.game.next(currentGame);
+    this.game.next({...currentGame});
     this.socketService.sendUpdateGame('updateGame', currentGame);
   }
 
@@ -308,7 +318,7 @@ export class MatchService {
   createRoom(creatorName: string): string {
     const roomId = this.generateRoomId();
     const initialPlayers = this.initPlayerArr(0, creatorName);
-    const newGame = new Game(cardSet, [], initialPlayers, roomId);
+    const newGame = new Game(cardSet, [], initialPlayers, roomId, "", 'WAITING_FOR_ANSWERS', false, false);
     this.game.next(newGame);
     return roomId;
   }
@@ -320,7 +330,7 @@ export class MatchService {
     }
 
     // Check if player already exists
-    const existingPlayer = currentGame.spieler.find(p => p.name === playerName);
+    const existingPlayer = currentGame.spieler.find(p => p.id === this.socketService.getPlayerId() || p.name === playerName);
     if (existingPlayer) {
       return true; // Player rejoining
     }
@@ -330,36 +340,47 @@ export class MatchService {
     const newPlayer = new Spieler(playerInfo.id, playerName, 0, [], [], false);
     currentGame.spieler.push(newPlayer);
     this.spielerKartenService.verteileKarten([newPlayer], answerSet);
-    this.game.next(currentGame);
+    this.game.next({...currentGame});
     return true;
   }
 
   startGame() {
     // Only host should trigger start
     if (!this.socketService.isHost.value) {
+      console.warn("[DEBUG_LOG] Only host can start game!");
       return;
     }
     const currentGame = this.game.value;
     if (!currentGame || !currentGame.gameHash) {
+      console.warn("[DEBUG_LOG] Game state or hash missing!");
       return;
     }
 
     // Min 2 players to start
     if (currentGame.spieler.length < 2) {
+      console.warn("[DEBUG_LOG] Not enough players to start game!");
       return;
     }
 
     // If already started, do nothing
-    if (currentGame.currentCatlordCard && currentGame.currentCatlordCard.length > 0) {
+    if (currentGame.isStarted) {
+      console.warn("[DEBUG_LOG] Game already started!");
       return;
     }
+
+    console.log("[DEBUG_LOG] Starting game. Current players:", currentGame.spieler.map(s => ({
+      name: s.name,
+      cards: s.cards.length
+    })));
 
     // Initialize all players' cards before starting
     currentGame.spieler.forEach(s => {
       // Deal 10 cards to each player
       const cardsToDeal = 10 - s.cards.length;
       if (cardsToDeal > 0 && currentGame.answerset.length >= cardsToDeal) {
-        s.cards.push(...currentGame.answerset.splice(0, cardsToDeal));
+        const newCards = currentGame.answerset.splice(0, cardsToDeal);
+        s.cards.push(...newCards);
+        console.log(`[DEBUG_LOG] Host: Dealt ${newCards.length} cards to ${s.name}. Total: ${s.cards.length}`);
       }
     });
 
@@ -369,8 +390,11 @@ export class MatchService {
     // Remove the selected card from cardset
     currentGame.cardset = currentGame.cardset.filter(c => c !== initialCard);
     currentGame.roundStatus = 'WAITING_FOR_ANSWERS';
+    currentGame.isStarted = true;
 
     // Broadcast updated game state
+    console.log("[DEBUG_LOG] Host: Broadcasting started game state to all players...");
+    this.game.next({...currentGame});
     this.socketService.sendUpdateGame('updateGame', currentGame);
   }
 

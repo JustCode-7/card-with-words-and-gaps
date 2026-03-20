@@ -1,12 +1,9 @@
-import {BehaviorSubject} from "rxjs";
-import {MatListModule} from "@angular/material/list";
-import {Component, inject, Input, OnInit} from "@angular/core";
+import {ChangeDetectorRef, Component, effect, inject, Input, OnInit, signal} from "@angular/core";
 import {MatCardModule} from "@angular/material/card";
 import {MatButtonModule} from "@angular/material/button";
 import {MatBadgeModule} from "@angular/material/badge";
 import {MatchService} from "../../service/match.service";
 import {SocketService} from "../../service/socket.service";
-import {AsyncPipe} from "@angular/common";
 
 interface Answer {
   answer: string;
@@ -19,16 +16,12 @@ interface Answer {
   imports: [
     MatCardModule,
     MatButtonModule,
-    MatListModule,
     MatBadgeModule,
-    AsyncPipe,
   ],
   templateUrl: './answer-text-card.component.html',
   styleUrl: './answer-text-card.component.scss'
 })
 export class AnswerTextCardComponent implements OnInit {
-  @Input() spielerAntworten!: string[];
-  answers = new BehaviorSubject([""])
   answerCounter = 0;
   @Input() disabled: boolean = false;
   gapsInTextCounter = 1;
@@ -36,17 +29,21 @@ export class AnswerTextCardComponent implements OnInit {
 
   matchService: MatchService = inject(MatchService);
   socketService: SocketService = inject(SocketService);
-  answerset = new BehaviorSubject<Answer[]>([]);
-  gaptext = new BehaviorSubject('')
+  cdr: ChangeDetectorRef = inject(ChangeDetectorRef);
+  answerset = signal<Answer[]>([]);
+  gaptext = signal<string>('');
   lueckentextArr: { text: string, gap: string }[] = [];
   lastpickedAnswerIndex = 0;
   selectedAnswers: Answer[] = [];
-  protected gapCount = new BehaviorSubject(1);
+  protected gapCount = signal<number>(1);
 
-  ngOnInit(): void {
-    const currentPlayerId = this.socketService.getPlayerId();
+  constructor() {
+    // Reaktivität via Angular Effect
+    effect(() => {
+      const game = this.matchService.gameSignal();
+      if (!game || !game.gameHash) return;
 
-    this.matchService.game.subscribe(game => {
+      const currentPlayerId = this.socketService.getPlayerId();
       // Find the player in the game via ID (preferred) or Name
       const playerInGame = game.spieler.find((s: any) =>
         s.id === currentPlayerId || (s.name === this.playername && !s.id)
@@ -54,21 +51,19 @@ export class AnswerTextCardComponent implements OnInit {
 
       if (playerInGame) {
         // Deep compare of cards to see if we need an update
-        const currentCards = this.answerset.value.map(a => a.answer);
+        const currentCards = this.answerset().map(a => a.answer);
         const hasChanged = JSON.stringify(currentCards) !== JSON.stringify(playerInGame.cards);
 
-        // Only update if number of cards changed or cards themselves changed,
-        // OR we are not in readiness state
-        if (hasChanged || !playerInGame.ready) {
-          console.log(`[DEBUG_LOG] AnswerCard: Updating cards for ${playerInGame.name}`, playerInGame.cards);
-          this.answerset.next(playerInGame.cards.map(card => ({answer: card, selected: false})));
+        if (hasChanged || (game.isStarted && this.answerset().length === 0)) {
+          console.log(`[DEBUG_LOG] AnswerCard effect update: ${playerInGame.name}, Cards: ${playerInGame.cards.length}`);
+          this.answerset.set(playerInGame.cards.map(card => ({answer: card, selected: false})));
         }
       }
 
-      if (game.currentCatlordCard && (game.currentCatlordCard !== this.gaptext.value || game.roundStatus === 'WAITING_FOR_ANSWERS')) {
-        if (game.currentCatlordCard !== this.gaptext.value || this.lueckentextArr.length === 0) {
+      if (game.currentCatlordCard && (game.currentCatlordCard !== this.gaptext() || game.roundStatus === 'WAITING_FOR_ANSWERS')) {
+        if (game.currentCatlordCard !== this.gaptext() || this.lueckentextArr.length === 0) {
           this.resetVariables();
-          this.gaptext.next(game.currentCatlordCard);
+          this.gaptext.set(game.currentCatlordCard);
           this.countGaps();
           this.prepareFillIntoGaps();
         }
@@ -76,16 +71,20 @@ export class AnswerTextCardComponent implements OnInit {
     });
   }
 
+  ngOnInit(): void {
+    console.log(`[DEBUG_LOG] AnswerCard OnInit: playerName=${this.playername}`);
+  }
+
   submitAnswers() {
-    const selected = this.answerset.value
+    const selected = this.answerset()
       .filter(a => a.selected)
       .sort((a, b) => (a.index || 0) - (b.index || 0))
       .map(a => a.answer);
 
-    if (selected.length === this.gapCount.value || (this.gapCount.value === 0 && selected.length === 1)) {
+    if (selected.length === this.gapCount() || (this.gapCount() === 0 && selected.length === 1)) {
       this.matchService.playerReady(this.playername, selected);
     } else {
-      alert(`Bitte wähle genau ${this.gapCount.value || 1} Karte(n) aus.`);
+      alert(`Bitte wähle genau ${this.gapCount() || 1} Karte(n) aus.`);
     }
   }
 
@@ -99,7 +98,7 @@ export class AnswerTextCardComponent implements OnInit {
 
   pickAnswerAndFillIntoGaps(answer: Answer) {
     this.fillSelectedAnswerIntoGap(answer);
-    const currentAnswers = this.answerset.value;
+    const currentAnswers = this.answerset();
     if (!currentAnswers.some((value) => value.selected)) {
       answer.selected = !answer.selected;
       answer.index = 1;
@@ -114,7 +113,7 @@ export class AnswerTextCardComponent implements OnInit {
         value.selected = false;
       }
     });
-    this.answerset.next(currentAnswers);
+    this.answerset.set([...currentAnswers]);
   }
 
   /**
@@ -145,7 +144,7 @@ export class AnswerTextCardComponent implements OnInit {
   }
 
   private countGaps() {
-    this.gapCount.next(this.gaptext.value.split('___').length - 1);
+    this.gapCount.set(this.gaptext().split('___').length - 1);
   }
 
   /**
@@ -153,8 +152,8 @@ export class AnswerTextCardComponent implements OnInit {
    * @private
    */
   private prepareFillIntoGaps() {
-    this.gaptext.value.split('___').forEach((gapText, gapTextindex) => {
-      if (this.gapCount.value > 0 && gapTextindex === this.gaptext.value.split('___').length - 1) {
+    this.gaptext().split('___').forEach((gapText, gapTextindex) => {
+      if (this.gapCount() > 0 && gapTextindex === this.gaptext().split('___').length - 1) {
         this.lueckentextArr.push({text: gapText, gap: ''});
       } else {
         this.lueckentextArr.push({text: gapText, gap: '___'});
@@ -165,9 +164,9 @@ export class AnswerTextCardComponent implements OnInit {
 
   private resetVariables() {
     this.lueckentextArr = [];
-    this.gapCount.next(0);
+    this.gapCount.set(0);
     this.lastpickedAnswerIndex = 0;
-    this.answerset.next([]);
+    this.answerset.set([]);
     this.selectedAnswers = [];
   }
 
@@ -180,7 +179,7 @@ export class AnswerTextCardComponent implements OnInit {
 
   private whenNoGapLeftChangeLastNotChanged(answer: Answer) {
     if (this.lueckentextArr.every((value) => value.gap !== '___')) {
-      if (this.gapCount.value > 1) {
+      if (this.gapCount() > 1) {
         let founded = this.lueckentextArr.find((value, index) =>
           value.gap !== answer.answer && this.lastpickedAnswerIndex !== index
         );
@@ -201,11 +200,11 @@ export class AnswerTextCardComponent implements OnInit {
   }
 
   private getRandomLueckentext() {
-    this.gaptext.next(this.matchService.game.value.cardset.at(Math.random() * this.matchService.game.value.cardset.length - 1)!);
+    this.gaptext.set(this.matchService.game.value.cardset.at(Math.random() * this.matchService.game.value.cardset.length - 1)!);
   }
 
   private getRandomAnswerSet() {
-    const currentAnswers = this.answerset.value;
+    const currentAnswers = this.answerset();
     while (currentAnswers.length <= 6) {
       const tempRandomAnswer: Answer = {
         answer: this.matchService.game.value.answerset.at(Math.random() * this.matchService.game.value.answerset.length - 1)!,
@@ -215,7 +214,7 @@ export class AnswerTextCardComponent implements OnInit {
         currentAnswers.push(tempRandomAnswer);
       }
     }
-    this.answerset.next(currentAnswers);
+    this.answerset.set([...currentAnswers]);
   }
 
 }

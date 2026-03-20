@@ -5,7 +5,7 @@ import {MatInputModule} from "@angular/material/input";
 import {FormControl, FormGroup, ReactiveFormsModule, Validators} from "@angular/forms";
 import {PlayerService} from "../../service/player.service";
 import {MatIconModule} from "@angular/material/icon";
-import {Router} from "@angular/router";
+import {ActivatedRoute, Router} from "@angular/router";
 import {WebRTCService} from "../../service/webrtc.service";
 
 @Component({
@@ -46,9 +46,17 @@ export class PlayerNamePage implements OnInit {
   private webrtcService = inject(WebRTCService);
   private router = inject(Router);
 
+  private route = inject(ActivatedRoute);
+
   async ngOnInit() {
     const {name} = this.playerService.getPlayer();
     this.form.patchValue({name});
+
+    // Falls wir von einem Join-Link kommen, behalten wir die Parameter für nachher
+    const offer = this.route.snapshot.queryParams['offer'];
+    if (offer) {
+      console.log("[DEBUG_LOG] Startseite mit Offer-Code aufgerufen:", offer);
+    }
 
     // QR-Code für die App-URL generieren
     const appUrl = 'https://justcode-7.github.io/card-with-words-and-gaps/';
@@ -60,6 +68,12 @@ export class PlayerNamePage implements OnInit {
     const {name} = this.form.value;
     this.playerService.setName(name);
 
-    this.router.navigate(['/join-game'])
+    // Falls ein Offer-Code vorhanden war, leiten wir direkt zurück zum Join
+    const offer = this.route.snapshot.queryParams['offer'];
+    if (offer) {
+      this.router.navigate(['/join-game'], {queryParams: {offer}});
+    } else {
+      this.router.navigate(['/join-game']);
+    }
   }
 }

@@ -68,11 +68,19 @@
             }
           </mat-chip-listbox>
 
-          <div [class.bg-danger-subtle]="(webrtcService.connectionStatus | async) === 'disconnected'"
-               [class.bg-success-subtle]="(webrtcService.connectionStatus | async) === 'connected'"
-               [class.bg-warning-subtle]="(webrtcService.connectionStatus | async) === 'connecting'"
-               class="mt-2 text-center p-2 rounded small mb-4">
-            Netzwerk-Status: <strong class="text-uppercase">{{ webrtcService.connectionStatus | async }}</strong>
+          <div
+            [class.bg-danger-subtle]="(webrtcService.connectionStatus | async) === 'disconnected' || spielerListe().length < 2"
+            [class.bg-success-subtle]="(webrtcService.connectionStatus | async) === 'connected' && spielerListe().length >= 2"
+            [class.bg-warning-subtle]="(webrtcService.connectionStatus | async) === 'connecting' || ((webrtcService.connectionStatus | async) === 'connected' && spielerListe().length < 2)"
+            class="mt-2 text-center p-2 rounded small mb-4">
+            Netzwerk-Status:
+            <strong class="text-uppercase">
+              {{
+                ((webrtcService.connectionStatus | async) === 'connected' && spielerListe().length >= 2) ? 'connected' :
+                  ((webrtcService.connectionStatus | async) === 'connected' && spielerListe().length < 2) ? 'waiting for players' :
+                    (webrtcService.connectionStatus | async)
+              }}
+            </strong>
           </div>
 
           <button (click)="startGame()" [disabled]="spielerListe().length < 2" class="w-100 py-3 mt-auto" color="warn"

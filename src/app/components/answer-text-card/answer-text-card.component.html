@@ -4,7 +4,7 @@
       <mat-card-header>
         <mat-card-title>
           @for (part of lueckentextArr; track part) {
-            @if (gapCount.value === 0) {
+            @if (gapCount() === 0) {
               {{ part.text }}
               <button (click)="markFirstFreeAnswer()" [id]="'gapbtn'+$index"
                       mat-raised-button> {{ part.gap }}
@@ -15,19 +15,20 @@
             } @else {
               {{ part.text }}
             }
-
           }
         </mat-card-title>
       </mat-card-header>
     </mat-card>
 
     <div class="d-flex flex-column w-100 py-3">
-      @for (answer of (answerset | async); track answer) {
+      @for (answer of answerset(); track $index) {
         <button (click)="pickAnswerAndFillIntoGaps(answer)"
                 [color]="changeButtonColorDependingOnAnswerpickCounter(answer)"
                 [id]="'answerbtn'+$index" class="mb-2"
                 mat-raised-button>{{ answer.answer }}
         </button>
+      } @empty {
+        <p> kein answer set</p>
       }
     </div>
   </div>
@@ -35,11 +36,11 @@
   <div class="d-flex flex-row justify-content-between">
     <h2>{{ this.playername }}</h2>
     <button (click)="submitAnswers()"
-            [disabled]="matchService.game.value.roundStatus !== 'WAITING_FOR_ANSWERS'"
+            [disabled]="matchService.gameSignal().roundStatus !== 'WAITING_FOR_ANSWERS'"
             class="mt-2 float-end p-2 me-3 mb-2"
             color="warn"
             mat-raised-button>
-      {{ matchService.game.value.roundStatus !== 'WAITING_FOR_ANSWERS' ? 'Warten auf Catlord' : 'Fertig' }}
+      {{ matchService.gameSignal().roundStatus !== 'WAITING_FOR_ANSWERS' ? 'Warten auf Catlord' : 'Fertig' }}
     </button>
   </div>
 </div>

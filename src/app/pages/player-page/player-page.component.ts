@@ -1,4 +1,3 @@
-import {AsyncPipe, NgIf} from "@angular/common";
 import {Component, inject, Input, OnDestroy, OnInit} from '@angular/core';
 import {AnswerTextCardComponent} from "../../components/answer-text-card/answer-text-card.component";
 import {MatButtonModule} from "@angular/material/button";
@@ -19,9 +18,7 @@ import {Game} from "../../model/game-model";
     MatButtonModule,
     MatChipsModule,
     MatCardModule,
-    MatProgressSpinnerModule,
-    AsyncPipe,
-    NgIf
+    MatProgressSpinnerModule
   ],
   templateUrl: './player-page.component.html',
   styleUrl: './player-page.component.scss'
