@@ -80,6 +80,14 @@ export class SocketService {
     // Start a server instance on this client
     this.serverService.startServer(room);
 
+    // Auf GitHub Pages (window.location.origin) läuft kein Socket-Server.
+    // Wir überspringen den Verbindungsaufbau zum lokalen Server, wenn wir auf GitHub Pages sind.
+    if (window.location.origin.includes('github.io')) {
+      console.log("GitHub Pages detected: Skipping local socket connection, using pure P2P mode.");
+      this.isHost.next(true);
+      return;
+    }
+
     // Connect to the local server
     this.serverUrl.next(this.serverService.serverUrl);
 
@@ -270,11 +278,13 @@ export class SocketService {
 
   private connectToServer(): void {
     const url = this.serverUrl.value;
-    // Nur verbinden, wenn eine URL gesetzt ist und wir nicht im reinen P2P-Modus sind
-    if (!url || url === 'http://localhost:4200' || url === window.location.origin) {
-      console.log("No external server URL set, operating in P2P/Local mode.");
+    // Auf GitHub Pages (window.location.origin) läuft kein Socket.io-Server.
+    // Wir blockieren den Verbindungsaufbau, wenn die URL zum aktuellen GitHub-Origin führt.
+    if (!url || url.includes('github.io')) {
+      console.log("GitHub Pages mode: Operating in P2P/Local mode only.");
       return;
     }
+
     console.log(`Connecting to server at ${url}`);
     this.socket = io(url);
     this.setupSocketListeners();
