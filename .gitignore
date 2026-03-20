@@ -1,38 +1,42 @@
-# Logs
-logs
-*.log
-npm-debug.log*
+# See http://help.github.com/ignore-files/ for more about ignoring files.
 
-# Diagnostic reports (https://nodejs.org/api/report.html)
-report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+# Compiled output
+/dist
+/tmp
+/out-tsc
+/bazel-out
 
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
+# Node
+/node_modules
+npm-debug.log
+yarn-error.log
 
-# Dependency directories
-node_modules/
+# IDEs and editors
+.idea/
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
 
-# TypeScript cache
-*.tsbuildinfo
+# Visual Studio Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history/*
 
-# Optional npm cache directory
-.npm
+# Miscellaneous
+/.angular/cache
+.sass-cache/
+/connect.lock
+/coverage
+/libpeerconnection.log
+testem.log
+/typings
 
-# Optional eslint cache
-.eslintcache
-
-# Optional stylelint cache
-.stylelintcache
-
-# Output of 'npm pack'
-*.tgz
-
-# dotenv environment variable files
-.env
-.env.development.local
-.env.test.local
-.env.production.local
-.env.local
+# System files
+.DS_Store
+Thumbs.db
