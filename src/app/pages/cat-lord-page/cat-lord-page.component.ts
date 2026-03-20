@@ -32,21 +32,21 @@ export class NextCzarPipe implements PipeTransform {
 }
 
 @Component({
-    selector: 'app-cat-lord-page',
-    imports: [
-        GapTextCardComponent,
-        MatCardModule,
-        NgForOf,
-        MatButtonModule,
-        NgIf,
-        MatChipsModule,
-        MatIconModule,
-        MatListModule,
-        AsyncPipe,
-        NextCzarPipe
-    ],
-    templateUrl: './cat-lord-page.component.html',
-    styleUrl: './cat-lord-page.component.scss'
+  selector: 'app-cat-lord-page',
+  imports: [
+    GapTextCardComponent,
+    MatCardModule,
+    NgForOf,
+    MatButtonModule,
+    NgIf,
+    MatChipsModule,
+    MatIconModule,
+    MatListModule,
+    AsyncPipe,
+    NextCzarPipe
+  ],
+  templateUrl: './cat-lord-page.component.html',
+  styleUrl: './cat-lord-page.component.scss'
 })
 export class CatLordPage implements OnInit, OnDestroy {
   public catLordName: string = '';
@@ -131,7 +131,12 @@ export class CatLordPage implements OnInit, OnDestroy {
   private buildFullText(gapText: string, answers: string[]): string {
     let result = gapText;
     answers.forEach(answer => {
-      result = result.replace('___', `[${answer}]`);
+      if (gapText.includes('___')) {
+        result = result.replace('___', `[${answer}]`);
+      } else {
+        result = result.concat(` [${answer}]`);
+      }
+
     });
     return result;
   }

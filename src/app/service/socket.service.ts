@@ -1,6 +1,6 @@
 import {inject, Injectable} from '@angular/core';
 import {io, Socket} from 'socket.io-client';
-import {BehaviorSubject, Observable} from "rxjs";
+import {BehaviorSubject, Observable, Subject} from "rxjs";
 import {MYAction, SocketEvent} from "../util/client-enums";
 import {Spieler} from "../model/spieler-model";
 import {Game} from "../model/game-model";
@@ -9,22 +9,41 @@ import {Player} from "../model/Player";
 import {DataService} from "./data.service";
 import {ServerService} from "./server.service";
 import {environment} from "../../environments/environment";
+import {WebRTCService} from "./webrtc.service";
 
 @Injectable({providedIn: 'root'})
 export class SocketService {
 
   // Track if this client is hosting a server
   public isHost = new BehaviorSubject<boolean>(false);
+  public p2pGameUpdate$ = new Subject<Game>();
   private socket: Socket | null = null;
   private playerService = inject(PlayerService);
   private dataService = inject(DataService);
   private serverService = inject(ServerService);
+  private webrtcService = inject(WebRTCService);
+
+  // Zwischenspeicher für den aktuellen P2P-Raumnamen (um Circular Dependency mit MatchService zu vermeiden)
+  private currentP2PRoomId: string | null = null;
   // Track the current server URL
   private serverUrl = new BehaviorSubject<string>(environment.socketUrl);
 
   constructor() {
     // Initialize the socket connection
     this.connectToServer();
+
+    // Listen for WebRTC messages
+    this.webrtcService.message$.subscribe(msg => {
+      this.handleWebRTCMessage(msg);
+    });
+
+    // Automatisch beitreten, wenn P2P verbunden ist (nur für Gäste)
+    this.webrtcService.connectionStatus.subscribe(status => {
+      if (status === 'connected' && !this.isHost.value) {
+        // Wir nehmen den Raum-Namen aus dem MatchService
+        this.joinRoomViaWebRTC();
+      }
+    });
 
     // Listen for server URL changes and reconnect
     this.serverUrl.subscribe(url => {
@@ -94,6 +113,9 @@ export class SocketService {
   }
 
   public sendUpdateGame(event: string, game: Game): void {
+    // Send via WebRTC
+    this.webrtcService.sendMessage({event: 'game', data: game});
+
     // Use ServerService to update the game
     this.serverService.updateGame(game);
 
@@ -175,6 +197,10 @@ export class SocketService {
     this.socket.emit('notification', message);
   }
 
+  public setP2PRoomId(roomId: string) {
+    this.currentP2PRoomId = roomId;
+  }
+
   private handleBeforeUnload(event: BeforeUnloadEvent): void {
     // If we're the host, stop the server when the window is closed
     if (this.isHost.value) {
@@ -199,6 +225,46 @@ export class SocketService {
     // Set up other listeners
     this.socket.on('game', (game: Game) => {
       // Game updates will be handled by subscribers to getGame()
+    });
+  }
+
+  private handleWebRTCMessage(msg: any) {
+    if (msg.event === 'game') {
+      console.log("[DEBUG_LOG] Game update received via WebRTC", msg.data);
+      this.serverService.updateGame(msg.data);
+      // Den MatchService über das Subject informieren (löst Circular Dependency)
+      this.p2pGameUpdate$.next(msg.data);
+    } else if (msg.event === 'join-room' && this.isHost.value) {
+      // Wenn wir der Host sind, registrieren wir den beigetretenen P2P-Spieler
+      const {roomId, player} = msg.data;
+      console.log("P2P player joined room", roomId, player);
+      this.serverService.addPlayerToRoom(roomId, player);
+
+      // Als Host schicken wir dem neuen Spieler sofort den aktuellen Spielstatus
+      const currentGame = this.serverService.getGame(roomId);
+      if (currentGame) {
+        console.log("[DEBUG_LOG] Host pushing current game to new P2P player", roomId);
+        this.webrtcService.sendMessage({
+          event: 'game',
+          data: currentGame
+        });
+      }
+    }
+  }
+
+  private joinRoomViaWebRTC() {
+    const player: Player = this.playerService.getPlayer();
+    if (!player.name) {
+      console.warn("P2P-Join verzögert: Spielername noch nicht gesetzt");
+      return;
+    }
+
+    const roomId = this.currentP2PRoomId || "P2P-Room";
+    console.log(`[DEBUG_LOG] P2P-Join send: room=${roomId}, player=${player.name}`);
+
+    this.webrtcService.sendMessage({
+      event: 'join-room',
+      data: {roomId, player}
     });
   }
 

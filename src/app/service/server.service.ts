@@ -98,6 +98,19 @@ export class ServerService {
     if (this.socket) {
       this.socket.emit('updateGame', game);
     }
+
+    // Trigger local game event for listeners in the same client (host-mode)
+    if (this.socket) {
+      this.socket.emit('game', game);
+    }
+  }
+
+  public addPlayerToRoom(roomId: string, player: Player): void {
+    const room = this.rooms.get(roomId);
+    if (!room) {
+      this.createRoom(roomId);
+    }
+    this.joinRoom(roomId, player);
   }
 
   private setupSocketEvents(): void {

@@ -1,0 +1,75 @@
+<div class="d-flex flex-column justify-content-center overflow-hidden">
+  <div class="d-flex flex-column p-3 border rounded shadow-sm bg-darks">
+    <h2>Einen neuen Raum erstellen:</h2>
+
+    <mat-form-field>
+      <mat-label>Raum</mat-label>
+      <input [formControl]="roomIdControl" matInput maxlength="32" required>
+    </mat-form-field>
+    <button (click)="createRoom()"
+            [disabled]="roomIdControl.invalid"
+            aria-label="Create Room"
+            class="ms-3"
+            color="accent"
+            mat-button>
+      <mat-icon>add</mat-icon>
+      Create Room
+    </button>
+  </div>
+
+  @if (sessionCode()) {
+    <div class="d-flex flex-column mt-4 p-3 border rounded bg-dark shadow-sm overflow-hidden">
+      <h3 class="mb-3 text-primary">WebRTC: Peer-to-Peer Verbindung aufbauen</h3>
+
+      <div class="step-box mb-4">
+        <h4 class="h6 font-weight-bold">Schritt 1: Einladungs-Link teilen</h4>
+        <p class="small">Dein Mitspieler muss diesen Link öffnen oder den QR-Code scannen.</p>
+        <div class="text-center my-3">
+          <img [src]="qrCodeDataUrl()" alt="QR Code" class="w-75 vh-100  border p-2 bg-white rounded">
+        </div>
+        <mat-form-field class="w-100">
+          <mat-label>Einladungs-Link</mat-label>
+          <input #linkInput [value]="joinLink()" matInput readonly>
+          <button (click)="copyLink()" mat-icon-button matSuffix matTooltip="In Zwischenablage kopieren">
+            <mat-icon>content_copy</mat-icon>
+          </button>
+        </mat-form-field>
+      </div>
+
+      <div class="step-box mb-4">
+        <h4 class="h6 font-weight-bold">Schritt 2: Antwort vom Gast empfangen</h4>
+        <p class="small text-muted">Sobald dein Mitspieler den Link öffnet, wird er dir einen "Antwort-Code" zeigen.
+          Füge ihn hier ein:</p>
+        <mat-form-field class="w-100">
+          <mat-label>Antwort-Code einfügen</mat-label>
+          <textarea [formControl]="answerCodeControl" matInput placeholder="Antwort-SDP hier einfügen..."
+                    rows="3"></textarea>
+        </mat-form-field>
+        <button (click)="connect()" [disabled]="answerCodeControl.invalid" class="w-100 py-2" color="primary"
+                mat-raised-button>
+          <mat-icon>power</mat-icon>
+          Verbindung herstellen
+        </button>
+      </div>
+
+      <div [class.bg-danger-subtle]="(webrtcService.connectionStatus | async) === 'disconnected'"
+           [class.bg-success-subtle]="(webrtcService.connectionStatus | async) === 'connected'"
+           [class.bg-warning-subtle]="(webrtcService.connectionStatus | async) === 'connecting'"
+           class="mt-2 text-center p-2 rounded">
+        Status: <strong class="text-uppercase">{{ webrtcService.connectionStatus | async }}</strong>
+      </div>
+    </div>
+  }
+
+  @if (socketService.isHost | async) {
+    <div class="mt-3">
+      <mat-chip color="primary" selected>
+        <mat-icon>dns</mat-icon>
+        Du bist der Host dieses Raums (Socket.io)
+      </mat-chip>
+      <p class="mt-2">Als Raumersteller bist du der Host und der Server läuft auf deinem Gerät.
+        Bitte verlasse den Raum nicht, solange andere Spieler noch darin sind.</p>
+    </div>
+  }
+
+</div>

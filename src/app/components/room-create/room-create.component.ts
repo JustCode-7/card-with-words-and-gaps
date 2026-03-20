@@ -1,4 +1,4 @@
-import {Component, inject} from '@angular/core';
+import {Component, inject, signal} from '@angular/core';
 import {FormControl, ReactiveFormsModule, Validators} from "@angular/forms";
 import {MatButtonModule} from "@angular/material/button";
 import {MatFormFieldModule} from "@angular/material/form-field";
@@ -10,48 +10,27 @@ import {SocketService} from "../../service/socket.service";
 import {PlayerService} from "../../service/player.service";
 import {Router} from "@angular/router";
 import {MatchService} from "../../service/match.service";
+import {WebRTCService} from "../../service/webrtc.service";
+import {MatTooltip} from "@angular/material/tooltip";
 
 @Component({
-    selector: 'app-room-create',
-    imports: [
-        ReactiveFormsModule,
-        MatButtonModule,
-        MatFormFieldModule,
-        MatIconModule,
-        MatInputModule,
-        MatChipsModule,
-        AsyncPipe
-    ],
-    template: `
-    <h2>Einen neuen Raum erstellen:</h2>
-    <div>
-      <mat-form-field>
-        <mat-label>Raum</mat-label>
-        <input matInput [formControl]="roomIdControl" required maxlength="32">
-      </mat-form-field>
-      <button class="ms-3"
-              mat-button
-              color="accent"
-              aria-label="Create Room"
-              (click)="createRoom()"
-              [disabled]="roomIdControl.invalid">
-        <mat-icon>add</mat-icon>
-        Create Room
-      </button>
-    </div>
-
-    @if (socketService.isHost | async) {
-      <div class="mt-3">
-        <mat-chip color="primary" selected>
-          <mat-icon>dns</mat-icon>
-          Du bist der Host dieses Raums
-        </mat-chip>
-        <p class="mt-2">Als Raumersteller bist du der Host und der Server läuft auf deinem Gerät.
-          Bitte verlasse den Raum nicht, solange andere Spieler noch darin sind.</p>
-      </div>
+  selector: 'app-room-create',
+  imports: [
+    ReactiveFormsModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatChipsModule,
+    AsyncPipe,
+    MatTooltip
+  ],
+  templateUrl: './room-create.component.html',
+  styles: `
+    .mw-50 {
+      max-width: 50%;
     }
-  `,
-    styles: `
+
     .mt-2 {
       margin-top: 0.5rem;
     }
@@ -59,37 +38,102 @@ import {MatchService} from "../../service/match.service";
     .mt-3 {
       margin-top: 1rem;
     }
+
+    .mt-4 {
+      margin-top: 1.5rem;
+    }
+
+    .mb-3 {
+      margin-bottom: 1rem;
+    }
+
+    .mb-4 {
+      margin-bottom: 1.5rem;
+    }
+
+    .w-100 {
+      width: 100%;
+    }
+
+    .step-box {
+      padding: 1rem;
+      border: 1px solid #dee2e6;
+      border-radius: 0.5rem;
+      background-color: #fff;
+    }
+
+    .bg-success-subtle {
+      background-color: #d1e7dd;
+      color: #0f5132;
+    }
+
+    .bg-warning-subtle {
+      background-color: #fff3cd;
+      color: #664d03;
+    }
+
+    .bg-danger-subtle {
+      background-color: #f8d7da;
+      color: #842029;
+    }
   `
 })
 export class RoomCreateComponent {
 
-  roomIdControl = new FormControl('', [Validators.required, Validators.maxLength(32)])
+  roomIdControl = new FormControl('', [Validators.required, Validators.maxLength(32)]);
+  answerCodeControl = new FormControl('', [Validators.required]);
+
+  sessionCode = signal('');
+  joinLink = signal('');
+  qrCodeDataUrl = signal('');
+
   matchService = inject(MatchService);
   socketService = inject(SocketService);
   playerService = inject(PlayerService);
+  webrtcService = inject(WebRTCService);
   router = inject(Router);
 
-  createRoom() {
+  async createRoom() {
     if (this.roomIdControl.invalid) return;
 
     const room = this.roomIdControl.value!;
     const playerName = this.playerService.getPlayer().name;
 
-    // Mark as host before creating the room
+    // WebRTC Offer erzeugen
+    const offer = await this.webrtcService.createOffer(room);
+    this.sessionCode.set(offer);
+
+    // Join-Link erstellen
+    const url = new URL(window.location.href);
+    url.searchParams.set('offer', offer);
+    this.joinLink.set(url.toString());
+
+    const qr = await this.webrtcService.generateQRCode(url.toString());
+    this.qrCodeDataUrl.set(qr);
+
+    // Socket.io (optional parallel oder als Fallback)
+    this.socketService.setP2PRoomId(room);
     this.socketService.isHost.next(true);
-
-    // Create the room via socket
     this.socketService.createRoom(room);
-
-    // Initialize the match locally so the guards (RoomGuard, CatlordGuard) pass
     this.matchService.initMatch(room);
 
-    // Navigate to the catlord page
-    this.router.navigate(['game', room, playerName, 'catlord'],
-      {skipLocationChange: false});
+    // Navigation nach erfolgreicher WebRTC-Verbindung oder manuell
+    // Hier lassen wir den User erst mal auf der Seite, um die Answer einzugeben
+  }
 
-    // Clear the input after creating the room
-    this.roomIdControl.reset();
+  copyLink() {
+    navigator.clipboard.writeText(this.joinLink());
+  }
+
+  async connect() {
+    const answer = this.answerCodeControl.value;
+    if (answer) {
+      await this.webrtcService.handleAnswer(answer);
+      // Wenn verbunden, navigieren
+      const room = this.roomIdControl.value!;
+      const playerName = this.playerService.getPlayer().name;
+      this.router.navigate(['game', room, playerName, 'catlord']);
+    }
   }
 
 }

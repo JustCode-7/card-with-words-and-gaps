@@ -101,9 +101,21 @@ export class MatchService {
         }
         console.log("Updating game from server:", gameFromServer);
         this.game.next(gameFromServer)
-      })
+      });
+
+    // P2P-Updates abonnieren (um Circular Dependency zu vermeiden)
+    this.socketService.p2pGameUpdate$.subscribe(game => {
+      this.updateGameFromServer(game);
+    });
   }
 
+
+  public updateGameFromServer(game: Game) {
+    if (game) {
+      console.log("MatchService: updating game from server/P2P", game);
+      this.game.next(game);
+    }
+  }
 
   initPlayerArr(anzahl: number, catlordname: string): Spieler[] {
     let spielerArr = [];
