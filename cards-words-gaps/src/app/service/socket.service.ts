@@ -20,7 +20,7 @@ export class SocketService {
   // Track if this client is hosting a server
   public isHost = new BehaviorSubject<boolean>(false);
   // Track the current server URL
-  private serverUrl = new BehaviorSubject<string>('http://localhost:3000');
+  private serverUrl = new BehaviorSubject<string>(window.location.origin);
 
   constructor() {
     // Initialize the socket connection

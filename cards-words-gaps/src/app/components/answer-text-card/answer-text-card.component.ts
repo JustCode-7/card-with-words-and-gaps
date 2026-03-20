@@ -33,19 +33,46 @@ export class AnswerTextCardComponent implements OnInit {
   @Input() playername!: string;
 
   matchService: MatchService = inject(MatchService);
-  answerset: Answer[] = [{answer: '', selected: false}];
+  answerset: Answer[] = [];
   gaptext = new BehaviorSubject('')
-  lueckentextArr = [{text: '', gap: ''}];
+  lueckentextArr: { text: string, gap: string }[] = [];
   lastpickedAnswerIndex = 0;
-  selectedAnswers = [{answer: '', selected: false}];
+  selectedAnswers: Answer[] = [];
   protected gapCount = new BehaviorSubject(1);
 
   ngOnInit(): void {
-    this.resetVariables();
-    this.getRandomLueckentext();
-    this.getRandomAnswerSet();
-    this.countGaps();
-    this.prepareFillIntoGaps();
+    this.matchService.game.subscribe(game => {
+      const playerInGame = game.spieler.find(s => s.name === this.playername);
+      if (playerInGame) {
+        // Only update if number of cards changed or we are not in readiness state
+        // To avoid resetting selection while player is picking
+        if (this.answerset.length !== playerInGame.cards.length || !playerInGame.ready) {
+          this.answerset = playerInGame.cards.map(card => ({answer: card, selected: false}));
+        }
+      }
+
+      if (game.currentCatlordCard && (game.currentCatlordCard !== this.gaptext.value || game.roundStatus === 'WAITING_FOR_ANSWERS')) {
+        if (game.currentCatlordCard !== this.gaptext.value || this.lueckentextArr.length === 0) {
+          this.resetVariables();
+          this.gaptext.next(game.currentCatlordCard);
+          this.countGaps();
+          this.prepareFillIntoGaps();
+        }
+      }
+    });
+  }
+
+  submitAnswers() {
+    const selected = this.answerset
+      .filter(a => a.selected)
+      .sort((a, b) => (a.index || 0) - (b.index || 0))
+      .map(a => a.answer);
+
+    if (selected.length === this.gapCount.value || (this.gapCount.value === 0 && selected.length === 1)) {
+      this.matchService.playerReady(this.playername, selected);
+    } else {
+      alert(`Bitte wähle genau ${this.gapCount.value || 1} Karte(n) aus.`);
+    }
   }
 
   getNext() {

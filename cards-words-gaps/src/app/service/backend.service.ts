@@ -4,10 +4,10 @@ import {HttpClient} from "@angular/common/http";
 @Injectable({providedIn: 'root'})
 export class BackendService {
 
-  private readonly serverUrl = 'http://localhost:3000';
   private http = inject(HttpClient);
 
+  // Use same-origin relative path so Angular dev-server proxy can forward to backend
   getRoomIdList() {
-    return this.http.get<string[]>(`${this.serverUrl}/rooms`)
+    return this.http.get<string[]>(`/rooms`);
   }
 }

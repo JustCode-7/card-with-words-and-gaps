@@ -1,0 +1,15 @@
+{
+  "/socket.io": {
+    "target": "http://127.0.0.1:3000",
+    "secure": false,
+    "ws": true,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  },
+  "/rooms": {
+    "target": "http://127.0.0.1:3000",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  }
+}

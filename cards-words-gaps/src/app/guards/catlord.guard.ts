@@ -1,7 +1,7 @@
-import { Injectable, inject } from '@angular/core';
-import { CanActivate, ActivatedRouteSnapshot, Router } from '@angular/router';
-import { MatchService } from '../service/match.service';
-import { map, Observable } from 'rxjs';
+import {inject, Injectable} from '@angular/core';
+import {ActivatedRouteSnapshot, CanActivate, Router} from '@angular/router';
+import {MatchService} from '../service/match.service';
+import {map, Observable} from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -16,6 +16,11 @@ export class CatlordGuard implements CanActivate {
 
     return this.matchService.game.pipe(
       map(game => {
+        // If room is empty (not initialized yet), allow host through
+        if (!game.gameHash || game.spieler.length === 0) {
+          return this.matchService.socketService.isHost.value;
+        }
+
         const currentPlayer = game.spieler.find(player => player.name === playername);
 
         if (!currentPlayer || !currentPlayer.catLord) {

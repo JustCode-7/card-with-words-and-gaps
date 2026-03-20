@@ -20,7 +20,7 @@ export class ServerService {
   public isServerRunning = new BehaviorSubject<boolean>(false);
   public serverPort = 3000;
   // Use a local server for development
-  public serverUrl = 'http://localhost:3000';
+  public serverUrl = (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
   private socket: Socket | null = null;
   private rooms: Map<string, Room> = new Map();
   private games: Map<string, any> = new Map();

@@ -6,6 +6,7 @@ import {MatCardModule} from "@angular/material/card";
 import {Router} from "@angular/router";
 import {PlayerService} from "../../service/player.service";
 import {SocketService} from "../../service/socket.service";
+import {MatchService} from "../../service/match.service";
 
 @Component({
   selector: 'app-room-list',
@@ -48,17 +49,21 @@ import {SocketService} from "../../service/socket.service";
 export class RoomListComponent {
   protected playerService = inject(PlayerService);
   private data = inject(DataService);
+  rooms = this.data.roomListSignal;
   private socketService = inject(SocketService);
   private router = inject(Router);
-
-  rooms = this.data.roomListSignal;
+  private matchService = inject(MatchService);
 
   joinRoom(roomId: string) {
+    const playerName = this.playerService.getPlayer().name;
+
     // Join the room through the socket
     this.socketService.joinRoom(roomId);
 
-    // Navigate to the game page
-    const playerName = this.playerService.getPlayer().name;
-    this.router.navigate(['/game', roomId, playerName]);
+    // Initialize the match locally so the RoomGuard passes
+    this.matchService.initMatch(roomId);
+
+    // Navigate to the player page
+    this.router.navigate(['/game', roomId, playerName, 'player']);
   }
 }

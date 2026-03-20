@@ -1,7 +1,7 @@
-import { Injectable, inject } from '@angular/core';
-import { CanActivate, ActivatedRouteSnapshot, Router } from '@angular/router';
-import { MatchService } from '../service/match.service';
-import { map, Observable } from 'rxjs';
+import {inject, Injectable} from '@angular/core';
+import {ActivatedRouteSnapshot, CanActivate, Router} from '@angular/router';
+import {MatchService} from '../service/match.service';
+import {map, Observable} from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -16,6 +16,11 @@ export class RoomGuard implements CanActivate {
 
     return this.matchService.game.pipe(
       map(game => {
+        // If we are the host and the room is the one we are creating, let us through
+        if (this.matchService.socketService.isHost.value && !game.gameHash) {
+          return true;
+        }
+
         // Check if the room exists and player is part of the game
         if (!game.gameHash || game.gameHash !== roomname) {
           this.router.navigate(['/join-game']);
