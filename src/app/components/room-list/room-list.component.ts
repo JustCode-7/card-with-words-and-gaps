@@ -13,6 +13,7 @@ import {MatFormFieldModule} from "@angular/material/form-field";
 import {MatInputModule} from "@angular/material/input";
 import {AsyncPipe} from "@angular/common";
 import {MatTooltip} from "@angular/material/tooltip";
+import * as LZString from 'lz-string';
 
 @Component({
   selector: 'app-room-list',
@@ -99,6 +100,7 @@ export class RoomListComponent implements OnInit {
   answerCode = signal('');
   answerQrCodeUrl = signal('');
   p2pRoomId = signal('P2P-Room');
+  p2pConnectionId = signal<string | null>(null);
   protected playerService = inject(PlayerService);
   private data = inject(DataService);
   rooms = this.data.roomListSignal;
@@ -112,7 +114,14 @@ export class RoomListComponent implements OnInit {
 
     // Check for offer in URL
     this.route.queryParams.subscribe(params => {
-      const offer = params['offer'];
+      let offer = params['offer'];
+
+      // Falls der Browser den Offer-Code bereits URL-dekodiert hat,
+      // müssen wir sicherstellen, dass wir ihn so verarbeiten, wie LZString es erwartet.
+      // Manchmal hilft es, das offer-Paket explizit zu loggen
+      if (offer) {
+        console.warn(`[DEBUG_LOG] WebRTC: Offer parameter detected (length: ${offer.length})`);
+      }
 
       // Falls kein Name gesetzt ist, leiten wir zur Startseite um
       // und behalten den Offer-Code bei.
@@ -134,7 +143,26 @@ export class RoomListComponent implements OnInit {
   async generateAnswer() {
     const offer = this.offerCodeControl.value;
     if (offer) {
+      console.warn("[DEBUG_LOG] WebRTC: Attempting to decode offer code...");
+      // Wir dekodieren den Offer vorab, um die connectionId zu erhalten
+      try {
+        const decoded = LZString.decompressFromEncodedURIComponent(offer);
+        if (decoded) {
+          const packet = JSON.parse(decoded);
+          const id = packet.connectionId;
+          if (id) {
+            console.warn(`[DEBUG_LOG] WebRTC: Extracted connectionId: ${id}`);
+            this.p2pConnectionId.set(id);
+          }
+        } else {
+          console.error("[DEBUG_LOG] WebRTC: Decompression failed for offer code!");
+        }
+      } catch (e) {
+        console.error("[DEBUG_LOG] WebRTC: Error parsing offer JSON", e);
+      }
+
       const {answer, roomId} = await this.webrtcService.createAnswer(offer);
+      console.warn(`[DEBUG_LOG] WebRTC: Answer generated for room ${roomId}`);
 
       // WICHTIG: Erst den Raum-Namen setzen, bevor wir die Answer anzeigen
       // (da die Answer den Status 'connected' triggern kann)
@@ -151,6 +179,10 @@ export class RoomListComponent implements OnInit {
     navigator.clipboard.writeText(this.answerCode());
   }
 
+  joinRoom(room: string) {
+    this.router.navigate(['game', room, this.playerService.getPlayer().name, 'player']);
+  }
+
   finishJoin() {
     const roomId = this.p2pRoomId();
     const playerName = this.playerService.getPlayer().name;
@@ -165,16 +197,11 @@ export class RoomListComponent implements OnInit {
     this.router.navigate(['/game', roomId, playerName, 'player']);
   }
 
-  joinRoom(roomId: string) {
-    const playerName = this.playerService.getPlayer().name;
-
-    // Join the room through the socket
-    this.socketService.joinRoom(roomId);
-
-    // Initialize the match locally so the RoomGuard passes
-    this.matchService.initMatch(roomId);
-
-    // Navigate to the player page
-    this.router.navigate(['/game', roomId, playerName, 'player']);
+  getConnectionStatus() {
+    const id = this.p2pConnectionId();
+    if (id && this.webrtcService.individualStatus.has(id)) {
+      return this.webrtcService.individualStatus.get(id)!;
+    }
+    return this.webrtcService.connectionStatus;
   }
 }

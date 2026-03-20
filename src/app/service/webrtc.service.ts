@@ -6,6 +6,7 @@ import {BehaviorSubject, Subject} from 'rxjs';
 @Injectable({providedIn: 'root'})
 export class WebRTCService {
   public connectionStatus = new BehaviorSubject<'disconnected' | 'connecting' | 'connected'>('disconnected');
+  public individualStatus = new Map<string, BehaviorSubject<'disconnected' | 'connecting' | 'connected'>>();
   public message$ = new Subject<any>();
   private peerConnections: Map<string, RTCPeerConnection> = new Map();
   private dataChannels: Map<string, RTCDataChannel> = new Map();
@@ -33,22 +34,37 @@ export class WebRTCService {
     // Wait for ICE gathering
     await this.waitForIceGathering(pc);
 
-    const sdp = pc.localDescription!.sdp;
-    console.warn(`[DEBUG_LOG] WebRTC: Offer SDP generated, connectionId: ${connectionId}`);
+    let sdp = pc.localDescription!.sdp;
+
+    // Wir erzeugen eine saubere SDP-Zeilenstruktur (CRLF)
+    // Manche Browser/Umgebungen haben Probleme mit nur LF
+    const normalizedSdp = sdp.split('\n').map(line => line.trim()).join('\r\n') + '\r\n';
+
+    console.warn(`[DEBUG_LOG] WebRTC: Offer SDP generated (length: ${normalizedSdp.length}), connectionId: ${connectionId}`);
     // Wir packen den Raumnamen und die Verbindungs-ID mit in das Paket
-    const packet = {sdp, roomId, connectionId};
+    const packet = {sdp: normalizedSdp, roomId, connectionId};
     return LZString.compressToEncodedURIComponent(JSON.stringify(packet));
   }
 
   async handleAnswer(compressedAnswer: string) {
     console.warn(`[DEBUG_LOG] WebRTC: Handling answer...`);
 
-    const sdp = LZString.decompressFromEncodedURIComponent(compressedAnswer);
+    let sdp = LZString.decompressFromEncodedURIComponent(compressedAnswer);
+
+    if (!sdp) {
+      console.warn("[DEBUG_LOG] WebRTC: Answer decompression failed! Attempting recovery...");
+      const sanitized = compressedAnswer.replace(/ /g, '+');
+      sdp = LZString.decompressFromEncodedURIComponent(sanitized);
+    }
+
     if (sdp && this.pendingConnectionId) {
+      console.warn(`[DEBUG_LOG] WebRTC: Answer SDP decompressed (length: ${sdp.length})`);
       const pc = this.peerConnections.get(this.pendingConnectionId);
       if (pc) {
         console.warn(`[DEBUG_LOG] WebRTC: Setting remote description for connectionId: ${this.pendingConnectionId}`);
-        await pc.setRemoteDescription({type: 'answer', sdp});
+        // Normalisiere Antwort-SDP
+        const sanitizedSdp = sdp.split('\n').map(l => l.trim()).filter(l => l.length > 0).join('\r\n') + '\r\n';
+        await pc.setRemoteDescription({type: 'answer', sdp: sanitizedSdp});
         this.pendingConnectionId = null;
       } else {
         console.error(`[DEBUG_LOG] WebRTC ERROR: No peer connection found for ${this.pendingConnectionId}`);
@@ -62,13 +78,32 @@ export class WebRTCService {
   async createAnswer(compressedOffer: string): Promise<{ answer: string, roomId: string }> {
     console.warn(`[DEBUG_LOG] WebRTC: Creating answer...`);
 
-    const offerPacketString = LZString.decompressFromEncodedURIComponent(compressedOffer);
-    if (!offerPacketString) throw new Error("Invalid offer");
+    // In manchen Fällen werden Leerzeichen in '+' umgewandelt oder umgekehrt,
+    // was die Dekomprimierung behindern kann.
+    let offerPacketString = LZString.decompressFromEncodedURIComponent(compressedOffer);
+
+    if (!offerPacketString) {
+      console.warn("[DEBUG_LOG] WebRTC: Decompression failed for offer! Attempting recovery...");
+      // Falls der String falsch URL-codiert war (z.B. Leerzeichen statt +)
+      const sanitized = compressedOffer.replace(/ /g, '+');
+      offerPacketString = LZString.decompressFromEncodedURIComponent(sanitized);
+    }
+
+    if (!offerPacketString) {
+      throw new Error("Invalid offer (decompression failed)");
+    }
 
     const packet = JSON.parse(offerPacketString);
-    const sdpOffer = packet.sdp;
+    let sdpOffer = packet.sdp;
+
+    // SDP muss mit CRLF enden und darf keine fehlerhaften Endungen haben
+    if (sdpOffer && !sdpOffer.endsWith('\n')) {
+      sdpOffer += '\r\n';
+    }
+
     const roomId = packet.roomId || "P2P-Room";
     const connectionId = packet.connectionId || Math.random().toString(36).substring(2, 9);
+
     console.warn(`[DEBUG_LOG] WebRTC: Offer received for room ${roomId}, connectionId: ${connectionId}`);
 
     const pc = this.initPeerConnection(connectionId);
@@ -79,17 +114,27 @@ export class WebRTCService {
       this.setupDataChannel(dc, connectionId);
     };
 
-    await pc.setRemoteDescription({type: 'offer', sdp: sdpOffer});
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
+    try {
+      // Sicherstellen, dass SDP korrekt formatiert ist (CRLF)
+      const sanitizedSdp = sdpOffer.split('\n').map((l: string) => l.trim()).filter((l: string) => l.length > 0).join('\r\n') + '\r\n';
 
-    // Wait for ICE gathering
-    await this.waitForIceGathering(pc);
+      await pc.setRemoteDescription({type: 'offer', sdp: sanitizedSdp});
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
 
-    const sdp = pc.localDescription!.sdp;
-    console.warn(`[DEBUG_LOG] WebRTC: Answer SDP generated for connectionId: ${connectionId}`);
-    const answerCompressed = LZString.compressToEncodedURIComponent(sdp!);
-    return {answer: answerCompressed, roomId};
+      // Wait for ICE gathering
+      await this.waitForIceGathering(pc);
+
+      const sdp = pc.localDescription!.sdp;
+      const normalizedAnswerSdp = sdp.split('\n').map(line => line.trim()).join('\r\n') + '\r\n';
+
+      console.warn(`[DEBUG_LOG] WebRTC: Answer SDP generated (length: ${normalizedAnswerSdp.length}) for connectionId: ${connectionId}`);
+      const answerCompressed = LZString.compressToEncodedURIComponent(normalizedAnswerSdp);
+      return {answer: answerCompressed, roomId};
+    } catch (err: any) {
+      console.error(`[DEBUG_LOG] WebRTC: SDP Error: ${err.message}`);
+      throw err;
+    }
   }
 
   async generateQRCode(text: string): Promise<string> {
@@ -135,15 +180,22 @@ export class WebRTCService {
     const pc = new RTCPeerConnection(this.config);
     this.peerConnections.set(id, pc);
 
+    if (!this.individualStatus.has(id)) {
+      this.individualStatus.set(id, new BehaviorSubject<'disconnected' | 'connecting' | 'connected'>('disconnected'));
+    }
+    const statusSubject = this.individualStatus.get(id)!;
+
     pc.oniceconnectionstatechange = () => {
       const state = pc.iceConnectionState;
       console.warn(`[DEBUG_LOG] ICE Connection State (${id}):`, state);
 
       if (state === 'connected' || state === 'completed') {
         this.connectionStatus.next('connected');
+        statusSubject.next('connected');
       } else if (state === 'failed' || state === 'closed' || state === 'disconnected') {
         // Log explicitly for debugging
         console.warn(`[DEBUG_LOG] WebRTC State change: ${state} for ${id}`);
+        statusSubject.next('disconnected');
 
         // Wir setzen den Status nur auf disconnected, wenn ALLE Verbindungen weg sind
         const allDisconnected = Array.from(this.peerConnections.values())
@@ -158,14 +210,21 @@ export class WebRTCService {
 
   private setupDataChannel(channel: RTCDataChannel, id: string) {
     this.dataChannels.set(id, channel);
+    if (!this.individualStatus.has(id)) {
+      this.individualStatus.set(id, new BehaviorSubject<'disconnected' | 'connecting' | 'connected'>('disconnected'));
+    }
+    const statusSubject = this.individualStatus.get(id)!;
+
     channel.onopen = () => {
       console.warn(`[DEBUG_LOG] DataChannel open (${id})`);
       this.connectionStatus.next('connected');
+      statusSubject.next('connected');
     };
     channel.onclose = () => {
       console.warn(`[DEBUG_LOG] DataChannel closed (${id})`);
       this.dataChannels.delete(id);
       this.peerConnections.delete(id);
+      statusSubject.next('disconnected');
 
       const allDisconnected = this.dataChannels.size === 0;
       if (allDisconnected) {

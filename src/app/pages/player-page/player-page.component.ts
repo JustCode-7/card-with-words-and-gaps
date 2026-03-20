@@ -10,6 +10,10 @@ import {SocketService} from "../../service/socket.service";
 import {Spieler} from "../../model/spieler-model";
 import {Router} from "@angular/router";
 import {Game} from "../../model/game-model";
+import {MatListModule} from "@angular/material/list";
+import {MatIconModule} from "@angular/material/icon";
+import {CommonModule} from "@angular/common";
+import {NextCzarPipe} from "../cat-lord-page/cat-lord-page.component";
 
 @Component({
   selector: 'app-player-page',
@@ -18,7 +22,11 @@ import {Game} from "../../model/game-model";
     MatButtonModule,
     MatChipsModule,
     MatCardModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    MatListModule,
+    MatIconModule,
+    CommonModule,
+    NextCzarPipe
   ],
   templateUrl: './player-page.component.html',
   styleUrl: './player-page.component.scss'
@@ -46,7 +54,7 @@ export class PlayerPage implements OnInit, OnDestroy {
 
     this.subscriptions.push(
       this.matchService.game.subscribe((game: Game) => {
-        if (!game || !game.gameHash) return;
+        if (!game || !game.gameHash || game.isEnded) return;
 
         // Find the player in the game via ID (preferred) or Name
         const playerInGame = game.spieler.find((spieler: Spieler) =>

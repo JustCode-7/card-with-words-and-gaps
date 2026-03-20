@@ -1,3 +1,21 @@
+<mat-toolbar class="d-flex vw-100" color="primary">
+  <span>Card with Words and Gaps</span>
+  <span class="spacer"></span>
+  <button [matMenuTriggerFor]="menu" aria-label="Menu" mat-icon-button>
+    <mat-icon>menu</mat-icon>
+  </button>
+  <mat-menu #menu="matMenu">
+    <button (click)="goToMainMenu()" mat-menu-item>
+      <mat-icon>home</mat-icon>
+      <span>MainMenue</span>
+    </button>
+    <button (click)="endGame()" *ngIf="socketService.isHost | async" mat-menu-item>
+      <mat-icon>stop</mat-icon>
+      <span>End Game</span>
+    </button>
+  </mat-menu>
+</mat-toolbar>
+
 <div class="justify-content-center px-5 py-5">
   <router-outlet></router-outlet>
 </div>

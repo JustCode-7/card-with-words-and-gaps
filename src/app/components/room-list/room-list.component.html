@@ -29,21 +29,21 @@
         </button>
       </mat-form-field>
 
-      <div [class.bg-danger-subtle]="(webrtcService.connectionStatus | async) === 'disconnected'"
-           [class.bg-success-subtle]="(webrtcService.connectionStatus | async) === 'connected'"
-           [class.bg-warning-subtle]="(webrtcService.connectionStatus | async) === 'connecting'"
+      <div [class.bg-danger-subtle]="(getConnectionStatus() | async) === 'disconnected'"
+           [class.bg-success-subtle]="(getConnectionStatus() | async) === 'connected'"
+           [class.bg-warning-subtle]="(getConnectionStatus() | async) === 'connecting'"
            class="mt-3 p-2 text-center rounded">
-        Status: <strong class="text-uppercase">{{ webrtcService.connectionStatus | async }}</strong>
+        Status: <strong class="text-uppercase">{{ getConnectionStatus() | async }}</strong>
       </div>
 
-      <button (click)="finishJoin()" [disabled]="(webrtcService.connectionStatus | async) !== 'connected'"
+      <button (click)="finishJoin()" [disabled]="(getConnectionStatus() | async) !== 'connected'"
               class="w-100 mt-3 py-2" color="primary"
               mat-raised-button>
         <mat-icon>play_arrow</mat-icon>
         Spiel jetzt beitreten
       </button>
 
-      @if ((webrtcService.connectionStatus | async) !== 'connected') {
+      @if ((getConnectionStatus() | async) !== 'connected') {
         <p class="mt-2 small text-center text-danger animation-pulse">Warten auf Bestätigung durch Host...</p>
       }
     }

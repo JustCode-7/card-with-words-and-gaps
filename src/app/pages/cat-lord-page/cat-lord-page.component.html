@@ -1,89 +1,145 @@
-<div class="m-3">
-  <app-gap-text-card></app-gap-text-card>
+<div *ngIf="(game$ | async)?.isEnded" class="container mt-5">
+  <mat-card appearance="outlined" class="bg-success text-white text-center mb-4">
+    <mat-card-header>
+      <mat-card-title>
+        <h1>Spiel beendet!</h1>
+      </mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <p *ngIf="matchService.game.value.spieler | nextCzar as winner" class="h3">
+        Gesamtsieger: <strong>{{ winner.name }}</strong>
+      </p>
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card appearance="outlined">
+    <mat-card-header>
+      <mat-card-title>Abschluss-Spielstand</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <mat-list>
+        <mat-list-item *ngFor="let s of (game$ | async)?.spieler">
+          <span matListItemTitle>{{ s.name }}</span>
+          <span matListItemLine>{{ s.points }} Punkte</span>
+          <mat-icon *ngIf="matchService.game.value.spieler | nextCzar as winner; else notWinner"
+                    [color]="s.name === winner.name ? 'primary' : ''"
+                    matListItemIcon>
+            {{ s.name === winner.name ? 'emoji_events' : 'person' }}
+          </mat-icon>
+          <ng-template #notWinner>
+            <mat-icon matListItemIcon>person</mat-icon>
+          </ng-template>
+        </mat-list-item>
+      </mat-list>
+    </mat-card-content>
+  </mat-card>
 </div>
-<div class="container mt-2">
-  <div class="d-flex flex-row justify-content-between align-items-center mb-4">
-    <div>
-      <h2>Catlord: {{ this.catLordName }}</h2>
-      <div *ngIf="isHost" class="host-badge">
-        <mat-chip color="primary">
-          <mat-icon>dns</mat-icon>
-          Host
-        </mat-chip>
+
+<div *ngIf="!(game$ | async)?.isEnded">
+  <div class="m-3">
+    <app-gap-text-card></app-gap-text-card>
+  </div>
+  <div class="container mt-2">
+    <div class="d-flex flex-row justify-content-between align-items-center mb-4">
+      <div>
+        <h2>Catlord: {{ this.catLordName }}</h2>
+        <div *ngIf="isHost" class="host-badge">
+          <mat-chip color="primary">
+            <mat-icon>dns</mat-icon>
+            Host
+          </mat-chip>
+        </div>
+      </div>
+
+      <div *ngIf="(game$ | async)?.roundStatus === 'ROUND_FINISHED'">
+        <button (click)="submitDecision()" color="primary" mat-raised-button>Nächste Runde</button>
+      </div>
+
+      <!-- Start Game Button for Host -->
+      <div *ngIf="isHost && !(game$ | async)?.currentCatlordCard">
+        <button (click)="matchService.startGame()"
+                [disabled]="((game$ | async)?.spieler?.length || 0) < 2"
+                color="accent"
+                mat-raised-button>
+          <mat-icon>play_arrow</mat-icon>
+          Spiel starten
+        </button>
+        <div *ngIf="((game$ | async)?.spieler?.length || 0) < 2" class="small">
+          Warte auf mindestens einen weiteren Spieler...
+        </div>
       </div>
     </div>
 
-    <div *ngIf="(game$ | async)?.roundStatus === 'ROUND_FINISHED'">
-      <button (click)="submitDecision()" color="primary" mat-raised-button>Nächste Runde</button>
+    <!-- Status indicator -->
+    <div *ngIf="(game$ | async)?.roundStatus === 'WAITING_FOR_ANSWERS'" class="alert alert-info">
+      Warte auf Antworten der Spieler...
     </div>
 
-    <!-- Start Game Button for Host -->
-    <div *ngIf="isHost && !(game$ | async)?.currentCatlordCard">
-      <button (click)="matchService.startGame()"
-              [disabled]="((game$ | async)?.spieler?.length || 0) < 2"
-              color="accent"
-              mat-raised-button>
-        <mat-icon>play_arrow</mat-icon>
-        Spiel starten
+    <div *ngIf="(game$ | async)?.roundStatus === 'CZAR_DECIDING' && !(game$ | async)?.answersRevealed"
+         class="text-center my-4">
+      <button (click)="revealAnswers()" color="accent" mat-raised-button size="large">
+        <mat-icon>visibility</mat-icon>
+        Alle Antworten zeigen
       </button>
-      <div *ngIf="((game$ | async)?.spieler?.length || 0) < 2" class="small">
-        Warte auf mindestens einen weiteren Spieler...
+    </div>
+
+    <!-- Submitted Answers for the Czar -->
+    <div *ngIf="(game$ | async)?.roundStatus === 'CZAR_DECIDING' && (game$ | async)?.answersRevealed" class="row">
+      <div *ngFor="let entry of (submittedAnswers$ | async); let i = index" class="col-12 mb-3">
+        <mat-card appearance="outlined">
+          <mat-card-header>
+            <mat-card-title>Vorschlag {{ i + 1 }}</mat-card-title>
+          </mat-card-header>
+          <mat-card-content class="mt-2">
+            <p class="h5">{{ entry.fullText }}</p>
+          </mat-card-content>
+          <mat-card-actions align="end">
+            <button (click)="pickWinner(entry.name)" color="accent" mat-raised-button>Diesen wählen!</button>
+          </mat-card-actions>
+        </mat-card>
       </div>
     </div>
-  </div>
 
-  <!-- Status indicator -->
-  <div *ngIf="(game$ | async)?.roundStatus === 'WAITING_FOR_ANSWERS'" class="alert alert-info">
-    Warte auf Antworten der Spieler...
-  </div>
-
-  <div *ngIf="(game$ | async)?.roundStatus === 'CZAR_DECIDING' && !(game$ | async)?.answersRevealed"
-       class="text-center my-4">
-    <button (click)="revealAnswers()" color="accent" mat-raised-button size="large">
-      <mat-icon>visibility</mat-icon>
-      Alle Antworten zeigen
-    </button>
-  </div>
-
-  <!-- Submitted Answers for the Czar -->
-  <div *ngIf="(game$ | async)?.roundStatus === 'CZAR_DECIDING' && (game$ | async)?.answersRevealed" class="row">
-    <div *ngFor="let entry of (submittedAnswers$ | async); let i = index" class="col-12 mb-3">
-      <mat-card appearance="outlined">
-        <mat-card-header>
-          <mat-card-title>Vorschlag {{ i + 1 }}</mat-card-title>
-        </mat-card-header>
-        <mat-card-content class="mt-2">
-          <p class="h5">{{ entry.fullText }}</p>
+    <!-- Round Summary -->
+    <div *ngIf="(game$ | async)?.roundStatus === 'ROUND_FINISHED'" class="mt-4">
+      <mat-card appearance="outlined" class="bg-success text-white mb-4">
+        <mat-card-content class="text-center">
+          <h3>Runde beendet!</h3>
+          <p *ngIf="matchService.game.value.spieler | nextCzar as winner" class="h4">
+            Gewinner: <strong>{{ winner.name }}</strong>
+          </p>
+          <p class="h5 mt-2">"{{ (game$ | async)?.lastWinnerFullText }}"</p>
         </mat-card-content>
-        <mat-card-actions align="end">
-          <button (click)="pickWinner(entry.name)" color="accent" mat-raised-button>Diesen wählen!</button>
-        </mat-card-actions>
       </mat-card>
+
+      <h3>Alle Vorschläge dieser Runde</h3>
+      <div class="row">
+        <div *ngFor="let entry of (game$ | async)?.lastRoundAnswers" class="col-12 mb-3">
+          <mat-card [class.border-3]="entry.isWinner" [class.border-primary]="entry.isWinner" appearance="outlined">
+            <mat-card-header>
+              <mat-card-title>
+                {{ entry.name }}
+                <mat-icon *ngIf="entry.isWinner" class="align-middle" color="primary">emoji_events</mat-icon>
+              </mat-card-title>
+            </mat-card-header>
+            <mat-card-content class="mt-2">
+              <p [class.fw-bold]="entry.isWinner" class="h5">{{ entry.fullText }}</p>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <!-- Round Summary -->
-  <div *ngIf="(game$ | async)?.roundStatus === 'ROUND_FINISHED'" class="text-center">
-    <mat-card appearance="outlined" class="bg-success text-white">
-      <mat-card-content>
-        <h3>Runde beendet!</h3>
-        <p *ngIf="matchService.game.value.spieler | nextCzar as winner" class="h4">
-          Gewinner: <strong>{{ winner.name }}</strong>
-        </p>
-        <p>Er/Sie bekommt einen Punkt und ist der nächste Catlord.</p>
-      </mat-card-content>
-    </mat-card>
-  </div>
-
-  <!-- Leaderboard -->
-  <div class="mt-5">
-    <h3>Spielstand</h3>
-    <mat-list>
-      <mat-list-item *ngFor="let s of (game$ | async)?.spieler">
-        <span matListItemTitle>{{ s.name }} {{ s.catLord ? '(Catlord)' : '' }}</span>
-        <span matListItemLine>{{ s.points }} Punkte</span>
-        <mat-icon *ngIf="s.ready && !s.catLord" color="primary" matListItemIcon>check_circle</mat-icon>
-      </mat-list-item>
-    </mat-list>
+    <!-- Leaderboard -->
+    <div class="mt-5">
+      <h3>Spielstand</h3>
+      <mat-list>
+        <mat-list-item *ngFor="let s of (game$ | async)?.spieler">
+          <span matListItemTitle>{{ s.name }} {{ s.catLord ? '(Catlord)' : '' }}</span>
+          <span matListItemLine>{{ s.points }} Punkte</span>
+          <mat-icon *ngIf="s.ready && !s.catLord" color="primary" matListItemIcon>check_circle</mat-icon>
+        </mat-list-item>
+      </mat-list>
+    </div>
   </div>
 </div>

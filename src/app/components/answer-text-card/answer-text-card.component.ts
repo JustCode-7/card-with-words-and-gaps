@@ -36,6 +36,7 @@ export class AnswerTextCardComponent implements OnInit {
   lastpickedAnswerIndex = 0;
   selectedAnswers: Answer[] = [];
   protected gapCount = signal<number>(1);
+  protected isReady = signal<boolean>(false);
 
   constructor() {
     // Reaktivität via Angular Effect
@@ -50,6 +51,7 @@ export class AnswerTextCardComponent implements OnInit {
       );
 
       if (playerInGame) {
+        this.isReady.set(playerInGame.ready);
         // Deep compare of cards to see if we need an update
         const currentCards = this.answerset().map(a => a.answer);
         const hasChanged = JSON.stringify(currentCards) !== JSON.stringify(playerInGame.cards);

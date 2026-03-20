@@ -52,7 +52,8 @@ export class CatLordPage implements OnInit, OnDestroy {
 
   submittedAnswers$: Observable<any[]> = this.matchService.game.pipe(
     map(game => {
-      if (!game || !game.gameHash) return [];
+      if (!game || !game.gameHash || game.isEnded) return [];
+      if (game.roundStatus === 'ROUND_FINISHED') return [];
       const submitted = game.spieler
         .filter((s: Spieler) => !s.catLord && s.ready && s.selectedCards.length > 0)
         .map((s: Spieler) => ({
@@ -87,7 +88,7 @@ export class CatLordPage implements OnInit, OnDestroy {
     // Subscribe to matchService.game updates
     this.subscriptions.push(
       this.matchService.game.subscribe((game: Game) => {
-        if (!game || !game.gameHash) return;
+        if (!game || !game.gameHash || game.isEnded) return;
 
         // Find this player in the game
         const playerInGame = game.spieler.find((s: Spieler) => s.name === this.catLordName);

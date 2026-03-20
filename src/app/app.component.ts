@@ -1,7 +1,12 @@
-import {Component} from '@angular/core';
+import {Component, inject} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {RouterOutlet} from '@angular/router';
+import {Router, RouterOutlet} from '@angular/router';
 import {MatButtonModule} from "@angular/material/button";
+import {MatToolbarModule} from "@angular/material/toolbar";
+import {MatMenuModule} from "@angular/material/menu";
+import {MatIconModule} from "@angular/material/icon";
+import {MatchService} from "./service/match.service";
+import {SocketService} from "./service/socket.service";
 
 @Component({
   selector: 'app-root',
@@ -9,22 +14,23 @@ import {MatButtonModule} from "@angular/material/button";
     CommonModule,
     RouterOutlet,
     MatButtonModule,
-
+    MatToolbarModule,
+    MatMenuModule,
+    MatIconModule
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
 export class AppComponent {
+  matchService = inject(MatchService);
+  socketService = inject(SocketService);
+  router = inject(Router);
 
-  //
-  // @HostListener('window:beforeunload', ['$event'])
-  // public beforeUnloadHandler(event: any) {
-  //   event.preventDefault();
-  // }
-  //
-  // @HostListener('window:onload', ['$event'])
-  // public onload(event: any) {
-  //   event.preventDefault();
-  // }
+  goToMainMenu() {
+    this.router.navigate(['/']);
+  }
 
+  endGame() {
+    this.matchService.endGame();
+  }
 }

@@ -14,7 +14,7 @@ import {toSignal} from "@angular/core/rxjs-interop";
 export class MatchService {
   spielerKartenService: SpielerKartenService = inject(SpielerKartenService);
   socketService: SocketService = inject(SocketService);
-  game: BehaviorSubject<Game> = new BehaviorSubject<Game>(new Game([], [], [], "", "", 'WAITING_FOR_ANSWERS', false, false));
+  game: BehaviorSubject<Game> = new BehaviorSubject<Game>(new Game([], [], [], "", "", 'WAITING_FOR_ANSWERS', false, false, false));
 
   // Game as signal for better reactivity in components
   gameSignal = toSignal(this.game, {initialValue: this.game.value});
@@ -55,6 +55,7 @@ export class MatchService {
             "",
             'WAITING_FOR_ANSWERS',
             false,
+            false,
             false
           );
 
@@ -79,6 +80,7 @@ export class MatchService {
           roomId,
           "",
           'WAITING_FOR_ANSWERS',
+          false,
           false,
           false
         );
@@ -189,6 +191,21 @@ export class MatchService {
       (winner as any).isWinner = true;
       currentGame.roundStatus = 'ROUND_FINISHED';
       (currentGame as any).winnerOfLastRound = winnerName;
+
+      // Capture all answers for the round summary
+      currentGame.lastRoundAnswers = currentGame.spieler
+        .filter((s: Spieler) => !s.catLord && s.ready && s.selectedCards.length > 0)
+        .map((s: Spieler) => ({
+          name: s.name,
+          cards: s.selectedCards,
+          fullText: this.buildFullText(currentGame.currentCatlordCard, s.selectedCards),
+          isWinner: s.name === winnerName
+        }))
+        // Sort so the winner is first
+        .sort((a, b) => (a.isWinner === b.isWinner) ? 0 : a.isWinner ? -1 : 1);
+
+      const winningEntry = currentGame.lastRoundAnswers.find(a => a.isWinner);
+      currentGame.lastWinnerFullText = winningEntry ? winningEntry.fullText : "";
 
       this.game.next({...currentGame});
       this.socketService.sendUpdateGame('updateGame', currentGame);
@@ -318,9 +335,16 @@ export class MatchService {
   createRoom(creatorName: string): string {
     const roomId = this.generateRoomId();
     const initialPlayers = this.initPlayerArr(0, creatorName);
-    const newGame = new Game(cardSet, [], initialPlayers, roomId, "", 'WAITING_FOR_ANSWERS', false, false);
+    const newGame = new Game(cardSet, [], initialPlayers, roomId, "", 'WAITING_FOR_ANSWERS', false, false, false);
     this.game.next(newGame);
     return roomId;
+  }
+
+  endGame() {
+    const currentGame = this.game.value;
+    currentGame.isEnded = true;
+    this.game.next({...currentGame});
+    this.socketService.sendUpdateGame('updateGame', currentGame);
   }
 
   joinRoom(roomId: string, playerName: string): boolean {
@@ -391,11 +415,24 @@ export class MatchService {
     currentGame.cardset = currentGame.cardset.filter(c => c !== initialCard);
     currentGame.roundStatus = 'WAITING_FOR_ANSWERS';
     currentGame.isStarted = true;
+    currentGame.isEnded = false;
 
     // Broadcast updated game state
     console.log("[DEBUG_LOG] Host: Broadcasting started game state to all players...");
     this.game.next({...currentGame});
     this.socketService.sendUpdateGame('updateGame', currentGame);
+  }
+
+  private buildFullText(gapText: string, answers: string[]): string {
+    let result = gapText;
+    answers.forEach(answer => {
+      if (gapText.includes('___')) {
+        result = result.replace('___', `[${answer}]`);
+      } else {
+        result = result.concat(` [${answer}]`);
+      }
+    });
+    return result;
   }
 
   private removeFromCardSet(cardString: string) {

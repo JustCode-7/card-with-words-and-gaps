@@ -11,6 +11,7 @@ import {PlayerService} from "../../service/player.service";
 import {Router} from "@angular/router";
 import {MatchService} from "../../service/match.service";
 import {WebRTCService} from "../../service/webrtc.service";
+import * as LZString from 'lz-string';
 
 @Component({
   selector: 'app-room-create',
@@ -91,6 +92,7 @@ export class RoomCreateComponent {
   router = inject(Router);
 
   spielerListe = signal<any[]>([]);
+  p2pConnectionId = signal<string | null>(null);
 
   async createRoom() {
     if (this.roomIdControl.invalid) return;
@@ -119,6 +121,22 @@ export class RoomCreateComponent {
     const offer = await this.webrtcService.createOffer(room);
     this.sessionCode.set(offer);
 
+    console.warn("[DEBUG_LOG] WebRTC: New offer generated, decoding for connectionId...");
+    // Wir dekodieren den Offer vorab, um die connectionId zu erhalten (für den Status-Check)
+    try {
+      const decoded = LZString.decompressFromEncodedURIComponent(offer);
+      if (decoded) {
+        const packet = JSON.parse(decoded);
+        const id = packet.connectionId;
+        if (id) {
+          console.warn(`[DEBUG_LOG] WebRTC: Extracted connectionId: ${id}`);
+          this.p2pConnectionId.set(id);
+        }
+      }
+    } catch (e) {
+      console.error("[DEBUG_LOG] WebRTC: Error decoding own offer", e);
+    }
+
     const url = new URL(window.location.href);
     const baseUrl = url.origin + url.pathname;
     const joinLink = `${baseUrl}#/join-game?offer=${offer}`;
@@ -129,6 +147,14 @@ export class RoomCreateComponent {
 
     // Eingabefeld für Antwort leeren
     this.answerCodeControl.setValue('');
+  }
+
+  getConnectionStatus() {
+    const id = this.p2pConnectionId();
+    if (id && this.webrtcService.individualStatus.has(id)) {
+      return this.webrtcService.individualStatus.get(id)!;
+    }
+    return this.webrtcService.connectionStatus;
   }
 
   copyLink() {

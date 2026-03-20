@@ -67,28 +67,28 @@
         </mat-chip-listbox>
 
         <div
-          [class.bg-danger-subtle]="(webrtcService.connectionStatus | async) === 'disconnected' || spielerListe().length < 2"
-          [class.bg-success-subtle]="(webrtcService.connectionStatus | async) === 'connected' && spielerListe().length >= 2"
-          [class.bg-warning-subtle]="(webrtcService.connectionStatus | async) === 'connecting' || ((webrtcService.connectionStatus | async) === 'connected' && spielerListe().length < 2)"
+          [class.bg-danger-subtle]="(getConnectionStatus() | async) === 'disconnected' || spielerListe().length < 2"
+          [class.bg-success-subtle]="(getConnectionStatus() | async) === 'connected' && spielerListe().length >= 2"
+          [class.bg-warning-subtle]="(getConnectionStatus() | async) === 'connecting' || ((getConnectionStatus() | async) === 'connected' && spielerListe().length < 2)"
           class="mt-2 text-center p-2 rounded small mb-4">
           Netzwerk-Status:
           <strong class="text-uppercase">
             {{
-              ((webrtcService.connectionStatus | async) === 'connected' && spielerListe().length >= 2) ? 'connected' :
-                ((webrtcService.connectionStatus | async) === 'connected' && spielerListe().length < 2) ? 'waiting for players' :
-                  (webrtcService.connectionStatus | async)
+              ((getConnectionStatus() | async) === 'connected' && spielerListe().length >= 2) ? 'connected' :
+                ((getConnectionStatus() | async) === 'connected' && spielerListe().length < 2) ? 'waiting for players' :
+                  (getConnectionStatus() | async)
             }}
           </strong>
         </div>
 
-        <button (click)="startGame()" [disabled]="spielerListe().length < 2" class="w-100 py-3 mt-auto" color="warn"
-                mat-raised-button
-                style="font-size: 1.2rem">
+        <button (click)="startGame()" [disabled]="spielerListe().length < 2" class="w-100 py-3 pb-2 mb-3 fs-2"
+                color="accent"
+                mat-raised-button>
           <mat-icon>play_arrow</mat-icon>
           SPIEL JETZT STARTEN
         </button>
         @if (spielerListe().length < 2) {
-          <p class="text-center small text-muted mt-2">Mindestens 1 Mitspieler erforderlich</p>
+          <p class="text-center small mt-2">Mindestens 1 Mitspieler erforderlich</p>
         }
       </div>
     </div>
