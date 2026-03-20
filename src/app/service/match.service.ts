@@ -18,7 +18,7 @@ export class MatchService {
   catlordName: string = "lord";
   currentCatLordCard = new BehaviorSubject<string>("");
   lockedPlayerView: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
-  spielerListe: BehaviorSubject<Spieler[]> = new BehaviorSubject([new Spieler("dummy", 1, [], [], false)]);
+  spielerListe: BehaviorSubject<Spieler[]> = new BehaviorSubject([new Spieler("dummy-id", "dummy", 1, [], [], false)]);
   playerService = inject(PlayerService);
   private currentCardNr: number = 1
 
@@ -326,7 +326,8 @@ export class MatchService {
     }
 
     // Add new player
-    const newPlayer = new Spieler(playerName, 0, [], [], false);
+    const playerInfo = this.playerService.getPlayer();
+    const newPlayer = new Spieler(playerInfo.id, playerName, 0, [], [], false);
     currentGame.spieler.push(newPlayer);
     this.spielerKartenService.verteileKarten([newPlayer], answerSet);
     this.game.next(currentGame);
