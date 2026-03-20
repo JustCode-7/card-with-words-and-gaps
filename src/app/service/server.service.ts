@@ -125,17 +125,28 @@ export class ServerService {
     // damit die neue Spielerliste dort enthalten ist.
     const game = this.games.get(roomId);
     if (game) {
-      game.spieler = this.rooms.get(roomId)?.players.map(p => {
-        // Mappe Player zu Spieler-Modell (falls nötig)
-        return {
+      const playersInRoom = this.rooms.get(roomId)?.players || [];
+
+      // Nur Spieler hinzufügen, die noch nicht im Game sind
+      const newPlayers = playersInRoom.filter(p => !game.spieler.find((s: any) => s.name === p.name));
+
+      newPlayers.forEach(p => {
+        // Dem neuen Spieler Karten zuweisen, falls welche da sind
+        let playerCards: string[] = [];
+        if (game.answerset && game.answerset.length >= 10) {
+          playerCards = game.answerset.splice(0, 10);
+        }
+
+        game.spieler.push({
           name: p.name,
           points: 0,
-          cards: [],
+          cards: playerCards,
           selectedCards: [],
           catLord: false,
           ready: false
-        };
+        });
       });
+
       this.games.set(roomId, game);
     }
   }

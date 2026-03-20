@@ -63,12 +63,8 @@ export class SocketService {
     this.serverService.isServerRunning.subscribe(isRunning => {
       this.isHost.next(isRunning);
 
-      // If we're the host, add window unload event listener to stop the server when the window is closed
-      if (isRunning) {
-        window.addEventListener('beforeunload', this.handleBeforeUnload.bind(this));
-      } else {
-        window.removeEventListener('beforeunload', this.handleBeforeUnload.bind(this));
-      }
+      // Add window unload event listener to warn about P2P disconnect
+      window.addEventListener('beforeunload', this.handleBeforeUnload.bind(this));
     });
   }
 
@@ -233,6 +229,13 @@ export class SocketService {
   }
 
   private handleBeforeUnload(event: BeforeUnloadEvent): void {
+    // Warnung für alle Spieler auf GitHub Pages (da P2P bei Reload abbricht)
+    if (window.location.origin.includes('github.io')) {
+      event.preventDefault();
+      event.returnValue = 'Bei einem Reload der Seite wird die P2P-Verbindung unterbrochen und das Spiel für dich beendet.';
+      return event.returnValue;
+    }
+
     // If we're the host, stop the server when the window is closed
     if (this.isHost.value) {
       console.log('Host is leaving, stopping server...');
