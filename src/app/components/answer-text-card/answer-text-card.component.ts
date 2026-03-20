@@ -5,6 +5,7 @@ import {MatCardModule} from "@angular/material/card";
 import {MatButtonModule} from "@angular/material/button";
 import {MatBadgeModule} from "@angular/material/badge";
 import {MatchService} from "../../service/match.service";
+import {AsyncPipe} from "@angular/common";
 
 interface Answer {
   answer: string;
@@ -13,15 +14,16 @@ interface Answer {
 }
 
 @Component({
-    selector: 'app-answer-text-card',
-    imports: [
-        MatCardModule,
-        MatButtonModule,
-        MatListModule,
-        MatBadgeModule,
-    ],
-    templateUrl: './answer-text-card.component.html',
-    styleUrl: './answer-text-card.component.scss'
+  selector: 'app-answer-text-card',
+  imports: [
+    MatCardModule,
+    MatButtonModule,
+    MatListModule,
+    MatBadgeModule,
+    AsyncPipe,
+  ],
+  templateUrl: './answer-text-card.component.html',
+  styleUrl: './answer-text-card.component.scss'
 })
 export class AnswerTextCardComponent implements OnInit {
   @Input() spielerAntworten!: string[];
@@ -32,7 +34,7 @@ export class AnswerTextCardComponent implements OnInit {
   @Input() playername!: string;
 
   matchService: MatchService = inject(MatchService);
-  answerset: Answer[] = [];
+  answerset = new BehaviorSubject<Answer[]>([]);
   gaptext = new BehaviorSubject('')
   lueckentextArr: { text: string, gap: string }[] = [];
   lastpickedAnswerIndex = 0;
@@ -45,8 +47,8 @@ export class AnswerTextCardComponent implements OnInit {
       if (playerInGame) {
         // Only update if number of cards changed or we are not in readiness state
         // To avoid resetting selection while player is picking
-        if (this.answerset.length !== playerInGame.cards.length || !playerInGame.ready) {
-          this.answerset = playerInGame.cards.map(card => ({answer: card, selected: false}));
+        if (this.answerset.value.length !== playerInGame.cards.length || !playerInGame.ready) {
+          this.answerset.next(playerInGame.cards.map(card => ({answer: card, selected: false})));
         }
       }
 
@@ -62,7 +64,7 @@ export class AnswerTextCardComponent implements OnInit {
   }
 
   submitAnswers() {
-    const selected = this.answerset
+    const selected = this.answerset.value
       .filter(a => a.selected)
       .sort((a, b) => (a.index || 0) - (b.index || 0))
       .map(a => a.answer);
@@ -84,20 +86,22 @@ export class AnswerTextCardComponent implements OnInit {
 
   pickAnswerAndFillIntoGaps(answer: Answer) {
     this.fillSelectedAnswerIntoGap(answer);
-    if (!this.answerset.some((value) => value.selected)) {
+    const currentAnswers = this.answerset.value;
+    if (!currentAnswers.some((value) => value.selected)) {
       answer.selected = !answer.selected;
       answer.index = 1;
     } else {
       answer.selected = !answer.selected;
-      answer.index = this.answerset.filter((value) => value.selected).length;
+      answer.index = currentAnswers.filter((value) => value.selected).length;
     }
 
 
-    this.answerset.forEach((value) => {
+    currentAnswers.forEach((value) => {
       if (value.answer !== answer.answer && value.index! < 1) {
         value.selected = false;
       }
     });
+    this.answerset.next(currentAnswers);
   }
 
   /**
@@ -150,7 +154,7 @@ export class AnswerTextCardComponent implements OnInit {
     this.lueckentextArr = [];
     this.gapCount.next(0);
     this.lastpickedAnswerIndex = 0;
-    this.answerset = [];
+    this.answerset.next([]);
     this.selectedAnswers = [];
   }
 
@@ -188,15 +192,17 @@ export class AnswerTextCardComponent implements OnInit {
   }
 
   private getRandomAnswerSet() {
-    while (this.answerset.length <= 6) {
+    const currentAnswers = this.answerset.value;
+    while (currentAnswers.length <= 6) {
       const tempRandomAnswer: Answer = {
         answer: this.matchService.game.value.answerset.at(Math.random() * this.matchService.game.value.answerset.length - 1)!,
         selected: false
       };
-      if (!this.answerset.some((answer) => answer.answer === tempRandomAnswer.answer)) {
-        this.answerset.push(tempRandomAnswer);
+      if (!currentAnswers.some((ans: Answer) => ans.answer === tempRandomAnswer.answer)) {
+        currentAnswers.push(tempRandomAnswer);
       }
     }
+    this.answerset.next(currentAnswers);
   }
 
 }

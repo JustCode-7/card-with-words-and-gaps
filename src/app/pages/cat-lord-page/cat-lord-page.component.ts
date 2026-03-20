@@ -6,7 +6,7 @@ import {MatButtonModule} from "@angular/material/button";
 import {MatChipsModule} from "@angular/material/chips";
 import {MatIconModule} from "@angular/material/icon";
 import {SocketService} from "../../service/socket.service";
-import {Subscription} from "rxjs";
+import {map, Observable, Subscription} from "rxjs";
 import {ActivatedRoute, Router} from "@angular/router";
 
 import {MatListModule} from "@angular/material/list";
@@ -21,12 +21,6 @@ import {Spieler} from "../../model/spieler-model";
 export class NextCzarPipe implements PipeTransform {
   transform(spieler: Spieler[] | undefined): Spieler | undefined {
     if (!spieler) return undefined;
-    // The match service logic: if round is finished, the winner has the points incremented
-    // and we stored winnerOfLastRound but that's not easily accessible here.
-    // However, the player who will be catLord next is either marked or we can find who just got a point?
-    // Let's use the simplest logic: find someone who is NOT current catLord but will be? No.
-    // Let's just pass the whole game state if needed.
-    // Actually, I'll change the pipe to find the winner based on points or a specific property.
     return spieler.find(s => (s as any).isWinner);
   }
 }
@@ -55,6 +49,21 @@ export class CatLordPage implements OnInit, OnDestroy {
   matchService: MatchService = inject(MatchService);
   socketService: SocketService = inject(SocketService);
   game$ = this.matchService.game.asObservable();
+
+  submittedAnswers$: Observable<any[]> = this.matchService.game.pipe(
+    map(game => {
+      if (!game || !game.gameHash) return [];
+      const submitted = game.spieler
+        .filter((s: Spieler) => !s.catLord && s.ready && s.selectedCards.length > 0)
+        .map((s: Spieler) => ({
+          name: s.name,
+          cards: s.selectedCards,
+          fullText: this.buildFullText(game.currentCatlordCard, s.selectedCards)
+        }));
+      return this.shuffle(submitted);
+    })
+  );
+
   isHost = false;
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -100,19 +109,6 @@ export class CatLordPage implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     // Clean up subscriptions
     this.subscriptions.forEach(sub => sub.unsubscribe());
-  }
-
-  getShuffledSubmittedAnswers() {
-    const game = this.matchService.game.value;
-    const submitted = game.spieler
-      .filter((s: Spieler) => !s.catLord && s.ready && s.selectedCards.length > 0)
-      .map((s: Spieler) => ({
-        name: s.name,
-        cards: s.selectedCards,
-        fullText: this.buildFullText(game.currentCatlordCard, s.selectedCards)
-      }));
-
-    return this.shuffle(submitted);
   }
 
   submitDecision() {

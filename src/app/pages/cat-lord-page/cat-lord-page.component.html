@@ -45,7 +45,7 @@
 
   <!-- Submitted Answers for the Czar -->
   <div *ngIf="(game$ | async)?.roundStatus === 'CZAR_DECIDING' && (game$ | async)?.answersRevealed" class="row">
-    <div *ngFor="let entry of getShuffledSubmittedAnswers(); let i = index" class="col-12 mb-3">
+    <div *ngFor="let entry of (submittedAnswers$ | async); let i = index" class="col-12 mb-3">
       <mat-card appearance="outlined">
         <mat-card-header>
           <mat-card-title>Vorschlag {{ i + 1 }}</mat-card-title>

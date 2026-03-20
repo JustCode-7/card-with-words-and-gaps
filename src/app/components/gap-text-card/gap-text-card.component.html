@@ -1,8 +1,8 @@
 <div class="container-fluid">
   <mat-card appearance="outlined" class="bg-gradient bg-success">
     <mat-card-header>
-      <mat-card-title>{{ this.matchService.game.value.currentCatlordCard }}</mat-card-title>
-      <mat-card-subtitle>{{ this.getCatLordname() }} is Catlord</mat-card-subtitle>
+      <mat-card-title>{{ currentCatlordCard$ | async }}</mat-card-title>
+      <mat-card-subtitle>{{ catLordName$ | async }} is Catlord</mat-card-subtitle>
     </mat-card-header>
   </mat-card>
 </div>
