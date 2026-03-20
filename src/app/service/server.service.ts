@@ -149,9 +149,11 @@ export class ServerService {
         console.log(`[SERVER] Player ${player.name} (${player.id}) already exists, updating info`);
         // Namen aktualisieren, falls er sich geändert hat
         existingInGame.name = player.name;
-        // Falls der existierende Spieler keine Karten hat
-        if (existingInGame.cards.length === 0 && game.answerset && game.answerset.length >= 10) {
-          existingInGame.cards = game.answerset.splice(0, 10);
+        // Falls der existierende Spieler keine Karten hat oder weniger als 10
+        if (existingInGame.cards.length < 10 && game.answerset && game.answerset.length >= (10 - existingInGame.cards.length)) {
+          console.log(`[SERVER] Refilling cards for ${player.name} (${player.id})`);
+          const cardsNeeded = 10 - existingInGame.cards.length;
+          existingInGame.cards.push(...game.answerset.splice(0, cardsNeeded));
         }
       }
 

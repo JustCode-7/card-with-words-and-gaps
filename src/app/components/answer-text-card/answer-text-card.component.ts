@@ -5,6 +5,7 @@ import {MatCardModule} from "@angular/material/card";
 import {MatButtonModule} from "@angular/material/button";
 import {MatBadgeModule} from "@angular/material/badge";
 import {MatchService} from "../../service/match.service";
+import {SocketService} from "../../service/socket.service";
 import {AsyncPipe} from "@angular/common";
 
 interface Answer {
@@ -34,6 +35,7 @@ export class AnswerTextCardComponent implements OnInit {
   @Input() playername!: string;
 
   matchService: MatchService = inject(MatchService);
+  socketService: SocketService = inject(SocketService);
   answerset = new BehaviorSubject<Answer[]>([]);
   gaptext = new BehaviorSubject('')
   lueckentextArr: { text: string, gap: string }[] = [];
@@ -42,12 +44,23 @@ export class AnswerTextCardComponent implements OnInit {
   protected gapCount = new BehaviorSubject(1);
 
   ngOnInit(): void {
+    const currentPlayerId = this.socketService.getPlayerId();
+
     this.matchService.game.subscribe(game => {
-      const playerInGame = game.spieler.find(s => s.name === this.playername);
+      // Find the player in the game via ID (preferred) or Name
+      const playerInGame = game.spieler.find((s: any) =>
+        s.id === currentPlayerId || (s.name === this.playername && !s.id)
+      );
+
       if (playerInGame) {
-        // Only update if number of cards changed or we are not in readiness state
-        // To avoid resetting selection while player is picking
-        if (this.answerset.value.length !== playerInGame.cards.length || !playerInGame.ready) {
+        // Deep compare of cards to see if we need an update
+        const currentCards = this.answerset.value.map(a => a.answer);
+        const hasChanged = JSON.stringify(currentCards) !== JSON.stringify(playerInGame.cards);
+
+        // Only update if number of cards changed or cards themselves changed,
+        // OR we are not in readiness state
+        if (hasChanged || !playerInGame.ready) {
+          console.log(`[DEBUG_LOG] AnswerCard: Updating cards for ${playerInGame.name}`, playerInGame.cards);
           this.answerset.next(playerInGame.cards.map(card => ({answer: card, selected: false})));
         }
       }
