@@ -101,11 +101,20 @@ export class WebRTCService {
     this.peerConnection = new RTCPeerConnection(this.config);
 
     this.peerConnection.oniceconnectionstatechange = () => {
-      console.log('ICE Connection State:', this.peerConnection?.iceConnectionState);
-      if (this.peerConnection?.iceConnectionState === 'connected') {
+      const state = this.peerConnection?.iceConnectionState;
+      console.log('ICE Connection State:', state);
+
+      if (state === 'connected' || state === 'completed') {
         this.connectionStatus.next('connected');
-      } else if (this.peerConnection?.iceConnectionState === 'failed' || this.peerConnection?.iceConnectionState === 'closed') {
-        this.connectionStatus.next('disconnected');
+      } else if (state === 'failed' || state === 'closed' || state === 'disconnected') {
+        // Bei 'disconnected' oder 'failed' versuchen wir nicht sofort abzubrechen,
+        // da ICE manchmal kurzzeitig die Verbindung verliert und wiederfindet.
+        if (state === 'failed') {
+          console.error("WebRTC: ICE failed. Verbindung konnte nicht hergestellt werden.");
+          this.connectionStatus.next('disconnected');
+        } else {
+          this.connectionStatus.next('disconnected');
+        }
       }
     };
   }

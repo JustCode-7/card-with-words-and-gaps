@@ -86,7 +86,6 @@ export class SocketService {
     this.serverService.startServer(room);
 
     // Auf GitHub Pages (window.location.origin) läuft kein Socket-Server.
-    // Wir überspringen den Verbindungsaufbau zum lokalen Server, wenn wir auf GitHub Pages sind.
     if (window.location.origin.includes('github.io')) {
       console.log("GitHub Pages detected: Skipping local socket connection, using pure P2P mode.");
       this.isHost.next(true);
@@ -97,13 +96,16 @@ export class SocketService {
     this.serverUrl.next(this.serverService.serverUrl);
 
     // After connecting, create the room
-    if (this.socket) {
+    if (this.socket && !window.location.origin.includes('github.io')) {
       this.socket.emit("create-room", room);
     }
   }
 
   public joinRoom(roomId: string) {
-    if (!this.socket) return;
+    if (!this.socket || window.location.origin.includes('github.io')) {
+      console.log("JoinRoom: Socket skipped due to P2P/GitHub mode.");
+      return;
+    }
 
     const player: Player = this.playerService.getPlayer();
     console.log("joining room", roomId, player);
@@ -111,7 +113,7 @@ export class SocketService {
   }
 
   public sendRoomID(event: string, roomid: string): void {
-    if (!this.socket) return;
+    if (!this.socket || window.location.origin.includes('github.io')) return;
     this.socket.emit(event, roomid);
   }
 
@@ -120,7 +122,7 @@ export class SocketService {
     this.serverService.setGame(roomid, game);
 
     // Also emit the event directly if we're not the host
-    if (!this.isHost.value && this.socket) {
+    if (!this.isHost.value && this.socket && !window.location.origin.includes('github.io')) {
       this.socket.emit(event, roomid, game);
     }
   }
@@ -133,7 +135,7 @@ export class SocketService {
     this.serverService.updateGame(game);
 
     // Also emit the event directly if we're not the host
-    if (!this.isHost.value && this.socket) {
+    if (!this.isHost.value && this.socket && !window.location.origin.includes('github.io')) {
       this.socket.emit(event, game);
     }
   }
@@ -145,12 +147,15 @@ export class SocketService {
       if (game) {
         // Simulate receiving the game from the server
         setTimeout(() => {
-          if (this.socket) {
+          // Im P2P Modus informieren wir den MatchService direkt über den Stream
+          this.p2pGameUpdate$.next(game);
+
+          if (this.socket && !window.location.origin.includes('github.io')) {
             this.socket.emit('game', game);
           }
         }, 0);
       }
-    } else if (this.socket) {
+    } else if (this.socket && !window.location.origin.includes('github.io')) {
       // Otherwise, request the game from the server
       this.socket.emit(event, roomid);
     }
@@ -189,7 +194,7 @@ export class SocketService {
   }
 
   public sendNotification(params: any, action: MYAction, user: Spieler): void {
-    if (!this.socket) return;
+    if (!this.socket || window.location.origin.includes('github.io')) return;
 
     let message = {};
     if (action === MYAction.JOINED) {

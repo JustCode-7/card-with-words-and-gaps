@@ -89,7 +89,7 @@ export class ServerService {
     this.games.set(roomId, game);
 
     // Emit setGame event to the server
-    if (this.socket) {
+    if (this.socket && !window.location.origin.includes('github.io')) {
       this.socket.emit('setGame', roomId, game);
     }
   }
@@ -105,12 +105,12 @@ export class ServerService {
     this.games.set(game.gameHash, game);
 
     // Emit updateGame event to the server
-    if (this.socket) {
+    if (this.socket && !window.location.origin.includes('github.io')) {
       this.socket.emit('updateGame', game);
     }
 
     // Trigger local game event for listeners in the same client (host-mode)
-    if (this.socket) {
+    if (this.socket && !window.location.origin.includes('github.io')) {
       this.socket.emit('game', game);
     }
   }
@@ -170,7 +170,7 @@ export class ServerService {
     this.rooms.set(roomId, newRoom);
 
     // Emit create-room event to the server
-    if (this.socket) {
+    if (this.socket && !window.location.origin.includes('github.io')) {
       this.socket.emit('create-room', roomId);
     }
   }
@@ -191,7 +191,7 @@ export class ServerService {
     this.rooms.set(roomId, updatedRoom);
 
     // Emit join-room event to the server
-    if (this.socket) {
+    if (this.socket && !window.location.origin.includes('github.io')) {
       this.socket.emit('join-room', {roomId, player});
     }
   }
