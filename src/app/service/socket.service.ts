@@ -260,15 +260,15 @@ export class SocketService {
       // Den Spieler im ServerService hinzufügen
       this.serverService.addPlayerToRoom(roomId, player);
 
-      // WICHTIG: Da ServerService auf GitHub Pages keine Events emittiert,
-      // müssen wir den MatchService des Hosts manuell über die Änderung informieren.
+      // Den lokalen MatchService des Hosts informieren
       const updatedGame = this.serverService.getGame(roomId);
       if (updatedGame) {
-        console.log("[DEBUG_LOG] Host updating local MatchService with new P2P player");
+        console.log("[DEBUG_LOG] Host notifying local MatchService about new player");
         this.p2pGameUpdate$.next(updatedGame);
 
-        // Als Host schicken wir dem neuen Spieler sofort den aktuellen Spielstatus
-        console.log("[DEBUG_LOG] Host pushing current game to new P2P player", roomId);
+        // Den Gast sofort mit dem aktuellen Spielstatus antworten
+        // Wir schicken das Spiel zurück, damit der Gast weiß, dass er drin ist
+        console.log("[DEBUG_LOG] Host replying to Gast with updated game state");
         this.webrtcService.sendMessage({
           event: 'game',
           data: updatedGame

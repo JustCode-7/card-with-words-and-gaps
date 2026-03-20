@@ -120,6 +120,24 @@ export class ServerService {
       this.createRoom(roomId);
     }
     this.joinRoom(roomId, player);
+
+    // Wir müssen das Game-Objekt für diesen Raum ebenfalls aktualisieren,
+    // damit die neue Spielerliste dort enthalten ist.
+    const game = this.games.get(roomId);
+    if (game) {
+      game.spieler = this.rooms.get(roomId)?.players.map(p => {
+        // Mappe Player zu Spieler-Modell (falls nötig)
+        return {
+          name: p.name,
+          points: 0,
+          cards: [],
+          selectedCards: [],
+          catLord: false,
+          ready: false
+        };
+      });
+      this.games.set(roomId, game);
+    }
   }
 
   private setupSocketEvents(): void {
