@@ -11,24 +11,23 @@ import {RoomListComponent} from "../../components/room-list/room-list.component"
 import {RoomCreateComponent} from "../../components/room-create/room-create.component";
 
 @Component({
-  selector: 'app-room-overview',
-  standalone: true,
-  imports: [
-    ReactiveFormsModule,
-    MatButtonModule,
-    MatFormFieldModule,
-    MatIconModule,
-    MatInputModule,
-    MatOptionModule,
-    MatSelectModule,
-    RoomListComponent,
-    RoomCreateComponent,
-  ],
-  template: `
+    selector: 'app-room-overview',
+    imports: [
+        ReactiveFormsModule,
+        MatButtonModule,
+        MatFormFieldModule,
+        MatIconModule,
+        MatInputModule,
+        MatOptionModule,
+        MatSelectModule,
+        RoomListComponent,
+        RoomCreateComponent,
+    ],
+    template: `
     <app-room-list/>
     <app-room-create/>
   `,
-  styles: ``
+    styles: ``
 })
 export class RoomOverviewPage implements OnInit, OnDestroy {
 

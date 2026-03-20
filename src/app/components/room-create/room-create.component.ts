@@ -12,18 +12,17 @@ import {Router} from "@angular/router";
 import {MatchService} from "../../service/match.service";
 
 @Component({
-  selector: 'app-room-create',
-  standalone: true,
-  imports: [
-    ReactiveFormsModule,
-    MatButtonModule,
-    MatFormFieldModule,
-    MatIconModule,
-    MatInputModule,
-    MatChipsModule,
-    AsyncPipe
-  ],
-  template: `
+    selector: 'app-room-create',
+    imports: [
+        ReactiveFormsModule,
+        MatButtonModule,
+        MatFormFieldModule,
+        MatIconModule,
+        MatInputModule,
+        MatChipsModule,
+        AsyncPipe
+    ],
+    template: `
     <h2>Einen neuen Raum erstellen:</h2>
     <div>
       <mat-form-field>
@@ -52,7 +51,7 @@ import {MatchService} from "../../service/match.service";
       </div>
     }
   `,
-  styles: `
+    styles: `
     .mt-2 {
       margin-top: 0.5rem;
     }

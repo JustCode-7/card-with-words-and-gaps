@@ -13,19 +13,18 @@ import {Router} from "@angular/router";
 import {Game} from "../../model/game-model";
 
 @Component({
-  selector: 'app-player-page',
-  standalone: true,
-  imports: [
-    AnswerTextCardComponent,
-    MatButtonModule,
-    MatChipsModule,
-    MatCardModule,
-    MatProgressSpinnerModule,
-    AsyncPipe,
-    NgIf
-  ],
-  templateUrl: './player-page.component.html',
-  styleUrl: './player-page.component.scss'
+    selector: 'app-player-page',
+    imports: [
+        AnswerTextCardComponent,
+        MatButtonModule,
+        MatChipsModule,
+        MatCardModule,
+        MatProgressSpinnerModule,
+        AsyncPipe,
+        NgIf
+    ],
+    templateUrl: './player-page.component.html',
+    styleUrl: './player-page.component.scss'
 })
 export class PlayerPage implements OnInit, OnDestroy {
   @Input('playername') playername!: string;

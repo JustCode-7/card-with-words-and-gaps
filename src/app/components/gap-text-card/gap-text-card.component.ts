@@ -5,14 +5,13 @@ import {BehaviorSubject} from "rxjs";
 import {MatchService} from "../../service/match.service";
 
 @Component({
-  selector: 'app-gap-text-card',
-  standalone: true,
-  imports: [
-    MatCardModule,
-    MatButtonModule
-  ],
-  templateUrl: './gap-text-card.component.html',
-  styleUrl: './gap-text-card.component.scss'
+    selector: 'app-gap-text-card',
+    imports: [
+        MatCardModule,
+        MatButtonModule
+    ],
+    templateUrl: './gap-text-card.component.html',
+    styleUrl: './gap-text-card.component.scss'
 })
 export class GapTextCardComponent implements OnInit {
   cardSet: BehaviorSubject<string[]> = new BehaviorSubject([''])

@@ -8,16 +8,15 @@ import {MatIconModule} from "@angular/material/icon";
 import {Router} from "@angular/router";
 
 @Component({
-  selector: 'app-player-name-page',
-  standalone: true,
-  imports: [
-    MatButtonModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatIconModule,
-    ReactiveFormsModule
-  ],
-  template: `
+    selector: 'app-player-name-page',
+    imports: [
+        MatButtonModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatIconModule,
+        ReactiveFormsModule
+    ],
+    template: `
     <h1>Willkommen zum <code>Banana Kittens</code> Kartenspiel</h1>
 
     <h3>Wie heisst du?</h3>
@@ -45,7 +44,7 @@ import {Router} from "@angular/router";
     </form>
 
   `,
-  styles: ``
+    styles: ``
 })
 export class PlayerNamePage implements OnInit {
   private playerService = inject(PlayerService);

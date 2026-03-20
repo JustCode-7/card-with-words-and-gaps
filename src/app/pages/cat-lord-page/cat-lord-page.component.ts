@@ -32,22 +32,21 @@ export class NextCzarPipe implements PipeTransform {
 }
 
 @Component({
-  selector: 'app-cat-lord-page',
-  standalone: true,
-  imports: [
-    GapTextCardComponent,
-    MatCardModule,
-    NgForOf,
-    MatButtonModule,
-    NgIf,
-    MatChipsModule,
-    MatIconModule,
-    MatListModule,
-    AsyncPipe,
-    NextCzarPipe
-  ],
-  templateUrl: './cat-lord-page.component.html',
-  styleUrl: './cat-lord-page.component.scss'
+    selector: 'app-cat-lord-page',
+    imports: [
+        GapTextCardComponent,
+        MatCardModule,
+        NgForOf,
+        MatButtonModule,
+        NgIf,
+        MatChipsModule,
+        MatIconModule,
+        MatListModule,
+        AsyncPipe,
+        NextCzarPipe
+    ],
+    templateUrl: './cat-lord-page.component.html',
+    styleUrl: './cat-lord-page.component.scss'
 })
 export class CatLordPage implements OnInit, OnDestroy {
   public catLordName: string = '';

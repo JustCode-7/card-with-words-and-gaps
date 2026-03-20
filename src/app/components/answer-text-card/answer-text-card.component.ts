@@ -13,16 +13,15 @@ interface Answer {
 }
 
 @Component({
-  selector: 'app-answer-text-card',
-  standalone: true,
-  imports: [
-    MatCardModule,
-    MatButtonModule,
-    MatListModule,
-    MatBadgeModule,
-  ],
-  templateUrl: './answer-text-card.component.html',
-  styleUrl: './answer-text-card.component.scss'
+    selector: 'app-answer-text-card',
+    imports: [
+        MatCardModule,
+        MatButtonModule,
+        MatListModule,
+        MatBadgeModule,
+    ],
+    templateUrl: './answer-text-card.component.html',
+    styleUrl: './answer-text-card.component.scss'
 })
 export class AnswerTextCardComponent implements OnInit {
   @Input() spielerAntworten!: string[];

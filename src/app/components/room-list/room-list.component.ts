@@ -9,14 +9,13 @@ import {SocketService} from "../../service/socket.service";
 import {MatchService} from "../../service/match.service";
 
 @Component({
-  selector: 'app-room-list',
-  standalone: true,
-  imports: [
-    MatButtonModule,
-    MatIconModule,
-    MatCardModule
-  ],
-  template: `
+    selector: 'app-room-list',
+    imports: [
+        MatButtonModule,
+        MatIconModule,
+        MatCardModule
+    ],
+    template: `
     <h1>List of existing Rooms</h1>
     @for (room of rooms(); track room) {
       <mat-card class="room-card">
@@ -36,7 +35,7 @@ import {MatchService} from "../../service/match.service";
       <div>There are no rooms yet.</div>
     }
   `,
-  styles: `
+    styles: `
     .room-card {
       margin-bottom: 1rem;
     }
