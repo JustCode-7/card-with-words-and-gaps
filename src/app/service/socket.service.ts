@@ -128,13 +128,15 @@ export class SocketService {
   }
 
   public sendUpdateGame(event: string, game: Game): void {
-    // Send via WebRTC
+    // IMMER via WebRTC senden (egal ob Host oder Gast)
     this.webrtcService.sendMessage({event: 'game', data: game});
 
-    // Use ServerService to update the game
-    this.serverService.updateGame(game);
+    // Wenn wir der Host sind, aktualisieren wir unseren lokalen Server-State
+    if (this.isHost.value) {
+      this.serverService.updateGame(game);
+    }
 
-    // Also emit the event directly if we're not the host
+    // Falls wir doch in einem echten Socket-Netzwerk sind, emittieren wir auch dort
     if (!this.isHost.value && this.socket && !window.location.origin.includes('github.io')) {
       this.socket.emit(event, game);
     }
@@ -219,6 +221,14 @@ export class SocketService {
     this.currentP2PRoomId = roomId;
   }
 
+  public requestGameViaWebRTC(roomId: string) {
+    console.log("[DEBUG_LOG] Gast: sending request-game via WebRTC for room", roomId);
+    this.webrtcService.sendMessage({
+      event: 'request-game',
+      data: {roomId}
+    });
+  }
+
   private handleBeforeUnload(event: BeforeUnloadEvent): void {
     // If we're the host, stop the server when the window is closed
     if (this.isHost.value) {
@@ -252,6 +262,16 @@ export class SocketService {
       this.serverService.updateGame(msg.data);
       // Den MatchService über das Subject informieren (löst Circular Dependency)
       this.p2pGameUpdate$.next(msg.data);
+    } else if (msg.event === 'request-game' && this.isHost.value) {
+      const {roomId} = msg.data;
+      console.log("[DEBUG_LOG] Host: received request-game via WebRTC for room", roomId);
+      const currentGame = this.serverService.getGame(roomId);
+      if (currentGame) {
+        this.webrtcService.sendMessage({
+          event: 'game',
+          data: currentGame
+        });
+      }
     } else if (msg.event === 'join-room' && this.isHost.value) {
       // Wenn wir der Host sind, registrieren wir den beigetretenen P2P-Spieler
       const {roomId, player} = msg.data;

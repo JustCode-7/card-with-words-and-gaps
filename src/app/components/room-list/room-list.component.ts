@@ -143,6 +143,12 @@ export class RoomListComponent implements OnInit {
     const playerName = this.playerService.getPlayer().name;
     this.socketService.setP2PRoomId(roomId);
     this.matchService.initMatch(roomId);
+
+    // Wir fragen das Spiel aktiv beim Host an
+    this.socketService.requestGameViaWebRTC(roomId);
+
+    // Navigation erst nach einer kleinen Verzögerung oder wenn Daten da sind
+    // In diesem Fall navigieren wir und lassen den Spinner in der PlayerPage wirken
     this.router.navigate(['/game', roomId, playerName, 'player']);
   }
 
