@@ -222,6 +222,9 @@ export class SocketService {
   }
 
   public requestGameViaWebRTC(roomId: string) {
+    // Bevor wir Daten anfragen, stellen wir sicher, dass wir im Raum angemeldet sind
+    this.joinRoomViaWebRTC();
+
     console.log("[DEBUG_LOG] Gast: sending request-game via WebRTC for room", roomId);
     this.webrtcService.sendMessage({
       event: 'request-game',
@@ -275,7 +278,7 @@ export class SocketService {
     } else if (msg.event === 'join-room' && this.isHost.value) {
       // Wenn wir der Host sind, registrieren wir den beigetretenen P2P-Spieler
       const {roomId, player} = msg.data;
-      console.log("P2P player joined room", roomId, player);
+      console.log(`[DEBUG_LOG] Host: P2P player ${player.name} joining room ${roomId}`);
 
       // Den Spieler im ServerService hinzufügen
       this.serverService.addPlayerToRoom(roomId, player);
@@ -283,12 +286,10 @@ export class SocketService {
       // Den lokalen MatchService des Hosts informieren
       const updatedGame = this.serverService.getGame(roomId);
       if (updatedGame) {
-        console.log("[DEBUG_LOG] Host notifying local MatchService about new player");
+        console.log(`[DEBUG_LOG] Host: game updated, now has ${updatedGame.spieler.length} players`);
         this.p2pGameUpdate$.next(updatedGame);
 
         // Den Gast sofort mit dem aktuellen Spielstatus antworten
-        // Wir schicken das Spiel zurück, damit der Gast weiß, dass er drin ist
-        console.log("[DEBUG_LOG] Host replying to Gast with updated game state");
         this.webrtcService.sendMessage({
           event: 'game',
           data: updatedGame
