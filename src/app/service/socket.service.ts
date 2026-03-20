@@ -29,14 +29,6 @@ export class SocketService {
   private serverUrl = new BehaviorSubject<string>(environment.socketUrl);
 
   constructor() {
-    // Initialize the socket connection
-    // connectToServer wird nur aufgerufen, wenn wir NICHT auf GitHub Pages sind
-    if (!window.location.origin.includes('github.io')) {
-      this.connectToServer();
-    } else {
-      console.log("GitHub Pages mode: Initial socket connection skipped.");
-    }
-
     // Listen for WebRTC messages
     this.webrtcService.message$.subscribe(msg => {
       this.handleWebRTCMessage(msg);
@@ -50,14 +42,22 @@ export class SocketService {
       }
     });
 
-    // Listen for server URL changes and reconnect
-    this.serverUrl.subscribe(url => {
-      if (this.socket) {
-        this.socket.disconnect();
-      }
-      this.socket = io(url);
-      this.setupSocketListeners();
-    });
+    // Sockets nur initialisieren, wenn NICHT auf GitHub Pages
+    if (!window.location.origin.includes('github.io')) {
+      this.connectToServer();
+
+      // Listen for server URL changes and reconnect
+      this.serverUrl.subscribe(url => {
+        if (!url) return;
+        if (this.socket) {
+          this.socket.disconnect();
+        }
+        this.socket = io(url);
+        this.setupSocketListeners();
+      });
+    } else {
+      console.log("GitHub Pages mode: All socket logic disabled.");
+    }
 
     // Listen for server status changes
     this.serverService.isServerRunning.subscribe(isRunning => {
@@ -256,15 +256,22 @@ export class SocketService {
       // Wenn wir der Host sind, registrieren wir den beigetretenen P2P-Spieler
       const {roomId, player} = msg.data;
       console.log("P2P player joined room", roomId, player);
+
+      // Den Spieler im ServerService hinzufügen
       this.serverService.addPlayerToRoom(roomId, player);
 
-      // Als Host schicken wir dem neuen Spieler sofort den aktuellen Spielstatus
-      const currentGame = this.serverService.getGame(roomId);
-      if (currentGame) {
+      // WICHTIG: Da ServerService auf GitHub Pages keine Events emittiert,
+      // müssen wir den MatchService des Hosts manuell über die Änderung informieren.
+      const updatedGame = this.serverService.getGame(roomId);
+      if (updatedGame) {
+        console.log("[DEBUG_LOG] Host updating local MatchService with new P2P player");
+        this.p2pGameUpdate$.next(updatedGame);
+
+        // Als Host schicken wir dem neuen Spieler sofort den aktuellen Spielstatus
         console.log("[DEBUG_LOG] Host pushing current game to new P2P player", roomId);
         this.webrtcService.sendMessage({
           event: 'game',
-          data: currentGame
+          data: updatedGame
         });
       }
     }

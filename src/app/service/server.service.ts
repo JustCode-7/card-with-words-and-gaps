@@ -38,7 +38,6 @@ export class ServerService {
 
     try {
       // Auf GitHub Pages (window.location.origin) läuft kein Socket-Server.
-      // Wir überspringen den Verbindungsaufbau, wenn wir auf GitHub Pages sind.
       if (window.location.origin.includes('github.io')) {
         console.log("GitHub Pages detected: Running ServerService in memory mode (No Socket.io).");
         this.socket = null;
