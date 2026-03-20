@@ -11,7 +11,6 @@ import {PlayerService} from "../../service/player.service";
 import {Router} from "@angular/router";
 import {MatchService} from "../../service/match.service";
 import {WebRTCService} from "../../service/webrtc.service";
-import {MatTooltip} from "@angular/material/tooltip";
 
 @Component({
   selector: 'app-room-create',
@@ -23,7 +22,6 @@ import {MatTooltip} from "@angular/material/tooltip";
     MatInputModule,
     MatChipsModule,
     AsyncPipe,
-    MatTooltip
   ],
   templateUrl: './room-create.component.html',
   styles: `
@@ -92,17 +90,35 @@ export class RoomCreateComponent {
   webrtcService = inject(WebRTCService);
   router = inject(Router);
 
+  spielerListe = signal<any[]>([]);
+
   async createRoom() {
     if (this.roomIdControl.invalid) return;
 
     const room = this.roomIdControl.value!;
-    const playerName = this.playerService.getPlayer().name;
 
-    // WebRTC Offer erzeugen
+    // Wir setzen den Host-Status und den Raum-Namen
+    this.socketService.setP2PRoomId(room);
+    this.socketService.isHost.next(true);
+    this.socketService.createRoom(room);
+    this.matchService.initMatch(room);
+
+    // Initialen Offer erzeugen
+    await this.generateNewOffer();
+
+    // Wir beobachten die Spielerliste aus dem MatchService
+    this.matchService.game.subscribe(game => {
+      if (game && game.spieler) {
+        this.spielerListe.set(game.spieler);
+      }
+    });
+  }
+
+  async generateNewOffer() {
+    const room = this.roomIdControl.value!;
     const offer = await this.webrtcService.createOffer(room);
     this.sessionCode.set(offer);
 
-    // Join-Link erstellen (mit Hash-Unterstützung für GitHub Pages)
     const url = new URL(window.location.href);
     const baseUrl = url.origin + url.pathname;
     const joinLink = `${baseUrl}#/join-game?offer=${offer}`;
@@ -111,14 +127,8 @@ export class RoomCreateComponent {
     const qr = await this.webrtcService.generateQRCode(joinLink);
     this.qrCodeDataUrl.set(qr);
 
-    // Socket.io (optional parallel oder als Fallback)
-    this.socketService.setP2PRoomId(room);
-    this.socketService.isHost.next(true);
-    this.socketService.createRoom(room);
-    this.matchService.initMatch(room);
-
-    // Navigation nach erfolgreicher WebRTC-Verbindung oder manuell
-    // Hier lassen wir den User erst mal auf der Seite, um die Answer einzugeben
+    // Eingabefeld für Antwort leeren
+    this.answerCodeControl.setValue('');
   }
 
   copyLink() {
@@ -129,11 +139,15 @@ export class RoomCreateComponent {
     const answer = this.answerCodeControl.value;
     if (answer) {
       await this.webrtcService.handleAnswer(answer);
-      // Wenn verbunden, navigieren
-      const room = this.roomIdControl.value!;
-      const playerName = this.playerService.getPlayer().name;
-      this.router.navigate(['game', room, playerName, 'catlord']);
+      // Wir bleiben auf der Seite, bis der Host das Spiel startet
+      // Der Gast wird über WebRTC 'join-room' senden, was die Liste aktualisiert
     }
+  }
+
+  startGame() {
+    const room = this.roomIdControl.value!;
+    const playerName = this.playerService.getPlayer().name;
+    this.router.navigate(['game', room, playerName, 'catlord']);
   }
 
 }

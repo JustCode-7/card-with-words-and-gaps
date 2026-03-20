@@ -37,9 +37,9 @@ export class ServerService {
     }
 
     try {
-      // Auf GitHub Pages (window.location.origin) läuft kein Socket-Server.
-      if (window.location.origin.includes('github.io')) {
-        console.log("GitHub Pages detected: Running ServerService in memory mode (No Socket.io).");
+      // Auf GitHub Pages (window.location.origin) oder Localhost (für P2P-Tests) läuft kein Socket-Server.
+      if (window.location.origin.includes('github.io') || window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')) {
+        console.log("P2P mode detected: Running ServerService in memory mode (No Socket.io).");
         this.socket = null;
         this.createRoom(roomId);
         this.isServerRunning.next(true);
@@ -88,7 +88,7 @@ export class ServerService {
     this.games.set(roomId, game);
 
     // Emit setGame event to the server
-    if (this.socket && !window.location.origin.includes('github.io')) {
+    if (this.socket && !window.location.origin.includes('github.io') && !window.location.origin.includes('localhost')) {
       this.socket.emit('setGame', roomId, game);
     }
   }
@@ -100,16 +100,12 @@ export class ServerService {
   public updateGame(game: any): void {
     if (!game || !game.gameHash) return;
 
-    console.log(`UPDATE GAME for room ${game.gameHash}`);
+    // console.log(`UPDATE GAME for room ${game.gameHash}`);
     this.games.set(game.gameHash, game);
 
-    // Emit updateGame event to the server
+    // Emit updateGame event to the server only if NOT on GitHub Pages
     if (this.socket && !window.location.origin.includes('github.io')) {
       this.socket.emit('updateGame', game);
-    }
-
-    // Trigger local game event for listeners in the same client (host-mode)
-    if (this.socket && !window.location.origin.includes('github.io')) {
       this.socket.emit('game', game);
     }
   }

@@ -19,45 +19,72 @@
 
   @if (sessionCode()) {
     <div
-      class="col-md-6 col-lg-4 shadow-sm ps-2 pe-4 rounded bg-dark border align-self-center mt-4">
+      class="col-md-8 col-lg-6 shadow-sm ps-2 pe-4 rounded bg-dark border align-self-center mt-4 mb-5">
       <h3 class="mb-3 text-primary">WebRTC: Peer-to-Peer Verbindung aufbauen</h3>
 
-      <div class="step-box mb-4">
-        <h4 class="h6 font-weight-bold">Schritt 1: Einladungs-Link teilen</h4>
-        <p class="small">Dein Mitspieler muss diesen Link öffnen oder den QR-Code scannen.</p>
-        <div class="text-center my-3">
-          <img [src]="qrCodeDataUrl()" alt="QR Code" class="img-fluid qr-image border rounded p-2">
-        </div>
-        <mat-form-field class="w-100">
-          <mat-label>Einladungs-Link</mat-label>
-          <input #linkInput [value]="joinLink()" matInput readonly>
-          <button (click)="copyLink()" mat-icon-button matSuffix matTooltip="In Zwischenablage kopieren">
-            <mat-icon>content_copy</mat-icon>
+      <div class="row">
+        <div class="col-md-6 border-end">
+          <div class="step-box mb-4">
+            <h4 class="h6 font-weight-bold">Schritt 1: Einladungs-Link teilen</h4>
+            <p class="small">Scan mich für Spieler {{ spielerListe().length + 1 }}:</p>
+            <div class="text-center my-3">
+              <img [src]="qrCodeDataUrl()" alt="QR Code" class="img-fluid qr-image border rounded p-2"
+                   style="max-width: 150px">
+            </div>
+            <button (click)="copyLink()" [attr.data-link]="joinLink()" class="w-100" color="accent" id="copyLinkBtn"
+                    mat-stroked-button>
+              <mat-icon>content_copy</mat-icon>
+              Link kopieren
+            </button>
+          </div>
+
+          <div class="step-box mb-4">
+            <h4 class="h6 font-weight-bold">Schritt 2: Antwort-Code</h4>
+            <mat-form-field class="w-100">
+              <textarea [formControl]="answerCodeControl" matInput placeholder="Antwort vom Gast hier einfügen..."
+                        rows="2"></textarea>
+            </mat-form-field>
+            <button (click)="connect()" [disabled]="answerCodeControl.invalid" class="w-100" color="primary"
+                    mat-raised-button>
+              <mat-icon>person_add</mat-icon>
+              Spieler hinzufügen
+            </button>
+          </div>
+
+          <button (click)="generateNewOffer()" class="w-100 mb-3" color="basic" mat-button>
+            <mat-icon>refresh</mat-icon>
+            Nächsten Code generieren
           </button>
-        </mat-form-field>
-      </div>
+        </div>
 
-      <div class="step-box mb-4">
-        <h4 class="h6 font-weight-bold">Schritt 2: Antwort vom Gast empfangen</h4>
-        <p class="small">Sobald dein Mitspieler den Link öffnet, wird er dir einen "Antwort-Code" zeigen.
-          Füge ihn hier ein:</p>
-        <mat-form-field class="w-100">
-          <mat-label>Antwort-Code einfügen</mat-label>
-          <textarea [formControl]="answerCodeControl" matInput placeholder="Antwort-SDP hier einfügen..."
-                    rows="3"></textarea>
-        </mat-form-field>
-        <button (click)="connect()" [disabled]="answerCodeControl.invalid" class="w-100 py-2" color="primary"
-                mat-raised-button>
-          <mat-icon>power</mat-icon>
-          Verbindung herstellen
-        </button>
-      </div>
+        <div class="col-md-6">
+          <h4 class="h6 font-weight-bold mt-2">Verbundene Spieler ({{ spielerListe().length }}/8):</h4>
+          <mat-chip-listbox aria-label="Player selection" class="mb-3">
+            @for (p of spielerListe(); track p.id) {
+              <mat-chip-option [selectable]="false" color="accent" selected>
+                <mat-icon matChipAvatar>person</mat-icon>
+                {{ p.name }}
+              </mat-chip-option>
+            }
+          </mat-chip-listbox>
 
-      <div [class.bg-danger-subtle]="(webrtcService.connectionStatus | async) === 'disconnected'"
-           [class.bg-success-subtle]="(webrtcService.connectionStatus | async) === 'connected'"
-           [class.bg-warning-subtle]="(webrtcService.connectionStatus | async) === 'connecting'"
-           class="mt-2 text-center p-2 rounded">
-        Status: <strong class="text-uppercase">{{ webrtcService.connectionStatus | async }}</strong>
+          <div [class.bg-danger-subtle]="(webrtcService.connectionStatus | async) === 'disconnected'"
+               [class.bg-success-subtle]="(webrtcService.connectionStatus | async) === 'connected'"
+               [class.bg-warning-subtle]="(webrtcService.connectionStatus | async) === 'connecting'"
+               class="mt-2 text-center p-2 rounded small mb-4">
+            Netzwerk-Status: <strong class="text-uppercase">{{ webrtcService.connectionStatus | async }}</strong>
+          </div>
+
+          <button (click)="startGame()" [disabled]="spielerListe().length < 2" class="w-100 py-3 mt-auto" color="warn"
+                  mat-raised-button
+                  style="font-size: 1.2rem">
+            <mat-icon>play_arrow</mat-icon>
+            SPIEL JETZT STARTEN
+          </button>
+          @if (spielerListe().length < 2) {
+            <p class="text-center small text-muted mt-2">Mindestens 1 Mitspieler erforderlich</p>
+          }
+        </div>
       </div>
     </div>
   }

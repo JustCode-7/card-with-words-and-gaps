@@ -42,8 +42,8 @@ export class SocketService {
       }
     });
 
-    // Sockets nur initialisieren, wenn NICHT auf GitHub Pages
-    if (!window.location.origin.includes('github.io')) {
+    // Sockets nur initialisieren, wenn NICHT auf GitHub Pages oder Localhost (für P2P Tests)
+    if (!window.location.origin.includes('github.io') && !window.location.origin.includes('localhost') && !window.location.origin.includes('127.0.0.1')) {
       this.connectToServer();
 
       // Listen for server URL changes and reconnect
@@ -81,9 +81,9 @@ export class SocketService {
     // Start a server instance on this client
     this.serverService.startServer(room);
 
-    // Auf GitHub Pages (window.location.origin) läuft kein Socket-Server.
-    if (window.location.origin.includes('github.io')) {
-      console.log("GitHub Pages detected: Skipping local socket connection, using pure P2P mode.");
+    // Auf GitHub Pages (window.location.origin) oder Localhost läuft kein Socket-Server (für P2P-Tests).
+    if (window.location.origin.includes('github.io') || window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')) {
+      console.log("P2P mode detected: Skipping local socket connection, using pure P2P mode.");
       this.isHost.next(true);
       return;
     }
@@ -98,8 +98,8 @@ export class SocketService {
   }
 
   public joinRoom(roomId: string) {
-    if (!this.socket || window.location.origin.includes('github.io')) {
-      console.log("JoinRoom: Socket skipped due to P2P/GitHub mode.");
+    if (!this.socket || window.location.origin.includes('github.io') || window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')) {
+      console.log("JoinRoom: Socket skipped due to P2P mode.");
       return;
     }
 
@@ -124,12 +124,11 @@ export class SocketService {
   }
 
   public sendUpdateGame(event: string, game: Game): void {
-    // IMMER via WebRTC senden (egal ob Host oder Gast)
-    this.webrtcService.sendMessage({event: 'game', data: game});
-
     // Wenn wir der Host sind, aktualisieren wir unseren lokalen Server-State
     if (this.isHost.value) {
       this.serverService.updateGame(game);
+      // IMMER via WebRTC an alle Gäste senden
+      this.webrtcService.sendMessage({event: 'game', data: game});
     }
 
     // Falls wir doch in einem echten Socket-Netzwerk sind, emittieren wir auch dort
@@ -268,10 +267,12 @@ export class SocketService {
 
   private handleWebRTCMessage(msg: any) {
     if (msg.event === 'game') {
-      console.log("[DEBUG_LOG] Game update received via WebRTC", msg.data);
-      this.serverService.updateGame(msg.data);
-      // Den MatchService über das Subject informieren (löst Circular Dependency)
-      this.p2pGameUpdate$.next(msg.data);
+      // Gast erhält Spiel-Update vom Host
+      if (!this.isHost.value) {
+        // console.log("[DEBUG_LOG] Guest: Game update received via WebRTC", msg.data);
+        this.serverService.updateGame(msg.data);
+        this.p2pGameUpdate$.next(msg.data);
+      }
     } else if (msg.event === 'request-game' && this.isHost.value) {
       const {roomId} = msg.data;
       console.log("[DEBUG_LOG] Host: received request-game via WebRTC for room", roomId);
@@ -296,7 +297,7 @@ export class SocketService {
         console.log(`[DEBUG_LOG] Host: game updated, now has ${updatedGame.spieler.length} players`);
         this.p2pGameUpdate$.next(updatedGame);
 
-        // Den Gast sofort mit dem aktuellen Spielstatus antworten
+        // Alle Gäste mit dem aktuellen Spielstatus informieren (Broadcast)
         this.webrtcService.sendMessage({
           event: 'game',
           data: updatedGame
@@ -306,9 +307,11 @@ export class SocketService {
   }
 
   private joinRoomViaWebRTC() {
+    console.warn("[DEBUG_LOG] joinRoomViaWebRTC called. Host status:", this.isHost.value);
+
     const player: Player = this.playerService.getPlayer();
-    if (!player.name) {
-      console.warn("P2P-Join verzögert: Spielername noch nicht gesetzt");
+    if (!player.name || player.name === 'undefined' || player.name === 'null') {
+      console.warn("P2P-Join verzögert: Spielername noch nicht gesetzt oder ungültig:", player.name);
       return;
     }
 
@@ -323,10 +326,9 @@ export class SocketService {
 
   private connectToServer(): void {
     const url = this.serverUrl.value;
-    // Auf GitHub Pages (window.location.origin) läuft kein Socket.io-Server.
-    // Wir blockieren den Verbindungsaufbau, wenn die URL zum aktuellen GitHub-Origin führt.
-    if (!url || url.includes('github.io')) {
-      console.log("GitHub Pages mode: Operating in P2P/Local mode only.");
+    // Auf GitHub Pages (window.location.origin) oder Localhost (für P2P-Tests) läuft kein Socket.io-Server.
+    if (!url || url.includes('github.io') || url.includes('localhost') || url.includes('127.0.0.1')) {
+      console.log("P2P mode: Operating in P2P/Local mode only.");
       return;
     }
 
