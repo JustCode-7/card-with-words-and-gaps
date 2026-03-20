@@ -8,19 +8,19 @@ import {PlayerService} from "./player.service";
 import {Player} from "../model/Player";
 import {DataService} from "./data.service";
 import {ServerService} from "./server.service";
+import {environment} from "../../environments/environment";
 
 @Injectable({providedIn: 'root'})
 export class SocketService {
 
+  // Track if this client is hosting a server
+  public isHost = new BehaviorSubject<boolean>(false);
   private socket: Socket | null = null;
   private playerService = inject(PlayerService);
   private dataService = inject(DataService);
   private serverService = inject(ServerService);
-
-  // Track if this client is hosting a server
-  public isHost = new BehaviorSubject<boolean>(false);
   // Track the current server URL
-  private serverUrl = new BehaviorSubject<string>(window.location.origin);
+  private serverUrl = new BehaviorSubject<string>(environment.socketUrl);
 
   constructor() {
     // Initialize the socket connection
@@ -46,40 +46,6 @@ export class SocketService {
         window.removeEventListener('beforeunload', this.handleBeforeUnload.bind(this));
       }
     });
-  }
-
-  private handleBeforeUnload(event: BeforeUnloadEvent): void {
-    // If we're the host, stop the server when the window is closed
-    if (this.isHost.value) {
-      console.log('Host is leaving, stopping server...');
-      this.serverService.stopServer();
-
-      // Show a confirmation dialog to warn the user
-      event.preventDefault();
-      event.returnValue = 'Als Host wird der Server beendet, wenn du die Seite verlässt. Alle Spieler werden getrennt.';
-      return event.returnValue;
-    }
-  }
-
-  private setupSocketListeners(): void {
-    if (!this.socket) return;
-
-    // Set up room list listener
-    this.socket.on("room-list", (roomList: string[]) => {
-      this.dataService.roomListSignal.set(roomList);
-    });
-
-    // Set up other listeners
-    this.socket.on('game', (game: Game) => {
-      // Game updates will be handled by subscribers to getGame()
-    });
-  }
-
-  private connectToServer(): void {
-    const url = this.serverUrl.value;
-    console.log(`Connecting to server at ${url}`);
-    this.socket = io(url);
-    this.setupSocketListeners();
   }
 
   public onRoomListener(): void {
@@ -207,6 +173,40 @@ export class SocketService {
     }
 
     this.socket.emit('notification', message);
+  }
+
+  private handleBeforeUnload(event: BeforeUnloadEvent): void {
+    // If we're the host, stop the server when the window is closed
+    if (this.isHost.value) {
+      console.log('Host is leaving, stopping server...');
+      this.serverService.stopServer();
+
+      // Show a confirmation dialog to warn the user
+      event.preventDefault();
+      event.returnValue = 'Als Host wird der Server beendet, wenn du die Seite verlässt. Alle Spieler werden getrennt.';
+      return event.returnValue;
+    }
+  }
+
+  private setupSocketListeners(): void {
+    if (!this.socket) return;
+
+    // Set up room list listener
+    this.socket.on("room-list", (roomList: string[]) => {
+      this.dataService.roomListSignal.set(roomList);
+    });
+
+    // Set up other listeners
+    this.socket.on('game', (game: Game) => {
+      // Game updates will be handled by subscribers to getGame()
+    });
+  }
+
+  private connectToServer(): void {
+    const url = this.serverUrl.value;
+    console.log(`Connecting to server at ${url}`);
+    this.socket = io(url);
+    this.setupSocketListeners();
   }
 
 }

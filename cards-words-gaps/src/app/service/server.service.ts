@@ -1,6 +1,7 @@
 import {Injectable} from '@angular/core';
 import {BehaviorSubject} from 'rxjs';
 import {io, Socket} from 'socket.io-client';
+import {environment} from "../../environments/environment";
 
 interface Player {
   id: string;
@@ -20,7 +21,7 @@ export class ServerService {
   public isServerRunning = new BehaviorSubject<boolean>(false);
   public serverPort = 3000;
   // Use a local server for development
-  public serverUrl = (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
+  public serverUrl = environment.socketUrl;
   private socket: Socket | null = null;
   private rooms: Map<string, Room> = new Map();
   private games: Map<string, any> = new Map();

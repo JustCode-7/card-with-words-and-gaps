@@ -1,12 +1,14 @@
 {
   "name": "cards-words-gaps",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "scripts": {
     "ng": "ng",
     "start": "ng serve --proxy-config proxy.conf.json",
     "backend": "node server.js",
     "dev": "concurrently \"npm run backend\" \"npm start\"",
     "build": "ng build",
+    "build:prod": "ng build --configuration production --base-href /cards-words-gaps/",
+    "deploy": "npm run build:prod && npx angular-cli-ghpages --dir=dist/cards-words-gaps",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
   },
