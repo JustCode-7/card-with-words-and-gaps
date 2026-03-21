@@ -58,7 +58,8 @@
           @for (p of matchService.gameSignal().spieler; track p.id) {
             <mat-chip-option [selectable]="false" color="accent" selected>
               <mat-icon
-                [style.color]="(getIndividualStatus(p.connectionId) | async) === 'connected' ? '#4caf50' : '#f44336'"
+                [class.status-icon-connected]="(getIndividualStatus(p.connectionId) | async) === 'connected'"
+                [class.status-icon-disconnected]="(getIndividualStatus(p.connectionId) | async) !== 'connected'"
                 matChipAvatar>
                 {{ (getIndividualStatus(p.connectionId) | async) === 'connected' ? 'person' : 'person_off' }}
               </mat-icon>
@@ -128,33 +129,34 @@
             }
 
             @if (showScanner()) {
-              <div class="scanner-container border rounded overflow-hidden bg-black position-relative"
-                   style="height: 300px;">
+              <div
+                class="scanner-container border rounded overflow-hidden bg-black position-relative scanner-container-height">
                 <video #scannerVideo class="w-100 h-100 object-fit-cover" playsinline></video>
                 <div
-                  class="scanner-overlay position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center pointer-events-none">
-                  <div [style.height.px]="200 * zoomLevel()"
-                       [style.width.px]="200 * zoomLevel()"
-                       class="border border-white border-2 opacity-50 mb-2 transition-all"
-                       style="border-radius: 8px;"></div>
-                  <div class="text-white small bg-dark px-2 py-1 rounded opacity-75 mb-2">QR-Code in den Rahmen halten
+                  class="scanner-overlay position-absolute top-0 start-0 w-100 h-100 d-flex flex-row align-items-center justify-content-center pointer-events-none">
+
+                  <!-- Zoom Controls (Left) -->
+                  <div
+                    class="pointer-events-auto bg-dark text-white border-white border rounded px-2 py-3 d-flex flex-column align-items-center gap-3 ms-2 position-absolute start-0 zoom-controls-panel">
+                    <mat-icon (click)="setZoom(5)" class="cursor-pointer icon-size-24">zoom_in
+                    </mat-icon>
+                    <div class="zoom-slider-container">
+                      <input #zoomSlider (input)="setZoom(+zoomSlider.value)" [value]="zoomLevel()"
+                             class="cursor-pointer zoom-slider-vertical"
+                             max="5" min="1" step="0.1"
+                             type="range">
+                    </div>
+                    <mat-icon (click)="setZoom(1)" class="cursor-pointer icon-size-24">zoom_out
+                    </mat-icon>
+                    <div class="small text-center zoom-label-tiny">{{ zoomLevel().toFixed(1) }}x</div>
                   </div>
 
-                  <!-- Zoom Controls -->
-                  <div
-                    class="pointer-events-auto bg-dark text-white border-white border rounded px-3 py-2 d-flex flex-column align-items-center gap-1"
-                    style="opacity: 0.9; min-width: 200px;">
-                    <div class="d-flex align-items-center gap-2 w-100">
-                      <mat-icon (click)="setZoom(1)" class="cursor-pointer"
-                                style="font-size: 18px; width: 18px; height: 18px;">zoom_out
-                      </mat-icon>
-                      <input #zoomSlider (input)="setZoom(+zoomSlider.value)" [value]="zoomLevel()" class="flex-grow-1"
-                             max="5" min="1" step="0.1" type="range">
-                      <mat-icon (click)="setZoom(5)" class="cursor-pointer"
-                                style="font-size: 18px; width: 18px; height: 18px;">zoom_in
-                      </mat-icon>
+                  <div class="d-flex flex-column align-items-center justify-content-center">
+                    <div [style.height.px]="200 * zoomLevel()"
+                         [style.width.px]="200 * zoomLevel()"
+                         class="border border-white border-2 opacity-50 mb-2 transition-all scanner-frame"></div>
+                    <div class="text-white small bg-dark px-2 py-1 rounded opacity-75">QR-Code in den Rahmen halten
                     </div>
-                    <div class="small">Zoom: {{ zoomLevel().toFixed(1) }}x</div>
                   </div>
                 </div>
               </div>

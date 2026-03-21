@@ -117,3 +117,47 @@ body {
 .transition-all {
   transition: all 0.3s ease-in-out;
 }
+
+.scanner-container-height {
+  height: 450px;
+}
+
+.zoom-controls-panel {
+  opacity: 0.9;
+  width: 50px;
+}
+
+.icon-size-24 {
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
+}
+
+.zoom-slider-container {
+  height: 150px;
+  display: flex;
+  align-items: center;
+}
+
+.zoom-slider-vertical {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 30px;
+  height: 100%;
+}
+
+.zoom-label-tiny {
+  font-size: 10px;
+}
+
+.scanner-frame {
+  border-radius: 8px;
+}
+
+.status-icon-connected {
+  color: #4caf50;
+}
+
+.status-icon-disconnected {
+  color: #f44336;
+}
