@@ -133,8 +133,10 @@
                 <video #scannerVideo class="w-100 h-100 object-fit-cover" playsinline></video>
                 <div
                   class="scanner-overlay position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center pointer-events-none">
-                  <div class="border border-white border-2 opacity-50 mb-2"
-                       style="width: 200px; height: 200px; border-radius: 8px;"></div>
+                  <div [style.height.px]="200 / zoomLevel()"
+                       [style.width.px]="200 / zoomLevel()"
+                       class="border border-white border-2 opacity-50 mb-2 transition-all"
+                       style="border-radius: 8px;"></div>
                   <div class="text-white small bg-dark px-2 py-1 rounded opacity-75 mb-2">QR-Code in den Rahmen halten
                   </div>
 
