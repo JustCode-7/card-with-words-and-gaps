@@ -25,6 +25,8 @@ export class WebRTCService {
     if (this.peerConnections.has(id)) {
       this.pendingConnectionId = id;
       console.warn(`[DEBUG_LOG] WebRTC: Restored pendingConnectionId: ${id}`);
+    } else {
+      console.warn(`[DEBUG_LOG] WebRTC: Cannot restore pendingConnectionId ${id} - Connection not found in peerConnections map.`);
     }
   }
 

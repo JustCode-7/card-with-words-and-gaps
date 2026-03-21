@@ -30,9 +30,11 @@ export class EntryPageComponent implements OnInit {
     const answer = this.route.snapshot.queryParams['answer'] || this.getQueryParamFromUrl('answer');
 
     // Host-Erkennung über localStorage (robust gegen Reloads)
-    const isHost = localStorage.getItem('isHost') === 'true' || this.socketService.isHost.value || !!this.socketService.getP2PRoomId();
+    const storedIsHost = localStorage.getItem('isHost') === 'true';
+    const storedRoom = localStorage.getItem('currentP2PRoomId');
+    const isHost = storedIsHost || this.socketService.isHost.value || !!this.socketService.getP2PRoomId();
 
-    console.log("[DEBUG_LOG] EntryPage ngOnInit. Player:", player.name, "Answer present:", !!answer, "IsHost:", isHost);
+    console.log("[DEBUG_LOG] EntryPage ngOnInit. Player:", player.name, "Answer present:", !!answer, "IsHost:", isHost, "StoredRoom:", storedRoom);
 
     // Falls ein Name fehlt, zur Namenseingabe leiten, dabei Parameter behalten
     if (!player.name || player.name === 'undefined') {
@@ -43,7 +45,7 @@ export class EntryPageComponent implements OnInit {
 
     // Wenn der User bereits Host eines aktiven Raums ist (oder war und wir ihn wiederherstellen)
     // und einen Antwort-Code scannt, leiten wir ihn direkt zu seiner Raum-Erstellungs-Seite zurück.
-    if (answer && isHost) {
+    if (answer && (isHost || storedRoom)) {
       console.log("[DEBUG_LOG] Host auf EntryPage mit Antwort-Code. Leite zu /new-game...");
       this.router.navigate(['/new-game'], {queryParams: {answer}, queryParamsHandling: 'merge'});
       return;

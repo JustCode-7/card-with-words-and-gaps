@@ -39,16 +39,18 @@ export class PlayerNamePage implements OnInit {
     // Parameter können vor oder nach dem Hash stehen
     const answer = this.route.snapshot.queryParams['answer'] || this.getQueryParamFromUrl('answer');
     const storedName = localStorage.getItem('playerName');
-    const isHost = localStorage.getItem('isHost') === 'true' || socketService.isHost.value || !!socketService.getP2PRoomId();
+    const storedIsHost = localStorage.getItem('isHost') === 'true';
+    const storedRoom = localStorage.getItem('currentP2PRoomId');
+    const isHost = storedIsHost || socketService.isHost.value || !!socketService.getP2PRoomId();
 
-    console.log("[DEBUG_LOG] PlayerNamePage ngOnInit. Name:", name, "Stored:", storedName, "Answer:", !!answer, "IsHost:", isHost);
-    if (!isHost && answer) {
+    console.log("[DEBUG_LOG] PlayerNamePage ngOnInit. Name:", name, "StoredName:", storedName, "Answer:", !!answer, "IsHost:", isHost, "StoredRoom:", storedRoom);
+    if (!isHost && !storedRoom && answer) {
       console.warn("[DEBUG_LOG] Guest in PlayerNamePage with answer parameter! LocalStorage might be empty.");
     }
 
     // Falls ein answer-Code vorhanden ist und der User bereits Host eines Raums ist,
     // leiten wir ihn direkt zur Raum-Erstellungs-Seite zurück, damit der Code dort verarbeitet wird.
-    if (answer && isHost && (name || (storedName && storedName !== 'undefined'))) {
+    if (answer && (isHost || storedRoom) && (name || (storedName && storedName !== 'undefined'))) {
       console.log("[DEBUG_LOG] Host hat Antwort-Code gescannt. Leite zurück zum Raum...");
       this.router.navigate(['/new-game'], {queryParams: {answer}, queryParamsHandling: 'merge'});
       return;
