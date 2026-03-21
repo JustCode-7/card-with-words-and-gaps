@@ -83,7 +83,8 @@ export class RoomCreateComponent implements OnInit {
     }
 
     this.route.queryParams.subscribe(params => {
-      const answer = params['answer'];
+      // Parameter können vor oder nach dem Hash stehen
+      const answer = params['answer'] || this.getQueryParamFromUrl('answer');
       if (answer) {
         console.warn("[DEBUG_LOG] WebRTC: Answer parameter detected in URL");
 
@@ -232,6 +233,15 @@ export class RoomCreateComponent implements OnInit {
       }
     } catch (e) {
       console.error("[DEBUG_LOG] WebRTC: Error decoding offer", e);
+    }
+  }
+
+  private getQueryParamFromUrl(name: string): string | null {
+    try {
+      const url = new URL(window.location.href);
+      return url.searchParams.get(name);
+    } catch (e) {
+      return null;
     }
   }
 

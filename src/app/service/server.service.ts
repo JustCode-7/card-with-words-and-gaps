@@ -209,6 +209,8 @@ export class ServerService {
         } catch (e) {
           console.error("[SERVER] Failed to restore games from localStorage", e);
         }
+      } else {
+        console.warn(`[SERVER] No games found in p2p_saved_games! Host: ${isHost}, Room: ${roomId}. LocalStorage keys: ${Object.keys(localStorage).join(', ')}`);
       }
       // Raum-Zustand ebenfalls herstellen
       if (!this.rooms.has(roomId)) {

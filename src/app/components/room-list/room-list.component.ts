@@ -66,7 +66,8 @@ export class RoomListComponent implements OnInit {
 
     // Check for offer in URL
     this.route.queryParams.subscribe(params => {
-      let offer = params['offer'];
+      // Parameter können vor oder nach dem Hash stehen
+      let offer = params['offer'] || this.getQueryParamFromUrl('offer');
 
       // Falls der Browser den Offer-Code bereits URL-dekodiert hat,
       // müssen wir sicherstellen, dass wir ihn so verarbeiten, wie LZString es erwartet.
@@ -139,7 +140,9 @@ export class RoomListComponent implements OnInit {
       const baseUrl = url.origin + url.pathname;
       // Der Link sollte generisch sein, damit der Host ihn überall verarbeiten kann,
       // am besten über die Root-Route, die dann intelligent weiterleitet.
-      const answerLink = `${baseUrl}#/?answer=${encodeURIComponent(answer)}`;
+      // Wir setzen den Parameter VOR den Hash, falls mobile Browser das besser handhaben,
+      // ODER wir bleiben bei Angular Standard. Testweise nutzen wir eine robustere Form.
+      const answerLink = `${baseUrl}?answer=${encodeURIComponent(answer)}#/`;
       this.answerLink.set(answerLink);
 
       const qr = await this.webrtcService.generateQRCode(answerLink);
@@ -179,5 +182,14 @@ export class RoomListComponent implements OnInit {
       return this.webrtcService.individualStatus.get(id)!;
     }
     return this.webrtcService.connectionStatus;
+  }
+
+  private getQueryParamFromUrl(name: string): string | null {
+    try {
+      const url = new URL(window.location.href);
+      return url.searchParams.get(name);
+    } catch (e) {
+      return null;
+    }
   }
 }

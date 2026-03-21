@@ -26,7 +26,8 @@ export class EntryPageComponent implements OnInit {
 
   ngOnInit(): void {
     const player = this.playerService.getPlayer();
-    const answer = this.route.snapshot.queryParams['answer'];
+    // Parameter können vor oder nach dem Hash stehen
+    const answer = this.route.snapshot.queryParams['answer'] || this.getQueryParamFromUrl('answer');
 
     // Host-Erkennung über localStorage (robust gegen Reloads)
     const isHost = localStorage.getItem('isHost') === 'true' || this.socketService.isHost.value || !!this.socketService.getP2PRoomId();
@@ -51,5 +52,14 @@ export class EntryPageComponent implements OnInit {
     // Wenn der User Host eines aktiven Raums ist, aber kein Antwort-Code vorliegt,
     // sollte er evtl. auch direkt zur Raumview? Das lassen wir vorerst offen, da er evtl.
     // bewusst auf die Startseite wollte. Aber für den Fix des Scans ist der obige Block entscheidend.
+  }
+
+  private getQueryParamFromUrl(name: string): string | null {
+    try {
+      const url = new URL(window.location.href);
+      return url.searchParams.get(name);
+    } catch (e) {
+      return null;
+    }
   }
 }

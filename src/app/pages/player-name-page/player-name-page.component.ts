@@ -36,11 +36,15 @@ export class PlayerNamePage implements OnInit {
     this.form.patchValue({name});
 
     const socketService = inject(SocketService);
-    const answer = this.route.snapshot.queryParams['answer'];
+    // Parameter können vor oder nach dem Hash stehen
+    const answer = this.route.snapshot.queryParams['answer'] || this.getQueryParamFromUrl('answer');
     const storedName = localStorage.getItem('playerName');
     const isHost = localStorage.getItem('isHost') === 'true' || socketService.isHost.value || !!socketService.getP2PRoomId();
 
     console.log("[DEBUG_LOG] PlayerNamePage ngOnInit. Name:", name, "Stored:", storedName, "Answer:", !!answer, "IsHost:", isHost);
+    if (!isHost && answer) {
+      console.warn("[DEBUG_LOG] Guest in PlayerNamePage with answer parameter! LocalStorage might be empty.");
+    }
 
     // Falls ein answer-Code vorhanden ist und der User bereits Host eines Raums ist,
     // leiten wir ihn direkt zur Raum-Erstellungs-Seite zurück, damit der Code dort verarbeitet wird.
@@ -75,6 +79,15 @@ export class PlayerNamePage implements OnInit {
     } else {
       // Wenn wir einen Answer-Code haben, nehmen wir diesen mit zur Startseite
       this.router.navigate(['/'], {queryParams: {answer}, queryParamsHandling: 'merge'});
+    }
+  }
+
+  private getQueryParamFromUrl(name: string): string | null {
+    try {
+      const url = new URL(window.location.href);
+      return url.searchParams.get(name);
+    } catch (e) {
+      return null;
     }
   }
 }
