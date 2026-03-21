@@ -29,32 +29,22 @@ export class EntryPageComponent implements OnInit {
     // Parameter können vor oder nach dem Hash stehen
     const answer = this.route.snapshot.queryParams['answer'] || this.getQueryParamFromUrl('answer');
 
-    // Host-Erkennung über localStorage (robust gegen Reloads)
-    const storedIsHost = localStorage.getItem('isHost') === 'true';
-    const storedRoom = localStorage.getItem('currentP2PRoomId');
-    const isHost = storedIsHost || this.socketService.isHost() || !!this.socketService.getP2PRoomId();
+    // Host-Erkennung über SocketService (Signal ist bereits mit localStorage initialisiert)
+    const isHost = this.socketService.isHost();
+    const storedRoom = this.socketService.getP2PRoomId();
 
     console.log("[DEBUG_LOG] EntryPage ngOnInit. Player:", player.name, "Answer present:", !!answer, "IsHost:", isHost, "StoredRoom:", storedRoom);
 
-    // Falls ein answer-Parameter vorhanden ist, erzwingen wir die Host-Wiederherstellung,
-    // falls wir im localStorage Daten finden.
-    if (answer && !isHost && storedRoom) {
-      console.warn("[DEBUG_LOG] EntryPage: Answer parameter detected but isHost is false. Restoring host status from localStorage.");
-      this.socketService.isHost.set(true);
-      this.socketService.setP2PRoomId(storedRoom);
-    }
-
     // Falls ein Name fehlt, zur Namenseingabe leiten, dabei Parameter behalten
-    // Wir prüfen explizit auf den String 'undefined' oder leere Werte
     if (!player.name || player.name === 'undefined' || player.name.trim() === '') {
       console.log("[DEBUG_LOG] Name missing. Redirecting to /set-name");
       this.router.navigate(['/set-name'], {queryParams: {answer}, queryParamsHandling: 'merge'});
       return;
     }
 
-    // Wenn der User bereits Host eines aktiven Raums ist (oder war und wir ihn wiederherstellen)
-    // und einen Antwort-Code scannt, leiten wir ihn direkt zu seiner Raum-Erstellungs-Seite zurück.
-    if (answer && (isHost || storedRoom || this.socketService.isHost())) {
+    // Wenn der User bereits Host eines aktiven Raums ist und einen Antwort-Code scannt,
+    // leiten wir ihn direkt zu seiner Raum-Erstellungs-Seite zurück.
+    if (answer && (isHost || storedRoom)) {
       console.log("[DEBUG_LOG] Host auf EntryPage mit Antwort-Code. Leite zu /new-game...");
       this.router.navigate(['/new-game'], {queryParams: {answer}, queryParamsHandling: 'merge'});
       return;

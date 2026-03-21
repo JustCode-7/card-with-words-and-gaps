@@ -38,28 +38,14 @@ export class PlayerNamePage implements OnInit {
     const socketService = inject(SocketService);
     // Parameter können vor oder nach dem Hash stehen
     const answer = this.route.snapshot.queryParams['answer'] || this.getQueryParamFromUrl('answer');
-    const storedName = localStorage.getItem('playerName');
-    const storedIsHost = localStorage.getItem('isHost') === 'true';
-    const storedRoom = localStorage.getItem('currentP2PRoomId');
-    const isHost = storedIsHost || socketService.isHost() || !!socketService.getP2PRoomId();
+    const isHost = socketService.isHost();
+    const storedRoom = socketService.getP2PRoomId();
 
-    console.log("[DEBUG_LOG] PlayerNamePage ngOnInit. Name:", name, "StoredName:", storedName, "Answer:", !!answer, "IsHost:", isHost, "StoredRoom:", storedRoom);
-
-    // Falls ein answer-Parameter vorhanden ist, erzwingen wir die Host-Wiederherstellung,
-    // falls wir im localStorage Daten finden.
-    if (answer && !isHost && storedRoom) {
-      console.warn("[DEBUG_LOG] PlayerNamePage: Answer parameter detected but isHost is false. Restoring host status.");
-      socketService.isHost.set(true);
-      socketService.setP2PRoomId(storedRoom);
-    }
-    if (!isHost && !storedRoom && answer) {
-      console.warn("[DEBUG_LOG] Guest in PlayerNamePage with answer parameter! LocalStorage might be empty.");
-    }
+    console.log("[DEBUG_LOG] PlayerNamePage ngOnInit. Name:", name, "Answer:", !!answer, "IsHost:", isHost, "StoredRoom:", storedRoom);
 
     // Falls ein answer-Code vorhanden ist und der User bereits Host eines Raums ist,
     // leiten wir ihn direkt zur Raum-Erstellungs-Seite zurück, damit der Code dort verarbeitet wird.
-    const effectiveName = name || (storedName && storedName !== 'undefined' && storedName !== '');
-    if (answer && (isHost || storedRoom || socketService.isHost()) && effectiveName) {
+    if (answer && (isHost || storedRoom) && name && name !== 'undefined' && name.trim() !== '') {
       console.log("[DEBUG_LOG] Host hat Antwort-Code gescannt. Leite zurück zum Raum...");
       this.router.navigate(['/new-game'], {queryParams: {answer}, queryParamsHandling: 'merge'});
       return;
@@ -90,9 +76,8 @@ export class PlayerNamePage implements OnInit {
     if (offer) {
       this.router.navigate(['/join-game'], {queryParams: {offer}});
     } else if (answer) {
-      // Wenn wir einen Answer-Code haben und Host sind (via localStorage), direkt zum Raum
-      const isHost = localStorage.getItem('isHost') === 'true';
-      if (isHost) {
+      // Wenn wir einen Answer-Code haben und Host sind (via SocketService), direkt zum Raum
+      if (inject(SocketService).isHost()) {
         this.router.navigate(['/new-game'], {queryParams: {answer}, queryParamsHandling: 'merge'});
       } else {
         this.router.navigate(['/'], {queryParams: {answer}, queryParamsHandling: 'merge'});

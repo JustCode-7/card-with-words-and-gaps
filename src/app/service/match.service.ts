@@ -38,7 +38,7 @@ export class MatchService {
       return;
     }
 
-    const isReload = !!localStorage.getItem('currentP2PRoomId');
+    const isReload = !!this.socketService.getP2PRoomId();
     console.log(`[MATCH] initMatch for room ${roomId}. Reload: ${isReload}`);
 
     // Set player name in player service for identification
@@ -301,9 +301,7 @@ export class MatchService {
 
     // Select a new card using a deterministic method (based on timestamp)
     // This ensures all players will get the same card
-    const timestamp = Date.now();
-    const cardNumber = timestamp % catloardCardset.length;
-    this.currentCardNr = cardNumber;
+    this.currentCardNr = Date.now() % catloardCardset.length;
 
     // Make sure we have a valid card
     if (catloardCardset[this.currentCardNr] === undefined) {

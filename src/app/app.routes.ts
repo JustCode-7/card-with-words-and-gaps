@@ -9,8 +9,8 @@ import {EntryPageComponent} from "./pages/entry-page/entry-page.component";
 import {NewGamePage} from "./pages/new-game-page/new-game-page.component";
 import {CardEditorPageComponent} from "./pages/card-editor-page/card-editor-page.component";
 import {CardEditorEditComponent} from "./components/card-editor-edit/card-editor-edit.component";
-import {CatlordGuard} from "./guards/catlord.guard";
-import {RoomGuard} from "./guards/room.guard";
+import {catlordGuard} from "./guards/catlord.guard";
+import {roomGuard} from "./guards/room.guard";
 
 export const routes: Routes = [
   {path: '', component: EntryPageComponent, pathMatch: 'full'},
@@ -21,10 +21,10 @@ export const routes: Routes = [
   {
     path: 'game/:roomname/:playername/catlord',
     component: CatLordPage,
-    canActivate: [RoomGuard, CatlordGuard],
+    canActivate: [roomGuard, catlordGuard],
     pathMatch: 'full'
   },
-  {path: 'game/:roomname/:playername/player', component: PlayerPage, canActivate: [RoomGuard], pathMatch: 'full'},
+  {path: 'game/:roomname/:playername/player', component: PlayerPage, canActivate: [roomGuard], pathMatch: 'full'},
   {path: 'game/:roomname/:playername', redirectTo: 'game/:roomname/:playername/player', pathMatch: 'full'},
   {path: 'answer', component: NewGamePage, resolve: {roomState: roomStateResolver}},
   {path: 'edit-cards', component: CardEditorPageComponent},

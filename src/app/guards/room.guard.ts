@@ -1,42 +1,37 @@
-import {inject, Injectable} from '@angular/core';
-import {ActivatedRouteSnapshot, CanActivate, Router} from '@angular/router';
+import {inject} from '@angular/core';
+import {ActivatedRouteSnapshot, CanActivateFn, Router} from '@angular/router';
 import {MatchService} from '../service/match.service';
-import {map, Observable, take} from 'rxjs';
+import {map, take} from 'rxjs';
 import {toObservable} from "@angular/core/rxjs-interop";
 
-@Injectable({
-  providedIn: 'root'
-})
-export class RoomGuard implements CanActivate {
-  private matchService = inject(MatchService);
-  private router = inject(Router);
+export const roomGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
+  const matchService = inject(MatchService);
+  const router = inject(Router);
 
-  canActivate(route: ActivatedRouteSnapshot): Observable<boolean> {
-    const roomname = route.params['roomname'];
-    const playername = route.params['playername'];
+  const roomname = route.params['roomname'];
+  const playername = route.params['playername'];
 
-    return toObservable(this.matchService.game).pipe(
-      take(1),
-      map(game => {
-        // If we are the host and the room is the one we are creating, let us through
-        if (this.matchService.socketService.isHost() && !game.gameHash) {
-          return true;
-        }
-
-        // Check if the room exists and player is part of the game
-        if (!game.gameHash || game.gameHash !== roomname) {
-          this.router.navigate(['/join-game']);
-          return false;
-        }
-
-        const playerExists = game.spieler.some(player => player.name === playername);
-        if (!playerExists) {
-          this.router.navigate(['/join-game']);
-          return false;
-        }
-
+  return toObservable(matchService.game).pipe(
+    take(1),
+    map(game => {
+      // If we are the host and the room is the one we are creating, let us through
+      if (matchService.socketService.isHost() && !game.gameHash) {
         return true;
-      })
-    );
-  }
-}
+      }
+
+      // Check if the room exists and player is part of the game
+      if (!game.gameHash || game.gameHash !== roomname) {
+        router.navigate(['/join-game']);
+        return false;
+      }
+
+      const playerExists = game.spieler.some(player => player.name === playername);
+      if (!playerExists) {
+        router.navigate(['/join-game']);
+        return false;
+      }
+
+      return true;
+    })
+  );
+};

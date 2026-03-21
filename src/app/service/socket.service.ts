@@ -17,7 +17,7 @@ import {toObservable} from "@angular/core/rxjs-interop";
 export class SocketService {
 
   // Track if this client is hosting a server
-  public isHost = signal<boolean>(false);
+  public isHost = signal<boolean>(localStorage.getItem('isHost') === 'true');
   public p2pGameUpdate$ = new Subject<Game>();
   // P2P UI-Zustände (für Persistenz bei Routen-Wechseln)
   public sessionCode = signal('');
@@ -30,7 +30,7 @@ export class SocketService {
   private webrtcService = inject(WebRTCService);
   private router = inject(Router);
   // Zwischenspeicher für den aktuellen P2P-Raumnamen (um Circular Dependency mit MatchService zu vermeiden)
-  private currentP2PRoomId: string | null = null;
+  private currentP2PRoomId: string | null = localStorage.getItem('currentP2PRoomId');
   // Track the current server URL
   private serverUrl = new BehaviorSubject<string>(environment.socketUrl);
 
@@ -68,6 +68,7 @@ export class SocketService {
     // Listen for server status changes
     toObservable(this.serverService.isServerRunning).subscribe((isRunning: boolean) => {
       this.isHost.set(isRunning);
+      localStorage.setItem('isHost', isRunning.toString());
       if (isRunning) {
         // Wenn der Server läuft, stellen wir sicher, dass der P2P-Raumname gesetzt ist
         const storedRoomId = localStorage.getItem('currentP2PRoomId');
@@ -81,11 +82,10 @@ export class SocketService {
     });
 
     // Check for persisted host status and restore if needed (e.g. after QR scan reload)
-    const wasHost = localStorage.getItem('isHost') === 'true';
-    const persistedRoom = localStorage.getItem('currentP2PRoomId');
+    const wasHost = this.isHost();
+    const persistedRoom = this.currentP2PRoomId;
     if (wasHost && persistedRoom) {
       console.log(`[DEBUG_LOG] SocketService: Restoring host status for room ${persistedRoom}`);
-      this.isHost.set(true);
       // createRoom(persistedRoom) wird durch den Resolver oder initMatch getriggert
     }
   }
@@ -261,20 +261,11 @@ export class SocketService {
     });
   }
 
-  private handleBeforeUnload(event: BeforeUnloadEvent): void {
+  private handleBeforeUnload(): void {
     // Falls wir der Host sind, speichern wir den State noch einmal sicherheitshalber
     if (this.isHost()) {
       console.log('Host is leaving or reloading, ensuring state is saved...');
       this.serverService.saveState();
-
-      // Nur warnen, wenn wir auf GitHub Pages sind und P2P-Verbindungen aktiv sein könnten,
-      // die bei einem harten Reload verloren gehen würden.
-      // Aber da wir nun Auto-Reconnect Logik haben, ist das weniger kritisch.
-      if (window.location.origin.includes('github.io')) {
-        // event.preventDefault();
-        // event.returnValue = 'Bei einem Reload der Seite wird die P2P-Verbindung unterbrochen.';
-        // return event.returnValue;
-      }
     }
   }
 
@@ -287,7 +278,7 @@ export class SocketService {
     });
 
     // Set up other listeners
-    this.socket.on('game', (game: Game) => {
+    this.socket.on('game', () => {
       // Game updates will be handled by subscribers to getGame()
     });
   }

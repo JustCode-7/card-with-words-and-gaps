@@ -33,14 +33,14 @@ export class ServerService {
   }
 
   public startServer(roomId: string): void {
-    localStorage.setItem('isHost', 'true');
-    localStorage.setItem('currentP2PRoomId', roomId);
-    this.saveState(); // Sicherstellen, dass der State sofort gespeichert wird
-
     if (this.isServerRunning()) {
       console.log('Server is already running');
       return;
     }
+
+    localStorage.setItem('isHost', 'true');
+    localStorage.setItem('currentP2PRoomId', roomId);
+    this.saveState(); // Sicherstellen, dass der State sofort gespeichert wird
 
     try {
       // Auf GitHub Pages (window.location.origin) oder Localhost (für P2P-Tests) läuft kein Socket-Server.
@@ -70,14 +70,14 @@ export class ServerService {
   }
 
   public stopServer(): void {
-    localStorage.removeItem('isHost');
-    localStorage.removeItem('currentP2PRoomId');
-    localStorage.removeItem('p2p_saved_games');
-
     if (!this.isServerRunning()) {
       console.log('Server is not running');
       return;
     }
+
+    localStorage.removeItem('isHost');
+    localStorage.removeItem('currentP2PRoomId');
+    localStorage.removeItem('p2p_saved_games');
 
     try {
       // Vor dem Schließen alle P2P-Gäste informieren
@@ -201,6 +201,18 @@ export class ServerService {
     localStorage.setItem('p2p_saved_games', JSON.stringify(gamesObj));
   }
 
+  public getRoomIds(): string[] {
+    return [...this.rooms.keys()];
+  }
+
+  public getRoomById(roomId: string): Room {
+    const room = this.rooms.get(roomId);
+    if (room === undefined) {
+      throw new Error(`room '${roomId}' not found`);
+    }
+    return room;
+  }
+
   private restoreState(): void {
     const isHost = localStorage.getItem('isHost') === 'true';
     const roomId = localStorage.getItem('currentP2PRoomId');
@@ -319,21 +331,12 @@ export class ServerService {
       this.rooms.set(roomId, updatedRoom);
     }
 
+    // Bei Änderungen am Raum-Status (Spielerliste) speichern wir den Server-Status
+    this.saveState();
+
     // Emit join-room event to the server
     if (this.socket && !window.location.origin.includes('github.io')) {
       this.socket.emit('join-room', {roomId, player});
     }
-  }
-
-  private getRoomIds(): string[] {
-    return [...this.rooms.keys()];
-  }
-
-  private getRoomById(roomId: string): Room {
-    const room = this.rooms.get(roomId);
-    if (room === undefined) {
-      throw new Error(`room '${roomId}' not found`);
-    }
-    return room;
   }
 }
