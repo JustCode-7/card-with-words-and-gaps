@@ -10,12 +10,14 @@ import {SocketEvent} from "../util/client-enums";
 import {PlayerService} from "./player.service";
 import {toSignal} from "@angular/core/rxjs-interop";
 import {ServerService} from "./server.service";
+import {CardEditorService} from "./card-editor.service";
 
 @Injectable({providedIn: 'root'})
 export class MatchService {
   spielerKartenService: SpielerKartenService = inject(SpielerKartenService);
   socketService: SocketService = inject(SocketService);
   serverService: ServerService = inject(ServerService);
+  cardEditorService: CardEditorService = inject(CardEditorService);
   game: BehaviorSubject<Game> = new BehaviorSubject<Game>(new Game([], [], [], "", "", 'WAITING_FOR_ANSWERS', false, false, false));
 
   // Game as signal for better reactivity in components
@@ -27,6 +29,11 @@ export class MatchService {
   spielerListe: BehaviorSubject<Spieler[]> = new BehaviorSubject([new Spieler("dummy-id", "dummy", 1, [], [], false)]);
   playerService = inject(PlayerService);
   private currentCardNr: number = 1
+
+  constructor() {
+    this.listenOnEvents();
+    this.listenToCardUpdates();
+  }
 
   initMatch(roomId: string) {
     // Check if we are already in this room to avoid infinite loops or re-initialization
@@ -71,8 +78,8 @@ export class MatchService {
         const currentGameState = this.game.value;
         if (!currentGameState.gameHash || currentGameState.spieler.length <= 1) {
           const newGame = new Game(
-            [...cardSet],
-            [...answerSet],
+            [...this.cardEditorService.gaps()],
+            [...this.cardEditorService.answers()],
             [new Spieler(player.id, playerName, 0, [], [], true)],
             roomId,
             "",
@@ -148,7 +155,6 @@ export class MatchService {
     });
   }
 
-
   public updateGameFromServer(game: Game) {
     if (game) {
       console.log("MatchService: updating game from server/P2P", game);
@@ -166,7 +172,6 @@ export class MatchService {
     this.spielerKartenService.verteileKarten(spielerArr, answerSet);
     return spielerArr;
   }
-
 
   fillSpielerCardStack() {
     // randomly fill answer cards for every player to 10
@@ -448,6 +453,30 @@ export class MatchService {
     console.log("[DEBUG_LOG] Host: Broadcasting started game state to all players...");
     this.game.next({...currentGame});
     this.socketService.sendUpdateGame('updateGame', currentGame);
+  }
+
+  private listenToCardUpdates() {
+    this.cardEditorService.cardsUpdated$.subscribe(() => {
+      if (this.socketService.isHost.value) {
+        const currentGame = this.game.value;
+        if (currentGame && currentGame.gameHash) {
+          console.log("[MATCH] Cards updated in editor, updating active game sets.");
+
+          // Wir aktualisieren die Sets, behalten aber bereits im Spiel befindliche Karten bei,
+          // falls wir eine feinere Logik wollten. Hier ersetzen wir einfach die Vorräte.
+          currentGame.cardset = [...this.cardEditorService.gaps()];
+          currentGame.answerset = [...this.cardEditorService.answers()];
+
+          // Wir müssen sicherstellen, dass bereits verteilte Karten nicht doppelt vorkommen
+          // oder dass wir nicht Karten entfernen, die gerade gebraucht werden.
+          // Da cardset/answerset im Game-Objekt als "Nachschub" dienen, ist das Ersetzen
+          // der einfachste Weg.
+
+          this.game.next(currentGame);
+          this.socketService.sendUpdateGame('updateGame', currentGame);
+        }
+      }
+    });
   }
 
   private buildFullText(gapText: string, answers: string[]): string {
