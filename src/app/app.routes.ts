@@ -11,7 +11,7 @@ import {CatlordGuard} from "./guards/catlord.guard";
 import {RoomGuard} from "./guards/room.guard";
 
 export const routes: Routes = [
-  {path: '', component: EntryPageComponent},
+  {path: '', component: EntryPageComponent, pathMatch: 'full'},
   {path: 'set-name', component: PlayerNamePage},
   {path: 'new-game', component: NewGamePage, resolve: {roomState: roomStateResolver}},
   {path: 'join-game', component: RoomOverviewPage, resolve: {roomList: roomListResolver}, pathMatch: 'full'},
@@ -24,5 +24,6 @@ export const routes: Routes = [
   },
   {path: 'game/:roomname/:playername/player', component: PlayerPage, canActivate: [RoomGuard], pathMatch: 'full'},
   {path: 'game/:roomname/:playername', redirectTo: 'game/:roomname/:playername/player', pathMatch: 'full'},
+  {path: 'answer', component: NewGamePage, resolve: {roomState: roomStateResolver}},
   {path: '**', redirectTo: ''},
 ];

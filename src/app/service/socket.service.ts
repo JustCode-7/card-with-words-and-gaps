@@ -261,22 +261,19 @@ export class SocketService {
   }
 
   private handleBeforeUnload(event: BeforeUnloadEvent): void {
-    // Warnung für alle Spieler auf GitHub Pages (da P2P bei Reload abbricht)
-    if (window.location.origin.includes('github.io')) {
-      event.preventDefault();
-      event.returnValue = 'Bei einem Reload der Seite wird die P2P-Verbindung unterbrochen und das Spiel für dich beendet.';
-      return event.returnValue;
-    }
-
-    // If we're the host, stop the server when the window is closed
+    // Falls wir der Host sind, speichern wir den State noch einmal sicherheitshalber
     if (this.isHost.value) {
-      console.log('Host is leaving, stopping server...');
-      this.serverService.stopServer();
+      console.log('Host is leaving or reloading, ensuring state is saved...');
+      this.serverService.saveState();
 
-      // Show a confirmation dialog to warn the user
-      event.preventDefault();
-      event.returnValue = 'Als Host wird der Server beendet, wenn du die Seite verlässt. Alle Spieler werden getrennt.';
-      return event.returnValue;
+      // Nur warnen, wenn wir auf GitHub Pages sind und P2P-Verbindungen aktiv sein könnten,
+      // die bei einem harten Reload verloren gehen würden.
+      // Aber da wir nun Auto-Reconnect Logik haben, ist das weniger kritisch.
+      if (window.location.origin.includes('github.io')) {
+        // event.preventDefault();
+        // event.returnValue = 'Bei einem Reload der Seite wird die P2P-Verbindung unterbrochen.';
+        // return event.returnValue;
+      }
     }
   }
 

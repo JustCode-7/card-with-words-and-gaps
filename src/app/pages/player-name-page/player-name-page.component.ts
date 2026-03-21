@@ -58,7 +58,8 @@ export class PlayerNamePage implements OnInit {
 
     // Falls ein answer-Code vorhanden ist und der User bereits Host eines Raums ist,
     // leiten wir ihn direkt zur Raum-Erstellungs-Seite zurück, damit der Code dort verarbeitet wird.
-    if (answer && (isHost || storedRoom || socketService.isHost.value) && (name || (storedName && storedName !== 'undefined'))) {
+    const effectiveName = name || (storedName && storedName !== 'undefined' && storedName !== '');
+    if (answer && (isHost || storedRoom || socketService.isHost.value) && effectiveName) {
       console.log("[DEBUG_LOG] Host hat Antwort-Code gescannt. Leite zurück zum Raum...");
       this.router.navigate(['/new-game'], {queryParams: {answer}, queryParamsHandling: 'merge'});
       return;
@@ -81,14 +82,23 @@ export class PlayerNamePage implements OnInit {
     this.playerService.setName(name);
 
     // Falls ein Offer-Code vorhanden war, leiten wir direkt zurück zum Join
-    const offer = this.route.snapshot.queryParams['offer'];
-    const answer = this.route.snapshot.queryParams['answer'];
+    const offer = this.route.snapshot.queryParams['offer'] || this.getQueryParamFromUrl('offer');
+    const answer = this.route.snapshot.queryParams['answer'] || this.getQueryParamFromUrl('answer');
+
+    console.log("[DEBUG_LOG] PlayerNamePage: Name set to", name, "Answer present:", !!answer, "Offer present:", !!offer);
 
     if (offer) {
       this.router.navigate(['/join-game'], {queryParams: {offer}});
+    } else if (answer) {
+      // Wenn wir einen Answer-Code haben und Host sind (via localStorage), direkt zum Raum
+      const isHost = localStorage.getItem('isHost') === 'true';
+      if (isHost) {
+        this.router.navigate(['/new-game'], {queryParams: {answer}, queryParamsHandling: 'merge'});
+      } else {
+        this.router.navigate(['/'], {queryParams: {answer}, queryParamsHandling: 'merge'});
+      }
     } else {
-      // Wenn wir einen Answer-Code haben, nehmen wir diesen mit zur Startseite
-      this.router.navigate(['/'], {queryParams: {answer}, queryParamsHandling: 'merge'});
+      this.router.navigate(['/']);
     }
   }
 

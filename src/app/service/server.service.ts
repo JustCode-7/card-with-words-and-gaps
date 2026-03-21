@@ -36,6 +36,7 @@ export class ServerService {
   public startServer(roomId: string): void {
     localStorage.setItem('isHost', 'true');
     localStorage.setItem('currentP2PRoomId', roomId);
+    this.saveState(); // Sicherstellen, dass der State sofort gespeichert wird
 
     if (this.isServerRunning.value) {
       console.log('Server is already running');
@@ -193,6 +194,14 @@ export class ServerService {
     }
   }
 
+  public saveState(): void {
+    const gamesObj: { [key: string]: any } = {};
+    this.games.forEach((value, key) => {
+      gamesObj[key] = value;
+    });
+    localStorage.setItem('p2p_saved_games', JSON.stringify(gamesObj));
+  }
+
   private restoreState(): void {
     const isHost = localStorage.getItem('isHost') === 'true';
     const roomId = localStorage.getItem('currentP2PRoomId');
@@ -233,14 +242,6 @@ export class ServerService {
 
       this.isServerRunning.next(true);
     }
-  }
-
-  private saveState(): void {
-    const gamesObj: { [key: string]: any } = {};
-    this.games.forEach((value, key) => {
-      gamesObj[key] = value;
-    });
-    localStorage.setItem('p2p_saved_games', JSON.stringify(gamesObj));
   }
 
   private setupSocketEvents(): void {

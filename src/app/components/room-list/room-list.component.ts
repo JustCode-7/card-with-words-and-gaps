@@ -136,9 +136,9 @@ export class RoomListComponent implements OnInit {
       this.answerCode.set(answer);
 
       // Wir nutzen eine robuste URL-Struktur für mobile Browser.
-      // Der answer-Parameter wird vor das Hash-Fragment gesetzt.
+      // Der answer-Parameter wird im Hash-Fragment gesetzt, damit Angular ihn direkt verarbeiten kann.
       const baseUrl = window.location.origin + window.location.pathname;
-      const answerLink = `${baseUrl}?answer=${encodeURIComponent(answer)}#/`;
+      const answerLink = `${baseUrl}#/answer?answer=${encodeURIComponent(answer)}`;
       this.answerLink.set(answerLink);
 
       const qr = await this.webrtcService.generateQRCode(answerLink);

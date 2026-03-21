@@ -45,7 +45,8 @@ export class EntryPageComponent implements OnInit {
     }
 
     // Falls ein Name fehlt, zur Namenseingabe leiten, dabei Parameter behalten
-    if (!player.name || player.name === 'undefined') {
+    // Wir prüfen explizit auf den String 'undefined' oder leere Werte
+    if (!player.name || player.name === 'undefined' || player.name.trim() === '') {
       console.log("[DEBUG_LOG] Name missing. Redirecting to /set-name");
       this.router.navigate(['/set-name'], {queryParams: {answer}, queryParamsHandling: 'merge'});
       return;
@@ -58,10 +59,6 @@ export class EntryPageComponent implements OnInit {
       this.router.navigate(['/new-game'], {queryParams: {answer}, queryParamsHandling: 'merge'});
       return;
     }
-
-    // Wenn der User Host eines aktiven Raums ist, aber kein Antwort-Code vorliegt,
-    // sollte er evtl. auch direkt zur Raumview? Das lassen wir vorerst offen, da er evtl.
-    // bewusst auf die Startseite wollte. Aber für den Fix des Scans ist der obige Block entscheidend.
   }
 
   private getQueryParamFromUrl(name: string): string | null {
