@@ -76,13 +76,11 @@ export class RoomCreateComponent implements OnInit {
         }
         this.roomIdControl.setValue(room);
 
-        // Spielerliste wieder abonnieren
-        const matchSub = this.matchService.game.subscribe(game => {
-          if (game && game.spieler) {
-            this.spielerListe.set(game.spieler);
-          }
-        });
-        this.subscriptions.push(matchSub);
+        // Spielerliste via gameSignal anstatt manuellem Subscribe
+        // Aber für Initialisierung können wir ein einmaliges Update erzwingen
+        if (this.matchService.gameSignal().spieler) {
+          this.spielerListe.set(this.matchService.gameSignal().spieler);
+        }
 
         // Falls noch kein Offer da ist, einen erzeugen
         if (!this.sessionCode()) {

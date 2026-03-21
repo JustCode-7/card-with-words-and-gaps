@@ -55,7 +55,7 @@
       <div class="d-flex flex-column">
         <h4 class="h6 font-weight-bold mt-2">Verbundene Spieler in der Lobby:</h4>
         <mat-chip-listbox aria-label="Player selection" class="mb-3">
-          @for (p of spielerListe(); track p.id) {
+          @for (p of matchService.gameSignal().spieler; track p.id) {
             <mat-chip-option [selectable]="false" color="accent" selected>
               <mat-icon
                 [style.color]="(getIndividualStatus(p.connectionId) | async) === 'connected' ? '#4caf50' : '#f44336'"
@@ -71,34 +71,34 @@
         </mat-chip-listbox>
 
         <div #statusContainer
-             [class.bg-danger-subtle]="(getConnectionStatus() | async) === 'disconnected' || spielerListe().length < 2"
-             [class.bg-success-subtle]="(getConnectionStatus() | async) === 'connected' && spielerListe().length >= 2"
-             [class.bg-warning-subtle]="(getConnectionStatus() | async) === 'connecting' || ((getConnectionStatus() | async) === 'connected' && spielerListe().length < 2)"
+             [class.bg-danger-subtle]="(getConnectionStatus() | async) === 'disconnected' || matchService.gameSignal().spieler.length < 2"
+             [class.bg-success-subtle]="(getConnectionStatus() | async) === 'connected' && matchService.gameSignal().spieler.length >= 2"
+             [class.bg-warning-subtle]="(getConnectionStatus() | async) === 'connecting' || ((getConnectionStatus() | async) === 'connected' && matchService.gameSignal().spieler.length < 2)"
              class="mt-2 text-center p-2 rounded small mb-4">
           Netzwerk-Status:
           <strong class="text-uppercase">
             {{
-              ((getConnectionStatus() | async) === 'connected' && spielerListe().length >= 2) ? 'connected (' + spielerListe().length + '/8)' :
-                ((getConnectionStatus() | async) === 'connected' && spielerListe().length < 2) ? 'waiting for players' :
+              ((getConnectionStatus() | async) === 'connected' && matchService.gameSignal().spieler.length >= 2) ? 'connected (' + matchService.gameSignal().spieler.length + '/8)' :
+                ((getConnectionStatus() | async) === 'connected' && matchService.gameSignal().spieler.length < 2) ? 'waiting for players' :
                   (getConnectionStatus() | async)
             }}
           </strong>
         </div>
-        <button (click)="startGame()" [disabled]="spielerListe().length < 2"
+        <button (click)="startGame()" [disabled]="matchService.gameSignal().spieler.length < 2"
                 class="w-100 p-2 mb-2"
                 color="accent"
                 mat-raised-button>
           <mat-icon>play_arrow</mat-icon>
           SPIEL ERSTELLEN
         </button>
-        @if (spielerListe().length < 2) {
+        @if (matchService.gameSignal().spieler.length < 2) {
           <p class="text-center small mt-2">Mindestens 1 Mitspieler erforderlich</p>
         }
       </div>
       <div class="d-flex flex-column">
         <div class="step-box mb-4">
           <h4 class="h6 font-weight-bold">Schritt 1 - Einladungs-Link teilen, scan mich
-            Spieler {{ spielerListe().length + 1 }}: </h4>
+            Spieler {{ matchService.gameSignal().spieler.length + 1 }}: </h4>
           <button (click)="generateNewOffer()" class="w-100 mb-3" color="warn" mat-raised-button>
             <mat-icon>refresh</mat-icon>
             Neuen Einladungscode generieren

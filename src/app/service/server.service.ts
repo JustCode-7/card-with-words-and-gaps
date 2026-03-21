@@ -303,14 +303,22 @@ export class ServerService {
       throw new Error(`room ${roomId} does not exist`);
     }
 
-    const updatedRoom = {
-      ...existingRoom,
-      players: [
-        ...existingRoom.players,
-        player,
-      ]
-    };
-    this.rooms.set(roomId, updatedRoom);
+    // Check if player already exists in the room
+    const playerExists = existingRoom.players.some(p => p.id === player.id);
+    if (playerExists) {
+      console.log(`[SERVER] Player ${player.name} (${player.id}) already in room ${roomId}. Updating player data.`);
+      const updatedPlayers = existingRoom.players.map(p => p.id === player.id ? player : p);
+      this.rooms.set(roomId, {...existingRoom, players: updatedPlayers});
+    } else {
+      const updatedRoom = {
+        ...existingRoom,
+        players: [
+          ...existingRoom.players,
+          player,
+        ]
+      };
+      this.rooms.set(roomId, updatedRoom);
+    }
 
     // Emit join-room event to the server
     if (this.socket && !window.location.origin.includes('github.io')) {

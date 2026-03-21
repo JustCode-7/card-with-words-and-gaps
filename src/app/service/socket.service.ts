@@ -335,8 +335,9 @@ export class SocketService {
       // Den lokalen MatchService des Hosts informieren
       const updatedGame = this.serverService.getGame(roomId);
       if (updatedGame) {
-        console.log(`[DEBUG_LOG] Host: game updated, now has ${updatedGame.spieler.length} players`);
-        // Force reference update to trigger signals/effects
+        console.log(`[DEBUG_LOG] Host: game updated after join, now has ${updatedGame.spieler.length} players`);
+        // Wir setzen das persistierte Spiel im MatchService via p2pGameUpdate$
+        // Das sorgt dafür, dass MatchService.gameSignal aktualisiert wird
         const gameCopy = JSON.parse(JSON.stringify(updatedGame));
         this.p2pGameUpdate$.next(gameCopy);
 

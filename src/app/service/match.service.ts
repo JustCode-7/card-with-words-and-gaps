@@ -48,19 +48,26 @@ export class MatchService {
 
     // If this client is the host AND no game exists yet, initialize a new game
     if (this.socketService.isHost.value) {
-      // Small delay to ensure server is ready to receive setGame
+      // Check immediately for persisted game to avoid unnecessary delays
+      const persistedGame = this.serverService.getGame(roomId);
+      if (persistedGame && persistedGame.spieler && persistedGame.spieler.length > 0) {
+        console.log(`[MATCH] Found persisted game in ServerService for room ${roomId}`, persistedGame);
+        this.game.next(persistedGame);
+        this.socketService.joinRoom(roomId);
+        return;
+      }
+
+      // Small delay to ensure server is ready to receive setGame if not found above
       setTimeout(() => {
-        // Check if we already have a game in the local ServerService (e.g. after reload)
-        const persistedGame = this.serverService.getGame(roomId);
-        if (persistedGame && persistedGame.spieler && persistedGame.spieler.length > 0) {
-          console.log(`[MATCH] Found persisted game in ServerService for room ${roomId}`, persistedGame);
-          this.game.next(persistedGame);
-          // Force the UI to update with the correct room ID and player list
+        // Re-check after delay
+        const recheckPersisted = this.serverService.getGame(roomId);
+        if (recheckPersisted && recheckPersisted.spieler && recheckPersisted.spieler.length > 0) {
+          console.log(`[MATCH] Found persisted game after delay for room ${roomId}`);
+          this.game.next(recheckPersisted);
           this.socketService.joinRoom(roomId);
           return;
         }
 
-        // Only create if we still don't have a valid game from server
         const currentGameState = this.game.value;
         if (!currentGameState.gameHash || currentGameState.spieler.length <= 1) {
           const newGame = new Game(
