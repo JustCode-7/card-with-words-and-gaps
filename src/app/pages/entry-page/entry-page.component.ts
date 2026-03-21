@@ -27,8 +27,9 @@ export class EntryPageComponent implements OnInit {
   ngOnInit(): void {
     const player = this.playerService.getPlayer();
     const answer = this.route.snapshot.queryParams['answer'];
+    const isHost = this.socketService.isHost.value || !!this.socketService.getP2PRoomId();
 
-    console.log("[DEBUG_LOG] EntryPage ngOnInit. Player:", player.name, "Answer present:", !!answer, "IsHost:", this.socketService.isHost.value);
+    console.log("[DEBUG_LOG] EntryPage ngOnInit. Player:", player.name, "Answer present:", !!answer, "IsHost:", isHost);
 
     // Falls ein Name fehlt, zur Namenseingabe leiten, dabei Parameter behalten
     if (!player.name || player.name === 'undefined') {
@@ -37,9 +38,9 @@ export class EntryPageComponent implements OnInit {
       return;
     }
 
-    // Wenn der User bereits Host eines aktiven Raums ist und einen Antwort-Code scannt,
-    // leiten wir ihn direkt zu seiner Raum-Erstellungs-Seite zurück.
-    if (answer && this.socketService.isHost.value) {
+    // Wenn der User bereits Host eines aktiven Raums ist (oder war und wir ihn wiederherstellen)
+    // und einen Antwort-Code scannt, leiten wir ihn direkt zu seiner Raum-Erstellungs-Seite zurück.
+    if (answer && isHost) {
       console.log("[DEBUG_LOG] Host auf EntryPage mit Antwort-Code. Leite zu /new-game...");
       this.router.navigate(['/new-game'], {queryParams: {answer}, queryParamsHandling: 'merge'});
       return;

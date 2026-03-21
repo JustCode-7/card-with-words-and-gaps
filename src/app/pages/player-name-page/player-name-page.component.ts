@@ -38,12 +38,13 @@ export class PlayerNamePage implements OnInit {
     const socketService = inject(SocketService);
     const answer = this.route.snapshot.queryParams['answer'];
     const storedName = localStorage.getItem('playerName');
+    const isHost = socketService.isHost.value || !!socketService.getP2PRoomId();
 
-    console.log("[DEBUG_LOG] PlayerNamePage ngOnInit. Name:", name, "Stored:", storedName, "Answer:", !!answer, "IsHost:", socketService.isHost.value);
+    console.log("[DEBUG_LOG] PlayerNamePage ngOnInit. Name:", name, "Stored:", storedName, "Answer:", !!answer, "IsHost:", isHost);
 
     // Falls ein answer-Code vorhanden ist und der User bereits Host eines Raums ist,
     // leiten wir ihn direkt zur Raum-Erstellungs-Seite zurück, damit der Code dort verarbeitet wird.
-    if (answer && socketService.isHost.value && (name || (storedName && storedName !== 'undefined'))) {
+    if (answer && isHost && (name || (storedName && storedName !== 'undefined'))) {
       console.log("[DEBUG_LOG] Host hat Antwort-Code gescannt. Leite zurück zum Raum...");
       this.router.navigate(['/new-game'], {queryParams: {answer}, queryParamsHandling: 'merge'});
       return;

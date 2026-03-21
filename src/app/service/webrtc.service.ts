@@ -148,9 +148,7 @@ export class WebRTCService {
   }
 
   async generateQRCode(text: string): Promise<string> {
-    return await QRCode.toDataURL(text, {
-      errorCorrectionLevel: 'H', // High error correction level for better scanability
-    });
+    return await QRCode.toDataURL(text);
   }
 
   sendMessage(data: any) {
