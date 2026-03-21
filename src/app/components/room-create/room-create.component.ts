@@ -49,6 +49,7 @@ export class RoomCreateComponent implements OnInit {
   spielerListe = signal<any[]>([]);
   p2pConnectionId = signal<string | null>(null);
   showScanner = signal(false);
+  zoomLevel = signal(1);
   hasBarcodeDetector = 'BarcodeDetector' in window;
 
   @ViewChild('statusContainer') statusContainer!: ElementRef;
@@ -214,6 +215,7 @@ export class RoomCreateComponent implements OnInit {
 
   async startScanner() {
     this.showScanner.set(true);
+    this.zoomLevel.set(1); // Reset zoom on start
     try {
       const constraints: any = {
         video: {
@@ -240,6 +242,35 @@ export class RoomCreateComponent implements OnInit {
       console.error("Fehler beim Starten der Kamera:", err);
       this.showScanner.set(false);
       alert("Kamera konnte nicht gestartet werden. Bitte prüfen Sie die Berechtigungen.");
+    }
+  }
+
+  async toggleZoom() {
+    const stream = this.scannerVideo?.nativeElement.srcObject as MediaStream;
+    if (!stream) return;
+
+    const track = stream.getVideoTracks()[0];
+    const capabilities: any = track.getCapabilities ? track.getCapabilities() : {};
+
+    if (!capabilities.zoom) {
+      console.warn("Zoom wird von dieser Kamera nicht unterstützt.");
+      return;
+    }
+
+    const newZoom = this.zoomLevel() === 1 ? 2 : 1;
+    const minZoom = capabilities.zoom.min || 1;
+    const maxZoom = capabilities.zoom.max || 1;
+
+    // Wir wollen 2x Zoom, falls möglich, sonst max Zoom für Stufe 2, und min Zoom für Stufe 1.
+    const targetZoom = newZoom === 2 ? Math.min(2, maxZoom) : minZoom;
+
+    try {
+      await track.applyConstraints({
+        advanced: [{zoom: targetZoom}]
+      } as any);
+      this.zoomLevel.set(newZoom);
+    } catch (e) {
+      console.error("Fehler beim Anwenden des Zooms:", e);
     }
   }
 

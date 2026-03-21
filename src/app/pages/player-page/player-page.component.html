@@ -50,7 +50,7 @@
       </mat-card>
 
       <h3>Alle Vorschläge dieser Runde</h3>
-      <div class="row">
+      <div class="row w-100 p-2">
         <div *ngFor="let entry of (matchService.gameSignal())?.lastRoundAnswers" class="col-12 mb-3">
           <mat-card [class.border-3]="entry.isWinner" [class.border-primary]="entry.isWinner" appearance="outlined">
             <mat-card-header>

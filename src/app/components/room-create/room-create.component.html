@@ -135,7 +135,16 @@
                   class="scanner-overlay position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center pointer-events-none">
                   <div class="border border-white border-2 opacity-50 mb-2"
                        style="width: 200px; height: 200px; border-radius: 8px;"></div>
-                  <div class="text-white small bg-dark px-2 py-1 rounded opacity-75">QR-Code in den Rahmen halten</div>
+                  <div class="text-white small bg-dark px-2 py-1 rounded opacity-75 mb-2">QR-Code in den Rahmen halten
+                  </div>
+
+                  <!-- Zoom Button -->
+                  <button (click)="toggleZoom()"
+                          class="pointer-events-auto bg-dark text-white border-white border rounded px-3 py-2 d-flex align-items-center gap-2"
+                          style="opacity: 0.9;">
+                    <mat-icon>{{ zoomLevel() === 1 ? 'zoom_in' : 'zoom_out' }}</mat-icon>
+                    <span>Zoom: {{ zoomLevel() }}x</span>
+                  </button>
                 </div>
               </div>
             }
