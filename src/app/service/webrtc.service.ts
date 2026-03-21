@@ -22,11 +22,11 @@ export class WebRTCService {
    * Stellt eine ausstehende Verbindung wieder her, falls die Seite neu geladen wurde.
    */
   public restorePendingConnection(id: string) {
-    if (this.peerConnections.has(id)) {
-      this.pendingConnectionId = id;
-      console.warn(`[DEBUG_LOG] WebRTC: Restored pendingConnectionId: ${id}`);
-    } else {
-      console.warn(`[DEBUG_LOG] WebRTC: Cannot restore pendingConnectionId ${id} - Connection not found in peerConnections map.`);
+    console.log(`[DEBUG_LOG] WebRTC: Setting pendingConnectionId to ${id}`);
+    this.pendingConnectionId = id;
+
+    if (!this.peerConnections.has(id)) {
+      console.warn(`[DEBUG_LOG] WebRTC: Connection ${id} not found in peerConnections. Handshake might fail if this is a new PC.`);
     }
   }
 

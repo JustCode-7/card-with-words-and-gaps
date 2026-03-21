@@ -221,13 +221,14 @@ export class ServerService {
       } else {
         console.warn(`[SERVER] No games found in p2p_saved_games! Host: ${isHost}, Room: ${roomId}. LocalStorage keys: ${Object.keys(localStorage).join(', ')}`);
       }
+
       // Raum-Zustand ebenfalls herstellen
       if (!this.rooms.has(roomId)) {
         this.createRoom(roomId);
       }
 
       // Falls wir ein Game-Objekt haben, stellen wir sicher, dass die Spieler auch im Raum sind
-      const game = this.games.get(roomId);
+      const game = this.getGame(roomId);
       if (game && game.spieler) {
         const room = this.rooms.get(roomId);
         if (room) {

@@ -115,6 +115,30 @@
 
         <div class="step-box mb-4">
           <h4 class="h6 font-weight-bold">Schritt 2: Antwort-Code</h4>
+          <div class="d-flex flex-column gap-2 mb-2">
+            @if (hasBarcodeDetector) {
+              <button (click)="toggleScanner()"
+                      [color]="showScanner() ? 'warn' : 'accent'"
+                      class="w-100"
+                      mat-raised-button
+                      matTooltip="Scan den QR-Code vom Gast direkt hier ein, um einen Reload zu vermeiden.">
+                <mat-icon>{{ showScanner() ? 'videocam_off' : 'qr_code_scanner' }}</mat-icon>
+                {{ showScanner() ? 'Scanner schließen' : 'Gast QR-Code scannen' }}
+              </button>
+            }
+
+            @if (showScanner()) {
+              <div class="scanner-container border rounded overflow-hidden bg-black position-relative"
+                   style="height: 250px;">
+                <video #scannerVideo class="w-100 h-100 object-fit-cover"></video>
+                <div
+                  class="scanner-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center pointer-events-none">
+                  <div class="border border-white border-4 opacity-50" style="width: 150px; height: 150px;"></div>
+                </div>
+              </div>
+            }
+          </div>
+
           <mat-form-field class="w-100">
               <textarea [formControl]="answerCodeControl" matInput placeholder="Antwort vom Gast hier einfügen..."
                         rows="2"></textarea>

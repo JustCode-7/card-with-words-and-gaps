@@ -5,6 +5,7 @@ import {MatFormFieldModule} from "@angular/material/form-field";
 import {MatIconModule} from "@angular/material/icon";
 import {MatInputModule} from "@angular/material/input";
 import {MatChipsModule} from "@angular/material/chips";
+import {MatTooltipModule} from "@angular/material/tooltip";
 import {AsyncPipe} from "@angular/common";
 import {SocketService} from "../../service/socket.service";
 import {PlayerService} from "../../service/player.service";
@@ -26,6 +27,7 @@ import {BehaviorSubject, Subscription} from "rxjs";
     MatInputModule,
     MatChipsModule,
     AsyncPipe,
+    MatTooltipModule,
   ],
   templateUrl: './room-create.component.html'
 })
@@ -46,8 +48,13 @@ export class RoomCreateComponent implements OnInit {
 
   spielerListe = signal<any[]>([]);
   p2pConnectionId = signal<string | null>(null);
+  showScanner = signal(false);
+  hasBarcodeDetector = 'BarcodeDetector' in window;
+
   @ViewChild('statusContainer') statusContainer!: ElementRef;
+  @ViewChild('scannerVideo') scannerVideo!: ElementRef<HTMLVideoElement>;
   private subscriptions: Subscription[] = [];
+  private scannerInterval: any;
 
   getIndividualStatus(connectionId?: string) {
     if (connectionId && this.webrtcService.individualStatus.has(connectionId)) {
@@ -189,9 +196,48 @@ export class RoomCreateComponent implements OnInit {
 
       // Nach dem Hinzufügen zum Netzwerk-Status scrollen
       setTimeout(() => {
-        this.statusContainer.nativeElement.scrollIntoView({behavior: 'smooth', block: 'center'});
+        if (this.statusContainer) {
+          this.statusContainer.nativeElement.scrollIntoView({behavior: 'smooth', block: 'center'});
+        }
       }, 100);
     }
+  }
+
+  toggleScanner() {
+    if (this.showScanner()) {
+      this.stopScanner();
+    } else {
+      this.startScanner();
+    }
+  }
+
+  async startScanner() {
+    this.showScanner.set(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({video: {facingMode: 'environment'}});
+      if (this.scannerVideo) {
+        this.scannerVideo.nativeElement.srcObject = stream;
+        this.scannerVideo.nativeElement.play();
+        this.initScannerLoop();
+      }
+    } catch (err) {
+      console.error("Fehler beim Starten der Kamera:", err);
+      this.showScanner.set(false);
+      alert("Kamera konnte nicht gestartet werden. Bitte prüfen Sie die Berechtigungen.");
+    }
+  }
+
+  stopScanner() {
+    if (this.scannerInterval) {
+      clearInterval(this.scannerInterval);
+      this.scannerInterval = null;
+    }
+    if (this.scannerVideo && this.scannerVideo.nativeElement.srcObject) {
+      const stream = this.scannerVideo.nativeElement.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      this.scannerVideo.nativeElement.srcObject = null;
+    }
+    this.showScanner.set(false);
   }
 
   startGame() {
@@ -219,6 +265,44 @@ export class RoomCreateComponent implements OnInit {
     this.p2pConnectionId.set(null);
     this.roomIdControl.reset();
     this.serverService.stopServer();
+  }
+
+  private initScannerLoop() {
+    if (!this.hasBarcodeDetector) return;
+
+    // @ts-ignore
+    const barcodeDetector = new BarcodeDetector({formats: ['qr_code']});
+    this.scannerInterval = setInterval(async () => {
+      if (!this.showScanner() || !this.scannerVideo) return;
+      try {
+        const barcodes = await barcodeDetector.detect(this.scannerVideo.nativeElement);
+        if (barcodes.length > 0) {
+          const qrCodeValue = barcodes[0].rawValue;
+          console.log("QR-Code erkannt:", qrCodeValue);
+          this.handleScannedValue(qrCodeValue);
+        }
+      } catch (e) {
+        // Silently fail if detection fails
+      }
+    }, 500);
+  }
+
+  private handleScannedValue(value: string) {
+    // Versuchen, den answer-Parameter zu extrahieren
+    let answer = '';
+    try {
+      const url = new URL(value);
+      answer = url.searchParams.get('answer') || '';
+    } catch (e) {
+      // Falls es keine URL ist, nehmen wir den Wert direkt
+      answer = value;
+    }
+
+    if (answer) {
+      this.answerCodeControl.setValue(answer);
+      this.stopScanner();
+      this.connect();
+    }
   }
 
   private extractConnectionId(offer: string) {
