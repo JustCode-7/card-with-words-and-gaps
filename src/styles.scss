@@ -108,6 +108,10 @@ body {
   pointer-events: auto;
 }
 
+.cursor-pointer {
+  cursor: pointer;
+}
+
 @import 'styles/bootstrap';
 
 .transition-all {
