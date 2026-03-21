@@ -28,8 +28,11 @@ export class EntryPageComponent implements OnInit {
     const player = this.playerService.getPlayer();
     const answer = this.route.snapshot.queryParams['answer'];
 
+    console.log("[DEBUG_LOG] EntryPage ngOnInit. Player:", player.name, "Answer present:", !!answer, "IsHost:", this.socketService.isHost.value);
+
     // Falls ein Name fehlt, zur Namenseingabe leiten, dabei Parameter behalten
     if (!player.name || player.name === 'undefined') {
+      console.log("[DEBUG_LOG] Name missing. Redirecting to /set-name");
       this.router.navigate(['/set-name'], {queryParams: {answer}, queryParamsHandling: 'merge'});
       return;
     }
@@ -39,6 +42,11 @@ export class EntryPageComponent implements OnInit {
     if (answer && this.socketService.isHost.value) {
       console.log("[DEBUG_LOG] Host auf EntryPage mit Antwort-Code. Leite zu /new-game...");
       this.router.navigate(['/new-game'], {queryParams: {answer}, queryParamsHandling: 'merge'});
+      return;
     }
+
+    // Wenn der User Host eines aktiven Raums ist, aber kein Antwort-Code vorliegt,
+    // sollte er evtl. auch direkt zur Raumview? Das lassen wir vorerst offen, da er evtl.
+    // bewusst auf die Startseite wollte. Aber für den Fix des Scans ist der obige Block entscheidend.
   }
 }

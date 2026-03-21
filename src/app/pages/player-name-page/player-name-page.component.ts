@@ -35,15 +35,17 @@ export class PlayerNamePage implements OnInit {
     const {name} = this.playerService.getPlayer();
     this.form.patchValue({name});
 
+    const socketService = inject(SocketService);
+    const answer = this.route.snapshot.queryParams['answer'];
+    const storedName = localStorage.getItem('playerName');
+
+    console.log("[DEBUG_LOG] PlayerNamePage ngOnInit. Name:", name, "Stored:", storedName, "Answer:", !!answer, "IsHost:", socketService.isHost.value);
+
     // Falls ein answer-Code vorhanden ist und der User bereits Host eines Raums ist,
     // leiten wir ihn direkt zur Raum-Erstellungs-Seite zurück, damit der Code dort verarbeitet wird.
-    const answer = this.route.snapshot.queryParams['answer'];
-    const socketService = inject(SocketService);
-    // Wir nutzen localStorage direkt, falls das Service-Modell noch nicht bereit ist
-    const storedName = localStorage.getItem('playerName');
-    if (answer && socketService.isHost.value && (name || storedName)) {
+    if (answer && socketService.isHost.value && (name || (storedName && storedName !== 'undefined'))) {
       console.log("[DEBUG_LOG] Host hat Antwort-Code gescannt. Leite zurück zum Raum...");
-      this.router.navigate(['/new-game'], {queryParams: {answer}});
+      this.router.navigate(['/new-game'], {queryParams: {answer}, queryParamsHandling: 'merge'});
       return;
     }
 
