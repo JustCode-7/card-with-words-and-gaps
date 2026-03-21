@@ -27,7 +27,9 @@ export class EntryPageComponent implements OnInit {
   ngOnInit(): void {
     const player = this.playerService.getPlayer();
     const answer = this.route.snapshot.queryParams['answer'];
-    const isHost = this.socketService.isHost.value || !!this.socketService.getP2PRoomId();
+
+    // Host-Erkennung über localStorage (robust gegen Reloads)
+    const isHost = localStorage.getItem('isHost') === 'true' || this.socketService.isHost.value || !!this.socketService.getP2PRoomId();
 
     console.log("[DEBUG_LOG] EntryPage ngOnInit. Player:", player.name, "Answer present:", !!answer, "IsHost:", isHost);
 

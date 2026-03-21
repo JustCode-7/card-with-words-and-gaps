@@ -58,20 +58,10 @@ export class RoomCreateComponent implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
-    // Falls wir bereits Host sind, müssen wir die Spielerliste und den Raum-Zustand wiederherstellen
-    const isHost = this.socketService.isHost.value || !!this.socketService.getP2PRoomId();
-    if (isHost) {
-      const room = this.socketService.getP2PRoomId();
+    // Falls wir bereits Host sind (Resolver hat das bereits im SocketService sichergestellt)
+    if (this.socketService.isHost.value) {
+      const room = this.socketService.getP2PRoomId() || localStorage.getItem('currentP2PRoomId');
       if (room) {
-        // Sicherstellen, dass der Host-Status im Service auch wirklich auf true steht
-        if (!this.socketService.isHost.value) {
-          console.warn("[DEBUG_LOG] RoomCreate: Host-Status war false, stelle wieder her für Raum:", room);
-          this.socketService.isHost.next(true);
-          // Wenn der Status im Service false war, wurde vermutlich auch der Server-Server nicht initialisiert
-          this.socketService.createRoom(room);
-          this.matchService.initMatch(room);
-        }
-
         this.roomIdControl.setValue(room);
 
         // Spielerliste wieder abonnieren

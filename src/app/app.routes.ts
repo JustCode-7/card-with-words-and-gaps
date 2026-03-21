@@ -3,6 +3,7 @@ import {RoomOverviewPage} from "./pages/room-overview-page/room-overview-page.co
 import {CatLordPage} from "./pages/cat-lord-page/cat-lord-page.component";
 import {PlayerPage} from "./pages/player-page/player-page.component";
 import {roomListResolver} from "./resolver/room-list.resolver";
+import {roomStateResolver} from "./resolver/room-state.resolver";
 import {PlayerNamePage} from "./pages/player-name-page/player-name-page.component";
 import {EntryPageComponent} from "./pages/entry-page/entry-page.component";
 import {NewGamePage} from "./pages/new-game-page/new-game-page.component";
@@ -12,7 +13,7 @@ import {RoomGuard} from "./guards/room.guard";
 export const routes: Routes = [
   {path: '', component: EntryPageComponent},
   {path: 'set-name', component: PlayerNamePage},
-  {path: 'new-game', component: NewGamePage},
+  {path: 'new-game', component: NewGamePage, resolve: {roomState: roomStateResolver}},
   {path: 'join-game', component: RoomOverviewPage, resolve: {roomList: roomListResolver}, pathMatch: 'full'},
   {path: 'create-room/:playername', component: CatLordPage, pathMatch: 'full'},
   {

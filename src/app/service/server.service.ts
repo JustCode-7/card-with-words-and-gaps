@@ -33,6 +33,8 @@ export class ServerService {
   }
 
   public startServer(roomId: string): void {
+    localStorage.setItem('isHost', 'true');
+    localStorage.setItem('currentP2PRoomId', roomId);
 
     if (this.isServerRunning.value) {
       console.log('Server is already running');
@@ -67,6 +69,9 @@ export class ServerService {
   }
 
   public stopServer(): void {
+    localStorage.removeItem('isHost');
+    localStorage.removeItem('currentP2PRoomId');
+
     if (!this.isServerRunning.value) {
       console.log('Server is not running');
       return;

@@ -38,7 +38,7 @@ export class PlayerNamePage implements OnInit {
     const socketService = inject(SocketService);
     const answer = this.route.snapshot.queryParams['answer'];
     const storedName = localStorage.getItem('playerName');
-    const isHost = socketService.isHost.value || !!socketService.getP2PRoomId();
+    const isHost = localStorage.getItem('isHost') === 'true' || socketService.isHost.value || !!socketService.getP2PRoomId();
 
     console.log("[DEBUG_LOG] PlayerNamePage ngOnInit. Name:", name, "Stored:", storedName, "Answer:", !!answer, "IsHost:", isHost);
 

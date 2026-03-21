@@ -67,10 +67,25 @@ export class SocketService {
     // Listen for server status changes
     this.serverService.isServerRunning.subscribe(isRunning => {
       this.isHost.next(isRunning);
+      if (isRunning) {
+        // Wenn der Server läuft, stellen wir sicher, dass der P2P-Raumname gesetzt ist
+        const storedRoomId = localStorage.getItem('currentP2PRoomId');
+        if (storedRoomId) {
+          this.setP2PRoomId(storedRoomId);
+        }
+      }
 
       // Add window unload event listener to warn about P2P disconnect
       window.addEventListener('beforeunload', this.handleBeforeUnload.bind(this));
     });
+
+    // Check for persisted host status and restore if needed (e.g. after QR scan reload)
+    const wasHost = localStorage.getItem('isHost') === 'true';
+    const persistedRoom = localStorage.getItem('currentP2PRoomId');
+    if (wasHost && persistedRoom) {
+      console.log(`[DEBUG_LOG] SocketService: Restoring host status for room ${persistedRoom}`);
+      this.createRoom(persistedRoom);
+    }
   }
 
   public onRoomListener(): void {
