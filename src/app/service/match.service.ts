@@ -9,11 +9,13 @@ import {SocketService} from "./socket.service";
 import {SocketEvent} from "../util/client-enums";
 import {PlayerService} from "./player.service";
 import {toSignal} from "@angular/core/rxjs-interop";
+import {ServerService} from "./server.service";
 
 @Injectable({providedIn: 'root'})
 export class MatchService {
   spielerKartenService: SpielerKartenService = inject(SpielerKartenService);
   socketService: SocketService = inject(SocketService);
+  serverService: ServerService = inject(ServerService);
   game: BehaviorSubject<Game> = new BehaviorSubject<Game>(new Game([], [], [], "", "", 'WAITING_FOR_ANSWERS', false, false, false));
 
   // Game as signal for better reactivity in components
@@ -28,10 +30,14 @@ export class MatchService {
 
   initMatch(roomId: string) {
     // Check if we are already in this room to avoid infinite loops or re-initialization
+    // But allow re-initialization if the current game is empty or has only one player
     if (this.game.value.gameHash === roomId && this.game.value.spieler.length > 1) {
-      console.log("Match already initialized for room:", roomId);
+      console.log("Match already initialized with players for room:", roomId);
       return;
     }
+
+    const isReload = !!localStorage.getItem('currentP2PRoomId');
+    console.log(`[MATCH] initMatch for room ${roomId}. Reload: ${isReload}`);
 
     // Set player name in player service for identification
     const player = this.playerService.getPlayer();
@@ -44,6 +50,16 @@ export class MatchService {
     if (this.socketService.isHost.value) {
       // Small delay to ensure server is ready to receive setGame
       setTimeout(() => {
+        // Check if we already have a game in the local ServerService (e.g. after reload)
+        const persistedGame = this.serverService.getGame(roomId);
+        if (persistedGame && persistedGame.spieler && persistedGame.spieler.length > 0) {
+          console.log(`[MATCH] Found persisted game in ServerService for room ${roomId}`, persistedGame);
+          this.game.next(persistedGame);
+          // Force the UI to update with the correct room ID and player list
+          this.socketService.joinRoom(roomId);
+          return;
+        }
+
         // Only create if we still don't have a valid game from server
         const currentGameState = this.game.value;
         if (!currentGameState.gameHash || currentGameState.spieler.length <= 1) {
@@ -108,11 +124,15 @@ export class MatchService {
     })
     this.socketService.getGame()
       .subscribe((gameFromServer) => {
-        if (!gameFromServer || (gameFromServer.spieler.length === 0 && gameFromServer === this.game.value)) {
-          return
+        if (!gameFromServer) {
+          return;
+        }
+        // Wenn wir der Host sind und das Spiel vom Server (oder lokalem Speicher) leer ist, ignorieren wir es
+        if (this.socketService.isHost.value && gameFromServer.spieler.length === 0) {
+          return;
         }
         console.log("Updating game from server:", gameFromServer);
-        this.game.next(gameFromServer)
+        this.game.next(gameFromServer);
       });
 
     // P2P-Updates abonnieren (um Circular Dependency zu vermeiden)

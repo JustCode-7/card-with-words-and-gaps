@@ -18,13 +18,16 @@ export const roomStateResolver: ResolveFn<boolean> = (route, state) => {
   console.log(`[DEBUG_LOG] RoomStateResolver: Host status: ${isHost}, Room: ${room}`);
 
   if (isHost && room) {
-    // Falls der Status im Service noch false ist (z.B. nach Reload), stellen wir ihn hier schon sicher
+    // Sicherstellen, dass der Server-Service den Raum-Status kennt
+    // Der ServerService.restoreState() wird bereits im Constructor aufgerufen,
+    // aber wir triggern hier explizit die Initialisierung im Socket/Match Service.
     if (!socketService.isHost.value) {
       console.warn("[DEBUG_LOG] RoomStateResolver: Restoring host for room:", room);
       socketService.isHost.next(true);
-      socketService.createRoom(room);
-      matchService.initMatch(room);
     }
+
+    // Wir rufen initMatch immer auf, um sicherzustellen, dass die Daten aus dem ServerService geladen werden
+    matchService.initMatch(room);
     return true;
   }
 

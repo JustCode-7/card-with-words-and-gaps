@@ -30,6 +30,7 @@ export class ServerService {
   private webrtcService = inject(WebRTCService);
 
   constructor() {
+    this.restoreState();
   }
 
   public startServer(roomId: string): void {
@@ -71,6 +72,7 @@ export class ServerService {
   public stopServer(): void {
     localStorage.removeItem('isHost');
     localStorage.removeItem('currentP2PRoomId');
+    localStorage.removeItem('p2p_saved_games');
 
     if (!this.isServerRunning.value) {
       console.log('Server is not running');
@@ -98,6 +100,7 @@ export class ServerService {
   public setGame(roomId: string, game: any): void {
     console.log(`SET GAME for room ${roomId}`);
     this.games.set(roomId, game);
+    this.saveState();
 
     // Emit setGame event to the server
     if (this.socket && !window.location.origin.includes('github.io') && !window.location.origin.includes('localhost')) {
@@ -106,7 +109,23 @@ export class ServerService {
   }
 
   public getGame(roomId: string): any {
-    return this.games.get(roomId);
+    const game = this.games.get(roomId);
+    if (!game) {
+      // Check if we can restore from localStorage specifically for this room
+      const savedGames = localStorage.getItem('p2p_saved_games');
+      if (savedGames) {
+        try {
+          const gamesObj = JSON.parse(savedGames);
+          if (gamesObj[roomId]) {
+            console.log(`[SERVER] On-demand restore for room ${roomId}`);
+            this.games.set(roomId, gamesObj[roomId]);
+            return gamesObj[roomId];
+          }
+        } catch (e) {
+        }
+      }
+    }
+    return game;
   }
 
   public updateGame(game: any): void {
@@ -114,6 +133,7 @@ export class ServerService {
 
     // console.log(`UPDATE GAME for room ${game.gameHash}`);
     this.games.set(game.gameHash, game);
+    this.saveState();
 
     // Emit updateGame event to the server only if NOT on GitHub Pages
     if (this.socket && !window.location.origin.includes('github.io')) {
@@ -171,6 +191,54 @@ export class ServerService {
 
       this.games.set(roomId, game);
     }
+  }
+
+  private restoreState(): void {
+    const isHost = localStorage.getItem('isHost') === 'true';
+    const roomId = localStorage.getItem('currentP2PRoomId');
+    if (isHost && roomId) {
+      console.log(`[SERVER] Restoring server state for room: ${roomId}`);
+      const savedGames = localStorage.getItem('p2p_saved_games');
+      if (savedGames) {
+        try {
+          const gamesObj = JSON.parse(savedGames);
+          Object.keys(gamesObj).forEach(key => {
+            this.games.set(key, gamesObj[key]);
+            console.log(`[SERVER] Restored game for ${key} with ${gamesObj[key].spieler?.length} players`);
+          });
+        } catch (e) {
+          console.error("[SERVER] Failed to restore games from localStorage", e);
+        }
+      }
+      // Raum-Zustand ebenfalls herstellen
+      if (!this.rooms.has(roomId)) {
+        this.createRoom(roomId);
+      }
+
+      // Falls wir ein Game-Objekt haben, stellen wir sicher, dass die Spieler auch im Raum sind
+      const game = this.games.get(roomId);
+      if (game && game.spieler) {
+        const room = this.rooms.get(roomId);
+        if (room) {
+          room.players = game.spieler.map((s: any) => ({
+            id: s.id,
+            name: s.name,
+            connectionId: s.connectionId
+          }));
+          console.log(`[SERVER] Restored ${room.players.length} players to room ${roomId}`);
+        }
+      }
+
+      this.isServerRunning.next(true);
+    }
+  }
+
+  private saveState(): void {
+    const gamesObj: { [key: string]: any } = {};
+    this.games.forEach((value, key) => {
+      gamesObj[key] = value;
+    });
+    localStorage.setItem('p2p_saved_games', JSON.stringify(gamesObj));
   }
 
   private setupSocketEvents(): void {

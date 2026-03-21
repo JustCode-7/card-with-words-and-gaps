@@ -84,7 +84,8 @@ export class SocketService {
     const persistedRoom = localStorage.getItem('currentP2PRoomId');
     if (wasHost && persistedRoom) {
       console.log(`[DEBUG_LOG] SocketService: Restoring host status for room ${persistedRoom}`);
-      this.createRoom(persistedRoom);
+      this.isHost.next(true);
+      // createRoom(persistedRoom) wird durch den Resolver oder initMatch getriggert
     }
   }
 
