@@ -59,9 +59,14 @@ export class RoomCreateComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     // Falls wir bereits Host sind (Resolver hat das bereits im SocketService sichergestellt)
-    if (this.socketService.isHost.value) {
+    const isHost = this.socketService.isHost.value || localStorage.getItem('isHost') === 'true';
+    if (isHost) {
       const room = this.socketService.getP2PRoomId() || localStorage.getItem('currentP2PRoomId');
       if (room) {
+        if (!this.socketService.isHost.value) {
+          this.socketService.isHost.next(true);
+          this.socketService.setP2PRoomId(room);
+        }
         this.roomIdControl.setValue(room);
 
         // Spielerliste wieder abonnieren

@@ -135,13 +135,9 @@ export class RoomListComponent implements OnInit {
 
       this.answerCode.set(answer);
 
-      const url = new URL(window.location.href);
-      // Entferne alle Query-Parameter, um eine saubere Basis-URL zu haben
-      const baseUrl = url.origin + url.pathname;
-      // Der Link sollte generisch sein, damit der Host ihn überall verarbeiten kann,
-      // am besten über die Root-Route, die dann intelligent weiterleitet.
-      // Wir setzen den Parameter VOR den Hash, falls mobile Browser das besser handhaben,
-      // ODER wir bleiben bei Angular Standard. Testweise nutzen wir eine robustere Form.
+      // Wir nutzen eine robuste URL-Struktur für mobile Browser.
+      // Der answer-Parameter wird vor das Hash-Fragment gesetzt.
+      const baseUrl = window.location.origin + window.location.pathname;
       const answerLink = `${baseUrl}?answer=${encodeURIComponent(answer)}#/`;
       this.answerLink.set(answerLink);
 

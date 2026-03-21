@@ -44,13 +44,21 @@ export class PlayerNamePage implements OnInit {
     const isHost = storedIsHost || socketService.isHost.value || !!socketService.getP2PRoomId();
 
     console.log("[DEBUG_LOG] PlayerNamePage ngOnInit. Name:", name, "StoredName:", storedName, "Answer:", !!answer, "IsHost:", isHost, "StoredRoom:", storedRoom);
+
+    // Falls ein answer-Parameter vorhanden ist, erzwingen wir die Host-Wiederherstellung,
+    // falls wir im localStorage Daten finden.
+    if (answer && !isHost && storedRoom) {
+      console.warn("[DEBUG_LOG] PlayerNamePage: Answer parameter detected but isHost is false. Restoring host status.");
+      socketService.isHost.next(true);
+      socketService.setP2PRoomId(storedRoom);
+    }
     if (!isHost && !storedRoom && answer) {
       console.warn("[DEBUG_LOG] Guest in PlayerNamePage with answer parameter! LocalStorage might be empty.");
     }
 
     // Falls ein answer-Code vorhanden ist und der User bereits Host eines Raums ist,
     // leiten wir ihn direkt zur Raum-Erstellungs-Seite zurück, damit der Code dort verarbeitet wird.
-    if (answer && (isHost || storedRoom) && (name || (storedName && storedName !== 'undefined'))) {
+    if (answer && (isHost || storedRoom || socketService.isHost.value) && (name || (storedName && storedName !== 'undefined'))) {
       console.log("[DEBUG_LOG] Host hat Antwort-Code gescannt. Leite zurück zum Raum...");
       this.router.navigate(['/new-game'], {queryParams: {answer}, queryParamsHandling: 'merge'});
       return;
