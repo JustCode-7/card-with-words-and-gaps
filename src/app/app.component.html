@@ -9,6 +9,10 @@
       <mat-icon>home</mat-icon>
       <span>MainMenue</span>
     </button>
+    <button (click)="pwa.askToInstall()" *ngIf="pwa.canInstall$ | async" mat-menu-item>
+      <mat-icon>download</mat-icon>
+      <span>App installieren</span>
+    </button>
     <button (click)="endGame()" *ngIf="socketService.isHost | async" mat-menu-item>
       <mat-icon>stop</mat-icon>
       <span>End Game</span>
