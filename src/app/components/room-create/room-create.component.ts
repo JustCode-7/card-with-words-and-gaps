@@ -6,7 +6,7 @@ import {MatIconModule} from "@angular/material/icon";
 import {MatInputModule} from "@angular/material/input";
 import {MatChipsModule} from "@angular/material/chips";
 import {MatTooltipModule} from "@angular/material/tooltip";
-import {AsyncPipe} from "@angular/common";
+import {MatSliderModule} from "@angular/material/slider";
 import {SocketService} from "../../service/socket.service";
 import {PlayerService} from "../../service/player.service";
 import {ServerService} from "../../service/server.service";
@@ -15,7 +15,7 @@ import {MatchService} from "../../service/match.service";
 import {WebRTCService} from "../../service/webrtc.service";
 import {Game} from "../../model/game-model";
 import * as LZString from 'lz-string';
-import {BehaviorSubject, Subscription} from "rxjs";
+import {Subscription} from "rxjs";
 
 @Component({
   selector: 'app-room-create',
@@ -26,8 +26,9 @@ import {BehaviorSubject, Subscription} from "rxjs";
     MatIconModule,
     MatInputModule,
     MatChipsModule,
-    AsyncPipe,
     MatTooltipModule,
+    MatSliderModule,
+
   ],
   templateUrl: './room-create.component.html'
 })
@@ -62,25 +63,25 @@ export class RoomCreateComponent implements OnInit {
       return this.webrtcService.individualStatus.get(connectionId)!;
     }
     // Falls keine ID da ist (Host selbst), geben wir connected zurück
-    return new BehaviorSubject('connected');
+    return signal('connected');
   }
 
   async ngOnInit(): Promise<void> {
     // Falls wir bereits Host sind (Resolver hat das bereits im SocketService sichergestellt)
-    const isHost = this.socketService.isHost.value || localStorage.getItem('isHost') === 'true';
+    const isHost = this.socketService.isHost() || localStorage.getItem('isHost') === 'true';
     if (isHost) {
       const room = this.socketService.getP2PRoomId() || localStorage.getItem('currentP2PRoomId');
       if (room) {
-        if (!this.socketService.isHost.value) {
-          this.socketService.isHost.next(true);
+        if (!this.socketService.isHost()) {
+          this.socketService.isHost.set(true);
           this.socketService.setP2PRoomId(room);
         }
         this.roomIdControl.setValue(room);
 
-        // Spielerliste via gameSignal anstatt manuellem Subscribe
+        // Spielerliste via game anstatt manuellem Subscribe
         // Aber für Initialisierung können wir ein einmaliges Update erzwingen
-        if (this.matchService.gameSignal().spieler) {
-          this.spielerListe.set(this.matchService.gameSignal().spieler);
+        if (this.matchService.game().spieler) {
+          this.spielerListe.set(this.matchService.game().spieler);
         }
 
         // Falls noch kein Offer da ist, einen erzeugen
@@ -131,7 +132,7 @@ export class RoomCreateComponent implements OnInit {
 
     // Wir setzen den Host-Status und den Raum-Namen
     this.socketService.setP2PRoomId(room);
-    this.socketService.isHost.next(true);
+    this.socketService.isHost.set(true);
     this.socketService.createRoom(room);
     this.matchService.initMatch(room);
 
@@ -139,12 +140,8 @@ export class RoomCreateComponent implements OnInit {
     await this.generateNewOffer();
 
     // Wir beobachten die Spielerliste aus dem MatchService
-    const matchSub = this.matchService.game.subscribe(game => {
-      if (game && game.spieler) {
-        this.spielerListe.set(game.spieler);
-      }
-    });
-    this.subscriptions.push(matchSub);
+    // effect() kann hier im constructor genutzt werden, aber für die lokale Komponente ist ein simpler Bind im Template am besten
+    // oder wir setzen es hier manuell bei jedem Signal-Update (über effect).
   }
 
   async generateNewOffer() {
@@ -298,7 +295,7 @@ export class RoomCreateComponent implements OnInit {
   }
 
   beitreten() {
-    const room = this.matchService.gameSignal().gameHash;
+    const room = this.matchService.game().gameHash;
     const playerName = this.playerService.getPlayer().name;
     this.router.navigate(['game', room, playerName, 'catlord']);
   }
@@ -306,9 +303,9 @@ export class RoomCreateComponent implements OnInit {
   deleteRoom() {
     this.subscriptions.forEach(sub => sub.unsubscribe());
     this.subscriptions = [];
-    this.socketService.isHost.next(false);
+    this.socketService.isHost.set(false);
     this.socketService.setP2PRoomId('');
-    this.matchService.game.next(new Game([], [], [], "", "", 'WAITING_FOR_ANSWERS', false, false, false));
+    this.matchService.game.set(new Game([], [], [], "", "", 'WAITING_FOR_ANSWERS', false, false, false));
     this.sessionCode.set('');
     this.joinLink.set('');
     this.qrCodeDataUrl.set('');

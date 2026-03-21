@@ -35,14 +35,14 @@
 <div class="d-flex flex-row justify-content-between">
   <h2>{{ this.playername }}</h2>
   <button (click)="submitAnswers()"
-          [disabled]="matchService.gameSignal().roundStatus !== 'WAITING_FOR_ANSWERS' || isReady()"
+          [disabled]="matchService.game().roundStatus !== 'WAITING_FOR_ANSWERS' || isReady()"
           class="mt-2 float-end p-2 me-3 mb-2"
           color="warn"
           mat-raised-button>
     @if (isReady()) {
       <span class="text-primary font-weight-bold">Gesendet</span>
     } @else {
-      {{ matchService.gameSignal().roundStatus !== 'WAITING_FOR_ANSWERS' ? 'Warten auf Catlord' : 'Fertig' }}
+      {{ matchService.game().roundStatus !== 'WAITING_FOR_ANSWERS' ? 'Warten auf Catlord' : 'Fertig' }}
     }
   </button>
 </div>

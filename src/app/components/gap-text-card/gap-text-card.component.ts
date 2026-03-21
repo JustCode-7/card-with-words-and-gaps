@@ -1,35 +1,32 @@
-import {Component, inject, OnInit} from '@angular/core';
+import {Component, computed, inject, OnInit, signal} from '@angular/core';
 import {MatCardModule} from "@angular/material/card";
 import {MatButtonModule} from "@angular/material/button";
-import {BehaviorSubject, map, Observable} from "rxjs";
 import {MatchService} from "../../service/match.service";
-import {AsyncPipe} from "@angular/common";
+import {Spieler} from "../../model/spieler-model";
 
 @Component({
   selector: 'app-gap-text-card',
   imports: [
     MatCardModule,
     MatButtonModule,
-    AsyncPipe
   ],
   templateUrl: './gap-text-card.component.html',
   styleUrl: './gap-text-card.component.scss'
 })
 export class GapTextCardComponent implements OnInit {
-  cardSet: BehaviorSubject<string[]> = new BehaviorSubject([''])
+  cardSet = signal<string[]>(['']);
   matchService: MatchService = inject(MatchService);
 
-  currentCatlordCard$: Observable<string> = this.matchService.game.pipe(
-    map(game => game.currentCatlordCard)
-  );
+  currentCatlordCard = computed(() => this.matchService.game().currentCatlordCard);
 
-  catLordName$: Observable<string | undefined> = this.matchService.game.pipe(
-    map(game => game.spieler.find(s => s.catLord)?.name)
-  );
+  catLordName = computed(() => {
+    const game = this.matchService.game();
+    return game.spieler.find((s: Spieler) => s.catLord)?.name;
+  });
 
 
   ngOnInit(): void {
-    this.cardSet.next(this.matchService.game.value.cardset);
+    this.cardSet.set(this.matchService.game().cardset);
   }
 
 }

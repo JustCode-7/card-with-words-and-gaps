@@ -11,12 +11,13 @@ import {ServerService} from "./server.service";
 import {environment} from "../../environments/environment";
 import {WebRTCService} from "./webrtc.service";
 import {Router} from "@angular/router";
+import {toObservable} from "@angular/core/rxjs-interop";
 
 @Injectable({providedIn: 'root'})
 export class SocketService {
 
   // Track if this client is hosting a server
-  public isHost = new BehaviorSubject<boolean>(false);
+  public isHost = signal<boolean>(false);
   public p2pGameUpdate$ = new Subject<Game>();
   // P2P UI-Zustände (für Persistenz bei Routen-Wechseln)
   public sessionCode = signal('');
@@ -40,8 +41,8 @@ export class SocketService {
     });
 
     // Automatisch beitreten, wenn P2P verbunden ist (nur für Gäste)
-    this.webrtcService.connectionStatus.subscribe(status => {
-      if (status === 'connected' && !this.isHost.value) {
+    toObservable(this.webrtcService.connectionStatus).subscribe(status => {
+      if (status === 'connected' && !this.isHost()) {
         // Wir nehmen den Raum-Namen aus dem MatchService
         this.joinRoomViaWebRTC();
       }
@@ -65,8 +66,8 @@ export class SocketService {
     }
 
     // Listen for server status changes
-    this.serverService.isServerRunning.subscribe(isRunning => {
-      this.isHost.next(isRunning);
+    toObservable(this.serverService.isServerRunning).subscribe((isRunning: boolean) => {
+      this.isHost.set(isRunning);
       if (isRunning) {
         // Wenn der Server läuft, stellen wir sicher, dass der P2P-Raumname gesetzt ist
         const storedRoomId = localStorage.getItem('currentP2PRoomId');
@@ -84,7 +85,7 @@ export class SocketService {
     const persistedRoom = localStorage.getItem('currentP2PRoomId');
     if (wasHost && persistedRoom) {
       console.log(`[DEBUG_LOG] SocketService: Restoring host status for room ${persistedRoom}`);
-      this.isHost.next(true);
+      this.isHost.set(true);
       // createRoom(persistedRoom) wird durch den Resolver oder initMatch getriggert
     }
   }
@@ -105,7 +106,7 @@ export class SocketService {
     // Auf GitHub Pages (window.location.origin) oder Localhost läuft kein Socket-Server (für P2P-Tests).
     if (window.location.origin.includes('github.io') || window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')) {
       console.log("P2P mode detected: Skipping local socket connection, using pure P2P mode.");
-      this.isHost.next(true);
+      this.isHost.set(true);
       return;
     }
 
@@ -139,14 +140,14 @@ export class SocketService {
     this.serverService.setGame(roomid, game);
 
     // Also emit the event directly if we're not the host
-    if (!this.isHost.value && this.socket && !window.location.origin.includes('github.io')) {
+    if (!this.isHost() && this.socket && !window.location.origin.includes('github.io')) {
       this.socket.emit(event, roomid, game);
     }
   }
 
   public sendUpdateGame(event: string, game: Game): void {
     // Wenn wir der Host sind, aktualisieren wir unseren lokalen Server-State
-    if (this.isHost.value) {
+    if (this.isHost()) {
       this.serverService.updateGame(game);
       // IMMER via WebRTC an alle Gäste senden
       this.webrtcService.sendMessage({event: 'game', data: game});
@@ -157,14 +158,14 @@ export class SocketService {
     }
 
     // Falls wir doch in einem echten Socket-Netzwerk sind, emittieren wir auch dort
-    if (!this.isHost.value && this.socket && !window.location.origin.includes('github.io')) {
+    if (!this.isHost() && this.socket && !window.location.origin.includes('github.io')) {
       this.socket.emit(event, game);
     }
   }
 
   public sendGetGame(event: string, roomid: string): void {
     // If we're the host, we can get the game directly from ServerService
-    if (this.isHost.value) {
+    if (this.isHost()) {
       const game = this.serverService.getGame(roomid);
       if (game) {
         // Simulate receiving the game from the server
@@ -195,7 +196,7 @@ export class SocketService {
       }
 
       // If we're the host, we can also check for local game updates
-      if (this.isHost.value) {
+      if (this.isHost()) {
         // We'll rely on the server events for now
       }
     });
@@ -262,7 +263,7 @@ export class SocketService {
 
   private handleBeforeUnload(event: BeforeUnloadEvent): void {
     // Falls wir der Host sind, speichern wir den State noch einmal sicherheitshalber
-    if (this.isHost.value) {
+    if (this.isHost()) {
       console.log('Host is leaving or reloading, ensuring state is saved...');
       this.serverService.saveState();
 
@@ -294,21 +295,21 @@ export class SocketService {
   private handleWebRTCMessage(msg: any) {
     if (msg.event === 'game') {
       // Wenn wir eine Nachricht empfangen, aktualisieren wir unseren lokalen State
-      console.log(`[DEBUG_LOG] P2P: Received game update. Host: ${this.isHost.value}`);
+      console.log(`[DEBUG_LOG] P2P: Received game update. Host: ${this.isHost()}`);
       // Force reference update to trigger signals/effects
       const gameCopy = JSON.parse(JSON.stringify(msg.data));
       this.serverService.updateGame(gameCopy);
       this.p2pGameUpdate$.next(gameCopy);
 
       // Wenn wir der Host sind, müssen wir dieses Update an ALLE anderen Gäste broadcasten
-      if (this.isHost.value) {
+      if (this.isHost()) {
         console.log("[DEBUG_LOG] Host: Received P2P game update, broadcasting to all peers");
         this.webrtcService.sendMessage({
           event: 'game',
           data: gameCopy
         });
       }
-    } else if (msg.event === 'request-game' && this.isHost.value) {
+    } else if (msg.event === 'request-game' && this.isHost()) {
       const {roomId} = msg.data;
       console.log("[DEBUG_LOG] Host: received request-game via WebRTC for room", roomId);
       const currentGame = this.serverService.getGame(roomId);
@@ -318,7 +319,7 @@ export class SocketService {
           data: currentGame
         });
       }
-    } else if (msg.event === 'join-room' && this.isHost.value) {
+    } else if (msg.event === 'join-room' && this.isHost()) {
       // Wenn wir der Host sind, registrieren wir den beigetretenen P2P-Spieler
       const {roomId, player} = msg.data;
       const connectionId = msg._connectionId;
@@ -337,7 +338,7 @@ export class SocketService {
       if (updatedGame) {
         console.log(`[DEBUG_LOG] Host: game updated after join, now has ${updatedGame.spieler.length} players`);
         // Wir setzen das persistierte Spiel im MatchService via p2pGameUpdate$
-        // Das sorgt dafür, dass MatchService.gameSignal aktualisiert wird
+        // Das sorgt dafür, dass MatchService.game aktualisiert wird
         const gameCopy = JSON.parse(JSON.stringify(updatedGame));
         this.p2pGameUpdate$.next(gameCopy);
 
@@ -347,14 +348,14 @@ export class SocketService {
           data: gameCopy
         });
       }
-    } else if (msg.event === 'room-deleted' && !this.isHost.value) {
+    } else if (msg.event === 'room-deleted' && !this.isHost()) {
       console.warn("[DEBUG_LOG] P2P: Host deleted the room. Navigating to home.");
       this.router.navigate(['/']);
     }
   }
 
   private joinRoomViaWebRTC() {
-    console.warn("[DEBUG_LOG] joinRoomViaWebRTC called. Host status:", this.isHost.value);
+    console.warn("[DEBUG_LOG] joinRoomViaWebRTC called. Host status:", this.isHost());
 
     const player: Player = this.playerService.getPlayer();
     if (!player.name || player.name === 'undefined' || player.name === 'null') {
@@ -372,7 +373,7 @@ export class SocketService {
   }
 
   private connectToServer(): void {
-    const url = this.serverUrl.value;
+    const url = this.serverUrl.getValue();
     // Auf GitHub Pages (window.location.origin) oder Localhost (für P2P-Tests) läuft kein Socket.io-Server.
     if (!url || url.includes('github.io') || url.includes('localhost') || url.includes('127.0.0.1')) {
       console.log("P2P mode: Operating in P2P/Local mode only.");

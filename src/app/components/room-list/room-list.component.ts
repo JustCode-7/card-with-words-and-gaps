@@ -11,7 +11,6 @@ import {WebRTCService} from "../../service/webrtc.service";
 import {FormControl, ReactiveFormsModule, Validators} from "@angular/forms";
 import {MatFormFieldModule} from "@angular/material/form-field";
 import {MatInputModule} from "@angular/material/input";
-import {AsyncPipe} from "@angular/common";
 import {MatTooltip} from "@angular/material/tooltip";
 import * as LZString from 'lz-string';
 
@@ -24,7 +23,6 @@ import * as LZString from 'lz-string';
     ReactiveFormsModule,
     MatFormFieldModule,
     MatInputModule,
-    AsyncPipe,
     MatTooltip
   ],
   templateUrl: './room-list.component.html'

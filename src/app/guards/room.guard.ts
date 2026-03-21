@@ -1,7 +1,8 @@
 import {inject, Injectable} from '@angular/core';
 import {ActivatedRouteSnapshot, CanActivate, Router} from '@angular/router';
 import {MatchService} from '../service/match.service';
-import {map, Observable} from 'rxjs';
+import {map, Observable, take} from 'rxjs';
+import {toObservable} from "@angular/core/rxjs-interop";
 
 @Injectable({
   providedIn: 'root'
@@ -14,10 +15,11 @@ export class RoomGuard implements CanActivate {
     const roomname = route.params['roomname'];
     const playername = route.params['playername'];
 
-    return this.matchService.game.pipe(
+    return toObservable(this.matchService.game).pipe(
+      take(1),
       map(game => {
         // If we are the host and the room is the one we are creating, let us through
-        if (this.matchService.socketService.isHost.value && !game.gameHash) {
+        if (this.matchService.socketService.isHost() && !game.gameHash) {
           return true;
         }
 

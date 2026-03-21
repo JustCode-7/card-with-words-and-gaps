@@ -1,12 +1,12 @@
 <div class="p-2 justify-content-center">
   <h1>Roomview</h1>
-  @if (socketService.isHost | async) {
+  @if (socketService.isHost()) {
     <div class="mt-3">
       <div class="d-flex flex-row justify-content-center">
         <mat-chip color="primary" selected>
           <mat-icon>dns</mat-icon>
           Du bist der Host dieses Raums:
-          <span class="text-warning">{{ matchService.gameSignal().gameHash }}</span>
+          <span class="text-warning">{{ matchService.game().gameHash }}</span>
         </mat-chip>
       </div>
       <h3 class="mt-2 text-primary border bg-warning-subtle rounded">Als Raumersteller bist du der Host und der Server
@@ -40,7 +40,7 @@
       </button>
     </div>
   }
-  @if (!matchService.gameSignal().isEnded && matchService.gameSignal().spieler.length >= 2 && !sessionCode()) {
+  @if (!matchService.game().isEnded && matchService.game().spieler.length >= 2 && !sessionCode()) {
     <button (click)="beitreten()" class="w-100 py-3 mb-3 fs-2"
             color="accent"
             mat-raised-button>
@@ -55,51 +55,51 @@
       <div class="d-flex flex-column">
         <h4 class="h6 font-weight-bold mt-2">Verbundene Spieler in der Lobby:</h4>
         <mat-chip-listbox aria-label="Player selection" class="mb-3">
-          @for (p of matchService.gameSignal().spieler; track p.id) {
+          @for (p of matchService.game().spieler; track p.id) {
             <mat-chip-option [selectable]="false" color="accent" selected>
               <mat-icon
-                [class.status-icon-connected]="(getIndividualStatus(p.connectionId) | async) === 'connected'"
-                [class.status-icon-disconnected]="(getIndividualStatus(p.connectionId) | async) !== 'connected'"
+                [class.status-icon-connected]="getIndividualStatus(p.connectionId)() === 'connected'"
+                [class.status-icon-disconnected]="getIndividualStatus(p.connectionId)() !== 'connected'"
                 matChipAvatar>
-                {{ (getIndividualStatus(p.connectionId) | async) === 'connected' ? 'person' : 'person_off' }}
+                {{ getIndividualStatus(p.connectionId)() === 'connected' ? 'person' : 'person_off' }}
               </mat-icon>
               {{ p.name }}
-              @if ((getIndividualStatus(p.connectionId) | async) !== 'connected') {
-                <span class="ms-1 small">({{ getIndividualStatus(p.connectionId) | async }})</span>
+              @if (getIndividualStatus(p.connectionId)() !== 'connected') {
+                <span class="ms-1 small">({{ getIndividualStatus(p.connectionId)() }})</span>
               }
             </mat-chip-option>
           }
         </mat-chip-listbox>
 
         <div #statusContainer
-             [class.bg-danger-subtle]="(getConnectionStatus() | async) === 'disconnected' || matchService.gameSignal().spieler.length < 2"
-             [class.bg-success-subtle]="(getConnectionStatus() | async) === 'connected' && matchService.gameSignal().spieler.length >= 2"
-             [class.bg-warning-subtle]="(getConnectionStatus() | async) === 'connecting' || ((getConnectionStatus() | async) === 'connected' && matchService.gameSignal().spieler.length < 2)"
+             [class.bg-danger-subtle]="getConnectionStatus()() === 'disconnected' || matchService.game().spieler.length < 2"
+             [class.bg-success-subtle]="getConnectionStatus()() === 'connected' && matchService.game().spieler.length >= 2"
+             [class.bg-warning-subtle]="getConnectionStatus()() === 'connecting' || (getConnectionStatus()() === 'connected' && matchService.game().spieler.length < 2)"
              class="mt-2 text-center p-2 rounded small mb-4">
           Netzwerk-Status:
           <strong class="text-uppercase">
             {{
-              ((getConnectionStatus() | async) === 'connected' && matchService.gameSignal().spieler.length >= 2) ? 'connected (' + matchService.gameSignal().spieler.length + '/8)' :
-                ((getConnectionStatus() | async) === 'connected' && matchService.gameSignal().spieler.length < 2) ? 'waiting for players' :
-                  (getConnectionStatus() | async)
+              (getConnectionStatus()() === 'connected' && matchService.game().spieler.length >= 2) ? 'connected (' + matchService.game().spieler.length + '/8)' :
+                (getConnectionStatus()() === 'connected' && matchService.game().spieler.length < 2) ? 'waiting for players' :
+                  getConnectionStatus()()
             }}
           </strong>
         </div>
-        <button (click)="startGame()" [disabled]="matchService.gameSignal().spieler.length < 2"
+        <button (click)="startGame()" [disabled]="matchService.game().spieler.length < 2"
                 class="w-100 p-2 mb-2"
                 color="accent"
                 mat-raised-button>
           <mat-icon>play_arrow</mat-icon>
           SPIEL ERSTELLEN
         </button>
-        @if (matchService.gameSignal().spieler.length < 2) {
+        @if (matchService.game().spieler.length < 2) {
           <p class="text-center small mt-2">Mindestens 1 Mitspieler erforderlich</p>
         }
       </div>
       <div class="d-flex flex-column">
         <div class="step-box mb-4">
           <h4 class="h6 font-weight-bold">Schritt 1 - Einladungs-Link teilen, scan mich
-            Spieler {{ matchService.gameSignal().spieler.length + 1 }}: </h4>
+            Spieler {{ matchService.game().spieler.length + 1 }}: </h4>
           <button (click)="generateNewOffer()" class="w-100 mb-3" color="warn" mat-raised-button>
             <mat-icon>refresh</mat-icon>
             Neuen Einladungscode generieren

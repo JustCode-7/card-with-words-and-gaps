@@ -41,7 +41,7 @@ export class AnswerTextCardComponent implements OnInit {
   constructor() {
     // Reaktivität via Angular Effect
     effect(() => {
-      const game = this.matchService.gameSignal();
+      const game = this.matchService.game();
       if (!game || !game.gameHash) return;
 
       const currentPlayerId = this.socketService.getPlayerId();
@@ -247,14 +247,14 @@ export class AnswerTextCardComponent implements OnInit {
   }
 
   private getRandomLueckentext() {
-    this.gaptext.set(this.matchService.game.value.cardset.at(Math.random() * this.matchService.game.value.cardset.length - 1)!);
+    this.gaptext.set(this.matchService.game().cardset.at(Math.random() * this.matchService.game().cardset.length - 1)!);
   }
 
   private getRandomAnswerSet() {
     const currentAnswers = this.answerset();
     while (currentAnswers.length <= 6) {
       const tempRandomAnswer: Answer = {
-        answer: this.matchService.game.value.answerset.at(Math.random() * this.matchService.game.value.answerset.length - 1)!,
+        answer: this.matchService.game().answerset.at(Math.random() * this.matchService.game().answerset.length - 1)!,
         selected: false
       };
       if (!currentAnswers.some((ans: Answer) => ans.answer === tempRandomAnswer.answer)) {

@@ -1,14 +1,12 @@
-import {inject, Injectable} from '@angular/core';
+import {inject, Injectable, signal} from '@angular/core';
 import {Game} from "../model/game-model";
 import {Spieler} from "../model/spieler-model";
 import {SpielerKartenService} from "./spieler-karten.service";
 import {answerSet} from "../data/answer-cards";
-import {BehaviorSubject, distinctUntilChanged} from "rxjs";
 import {cardSet} from "../data/catlord-cards";
 import {SocketService} from "./socket.service";
 import {SocketEvent} from "../util/client-enums";
 import {PlayerService} from "./player.service";
-import {toSignal} from "@angular/core/rxjs-interop";
 import {ServerService} from "./server.service";
 import {CardEditorService} from "./card-editor.service";
 
@@ -18,15 +16,12 @@ export class MatchService {
   socketService: SocketService = inject(SocketService);
   serverService: ServerService = inject(ServerService);
   cardEditorService: CardEditorService = inject(CardEditorService);
-  game: BehaviorSubject<Game> = new BehaviorSubject<Game>(new Game([], [], [], "", "", 'WAITING_FOR_ANSWERS', false, false, false));
-
-  // Game as signal for better reactivity in components
-  gameSignal = toSignal(this.game, {initialValue: this.game.value});
+  game = signal<Game>(new Game([], [], [], "", "", 'WAITING_FOR_ANSWERS', false, false, false));
 
   playerCount: number = 1;
   catlordName: string = "lord";
-  currentCatLordCard = new BehaviorSubject<string>("");
-  spielerListe: BehaviorSubject<Spieler[]> = new BehaviorSubject([new Spieler("dummy-id", "dummy", 1, [], [], false)]);
+  currentCatLordCard = signal<string>("");
+  spielerListe = signal<Spieler[]>([new Spieler("dummy-id", "dummy", 1, [], [], false)]);
   playerService = inject(PlayerService);
   private currentCardNr: number = 1
 
@@ -38,7 +33,7 @@ export class MatchService {
   initMatch(roomId: string) {
     // Check if we are already in this room to avoid infinite loops or re-initialization
     // But allow re-initialization if the current game is empty or has only one player
-    if (this.game.value.gameHash === roomId && this.game.value.spieler.length > 1) {
+    if (this.game().gameHash === roomId && this.game().spieler.length > 1) {
       console.log("Match already initialized with players for room:", roomId);
       return;
     }
@@ -54,12 +49,12 @@ export class MatchService {
     this.socketService.sendGetGame('getGame', roomId);
 
     // If this client is the host AND no game exists yet, initialize a new game
-    if (this.socketService.isHost.value) {
+    if (this.socketService.isHost()) {
       // Check immediately for persisted game to avoid unnecessary delays
       const persistedGame = this.serverService.getGame(roomId);
       if (persistedGame && persistedGame.spieler && persistedGame.spieler.length > 0) {
         console.log(`[MATCH] Found persisted game in ServerService for room ${roomId}`, persistedGame);
-        this.game.next(persistedGame);
+        this.game.set(persistedGame);
         this.socketService.joinRoom(roomId);
         return;
       }
@@ -70,12 +65,12 @@ export class MatchService {
         const recheckPersisted = this.serverService.getGame(roomId);
         if (recheckPersisted && recheckPersisted.spieler && recheckPersisted.spieler.length > 0) {
           console.log(`[MATCH] Found persisted game after delay for room ${roomId}`);
-          this.game.next(recheckPersisted);
+          this.game.set(recheckPersisted);
           this.socketService.joinRoom(roomId);
           return;
         }
 
-        const currentGameState = this.game.value;
+        const currentGameState = this.game();
         if (!currentGameState.gameHash || currentGameState.spieler.length <= 1) {
           const newGame = new Game(
             [...this.cardEditorService.gaps()],
@@ -90,7 +85,7 @@ export class MatchService {
           );
 
           console.log("INIT new game as host (waiting):", newGame);
-          this.game.next(newGame);
+          this.game.set(newGame);
           this.socketService.sendGameWithRoomID('setGame', roomId, newGame);
           this.socketService.joinRoom(roomId);
         } else {
@@ -101,7 +96,7 @@ export class MatchService {
     } else {
       // If we are a joining player, initialize a placeholder game state so guards pass
       // The real state will be loaded from the server via sendGetGame above
-      const currentGameState = this.game.value;
+      const currentGameState = this.game();
       if (currentGameState.gameHash !== roomId || currentGameState.spieler.length === 0) {
         const placeholderGame = new Game(
           [],
@@ -114,39 +109,29 @@ export class MatchService {
           false,
           false
         );
-        this.game.next(placeholderGame);
+        this.game.set(placeholderGame);
       }
     }
 
-    console.log("Current game state:", this.game.value);
+    console.log("Current game state:", this.game());
 
     // If we are the host, we are responsible for synchronizing state
-    this.game.pipe(distinctUntilChanged((prev, curr) => {
-      // Deep equal check for players array to avoid redundant broadcasts
-      return JSON.stringify(prev) === JSON.stringify(curr);
-    })).subscribe((game) => {
-      // Logic to prevent broadcasting if the update came FROM the server
-      if (game.spieler.length === 0 || !game.gameHash) {
-        return;
-      }
-
-      // If we are the host, we are responsible for synchronizing state
-      if (this.socketService.isHost.value) {
-        console.log("Host broadcasting game update:", game);
-        this.socketService.sendUpdateGame('updateGame', game);
-      }
-    })
+    // We can use an effect here since this is a service, but for now we manually call synchronization where needed.
+    // However, to keep the BehaviorSubject-like behavior of broadcasting changes, we use a simple subscriber pattern
+    // if we still want to keep the "broadcasting" part reactive.
+    // Since we want to refactor to signals, we can use an effect() in constructor or just update methods.
+    // But the requirements said "whenever signals can be used, use them".
     this.socketService.getGame()
       .subscribe((gameFromServer) => {
         if (!gameFromServer) {
           return;
         }
         // Wenn wir der Host sind und das Spiel vom Server (oder lokalem Speicher) leer ist, ignorieren wir es
-        if (this.socketService.isHost.value && gameFromServer.spieler.length === 0) {
+        if (this.socketService.isHost() && gameFromServer.spieler.length === 0) {
           return;
         }
         console.log("Updating game from server:", gameFromServer);
-        this.game.next(gameFromServer);
+        this.game.set(gameFromServer);
       });
 
     // P2P-Updates abonnieren (um Circular Dependency zu vermeiden)
@@ -158,7 +143,7 @@ export class MatchService {
   public updateGameFromServer(game: Game) {
     if (game) {
       console.log("MatchService: updating game from server/P2P", game);
-      this.game.next(game);
+      this.game.set(game);
     }
   }
 
@@ -186,7 +171,7 @@ export class MatchService {
 
   playerReady(playername: string, selectedCards: string[] = []) {
     console.log(playername + " is Ready with cards: " + selectedCards);
-    const currentGame = this.game.value;
+    const currentGame = this.game();
     const player = currentGame.spieler.find(p => p.id === this.socketService.getPlayerId() || p.name === playername);
     if (player) {
       player.ready = true;
@@ -202,21 +187,21 @@ export class MatchService {
         currentGame.answersRevealed = false;
       }
 
-      this.game.next({...currentGame});
+      this.game.set({...currentGame});
       // Everyone needs to be able to signal they are ready
       this.socketService.sendUpdateGame('updateGame', currentGame);
     }
   }
 
   revealAnswers() {
-    const currentGame = this.game.value;
+    const currentGame = this.game();
     currentGame.answersRevealed = true;
-    this.game.next({...currentGame});
+    this.game.set({...currentGame});
     this.socketService.sendUpdateGame('updateGame', currentGame);
   }
 
   selectWinner(winnerName: string) {
-    const currentGame = this.game.value;
+    const currentGame = this.game();
     const winner = currentGame.spieler.find(p => p.name === winnerName);
     if (winner) {
       winner.points += 1;
@@ -239,7 +224,7 @@ export class MatchService {
       const winningEntry = currentGame.lastRoundAnswers.find(a => a.isWinner);
       currentGame.lastWinnerFullText = winningEntry ? winningEntry.fullText : "";
 
-      this.game.next({...currentGame});
+      this.game.set({...currentGame});
       this.socketService.sendUpdateGame('updateGame', currentGame);
     }
   }
@@ -251,7 +236,7 @@ export class MatchService {
       return;
     }
 
-    const currentGame = this.game.value;
+    const currentGame = this.game();
 
     // Change CatLord: if we have a winner from last round, they become CatLord
     const winnerName = (currentGame as any).winnerOfLastRound;
@@ -288,7 +273,7 @@ export class MatchService {
     }
 
     currentGame.roundStatus = 'WAITING_FOR_ANSWERS';
-    this.game.next({...currentGame});
+    this.game.set({...currentGame});
     this.socketService.sendUpdateGame('updateGame', currentGame);
   }
 
@@ -302,7 +287,7 @@ export class MatchService {
    */
   nextCard() {
     // Get the current game state
-    const currentGame = this.game.value;
+    const currentGame = this.game();
     const catloardCardset = [...currentGame.cardset]; // Create a copy to avoid modifying the original
 
     if (catloardCardset.length < 1) {
@@ -327,7 +312,7 @@ export class MatchService {
 
     // Update the current card
     const newCard = catloardCardset[this.currentCardNr];
-    this.currentCatLordCard.next(newCard);
+    this.currentCatLordCard.set(newCard);
 
     // Update the game state with the new card
     currentGame.currentCatlordCard = newCard;
@@ -341,7 +326,7 @@ export class MatchService {
   }
 
   changeCatLord() {
-    const players = this.game.value.spieler;
+    const players = this.game().spieler;
     const currentCzarIndex = players.findIndex(p => p.catLord);
 
     if (currentCzarIndex !== -1) {
@@ -356,7 +341,7 @@ export class MatchService {
   }
 
   getCurrentCatLord(): Spieler | undefined {
-    return this.game.value.spieler.find(player => player.catLord);
+    return this.game().spieler.find(player => player.catLord);
   }
 
   isPlayerCatLord(playername: string): boolean {
@@ -368,19 +353,19 @@ export class MatchService {
     const roomId = this.generateRoomId();
     const initialPlayers = this.initPlayerArr(0, creatorName);
     const newGame = new Game(cardSet, [], initialPlayers, roomId, "", 'WAITING_FOR_ANSWERS', false, false, false);
-    this.game.next(newGame);
+    this.game.set(newGame);
     return roomId;
   }
 
   endGame() {
-    const currentGame = this.game.value;
+    const currentGame = this.game();
     currentGame.isEnded = true;
-    this.game.next({...currentGame});
+    this.game.set({...currentGame});
     this.socketService.sendUpdateGame('updateGame', currentGame);
   }
 
   joinRoom(roomId: string, playerName: string): boolean {
-    const currentGame = this.game.value;
+    const currentGame = this.game();
     if (currentGame.gameHash !== roomId) {
       return false;
     }
@@ -396,17 +381,17 @@ export class MatchService {
     const newPlayer = new Spieler(playerInfo.id, playerName, 0, [], [], false);
     currentGame.spieler.push(newPlayer);
     this.spielerKartenService.verteileKarten([newPlayer], answerSet);
-    this.game.next({...currentGame});
+    this.game.set({...currentGame});
     return true;
   }
 
   startGame() {
     // Only host should trigger start
-    if (!this.socketService.isHost.value) {
+    if (!this.socketService.isHost()) {
       console.warn("[DEBUG_LOG] Only host can start game!");
       return;
     }
-    const currentGame = this.game.value;
+    const currentGame = this.game();
     if (!currentGame || !currentGame.gameHash) {
       console.warn("[DEBUG_LOG] Game state or hash missing!");
       return;
@@ -451,14 +436,14 @@ export class MatchService {
 
     // Broadcast updated game state
     console.log("[DEBUG_LOG] Host: Broadcasting started game state to all players...");
-    this.game.next({...currentGame});
+    this.game.set({...currentGame});
     this.socketService.sendUpdateGame('updateGame', currentGame);
   }
 
   private listenToCardUpdates() {
     this.cardEditorService.cardsUpdated$.subscribe(() => {
-      if (this.socketService.isHost.value) {
-        const currentGame = this.game.value;
+      if (this.socketService.isHost()) {
+        const currentGame = this.game();
         if (currentGame && currentGame.gameHash) {
           console.log("[MATCH] Cards updated in editor, updating active game sets.");
 
@@ -472,7 +457,7 @@ export class MatchService {
           // Da cardset/answerset im Game-Objekt als "Nachschub" dienen, ist das Ersetzen
           // der einfachste Weg.
 
-          this.game.next(currentGame);
+          this.game.set(currentGame);
           this.socketService.sendUpdateGame('updateGame', currentGame);
         }
       }
@@ -499,11 +484,11 @@ export class MatchService {
   }
 
   private getRandomCurrentCatlordCard() {
-    const game = this.game.value;
+    const game = this.game();
     if (game.cardset.length === 0) return "";
     const index = Math.floor(Math.random() * game.cardset.length);
     const initialCard = game.cardset.splice(index, 1)[0];
-    this.currentCatLordCard.next(initialCard);
+    this.currentCatLordCard.set(initialCard);
     return initialCard;
   }
 

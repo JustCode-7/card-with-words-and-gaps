@@ -1,8 +1,8 @@
 <div>
   <mat-card appearance="outlined" class="bg-gradient bg-success text-white">
     <mat-card-header>
-      <mat-card-title class="h3">{{ currentCatlordCard$ | async }}</mat-card-title>
-      <mat-card-subtitle class="text-white-50">{{ catLordName$ | async }} is Catlord</mat-card-subtitle>
+      <mat-card-title class="h3">{{ currentCatlordCard() }}</mat-card-title>
+      <mat-card-subtitle class="text-white-50">{{ catLordName() }} is Catlord</mat-card-subtitle>
     </mat-card-header>
   </mat-card>
 </div>

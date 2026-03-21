@@ -1,12 +1,12 @@
-import {Injectable} from '@angular/core';
+import {Injectable, signal, WritableSignal} from '@angular/core';
 import * as QRCode from 'qrcode';
 import * as LZString from 'lz-string';
-import {BehaviorSubject, Subject} from 'rxjs';
+import {Subject} from 'rxjs';
 
 @Injectable({providedIn: 'root'})
 export class WebRTCService {
-  public connectionStatus = new BehaviorSubject<'disconnected' | 'connecting' | 'connected'>('disconnected');
-  public individualStatus = new Map<string, BehaviorSubject<'disconnected' | 'connecting' | 'connected'>>();
+  public connectionStatus = signal<'disconnected' | 'connecting' | 'connected'>('disconnected');
+  public individualStatus = new Map<string, WritableSignal<'disconnected' | 'connecting' | 'connected'>>();
   public message$ = new Subject<any>();
   private peerConnections: Map<string, RTCPeerConnection> = new Map();
   private dataChannels: Map<string, RTCDataChannel> = new Map();
@@ -179,9 +179,9 @@ export class WebRTCService {
     this.peerConnections.forEach(pc => pc.close());
     this.dataChannels.clear();
     this.peerConnections.clear();
-    this.individualStatus.forEach(status => status.next('disconnected'));
+    this.individualStatus.forEach(status => status.set('disconnected'));
     this.individualStatus.clear();
-    this.connectionStatus.next('disconnected');
+    this.connectionStatus.set('disconnected');
     this.pendingConnectionId = null;
   }
 
@@ -217,27 +217,27 @@ export class WebRTCService {
     this.peerConnections.set(id, pc);
 
     if (!this.individualStatus.has(id)) {
-      this.individualStatus.set(id, new BehaviorSubject<'disconnected' | 'connecting' | 'connected'>('disconnected'));
+      this.individualStatus.set(id, signal<'disconnected' | 'connecting' | 'connected'>('disconnected'));
     }
-    const statusSubject = this.individualStatus.get(id)!;
+    const statusSignal = this.individualStatus.get(id)!;
 
     pc.oniceconnectionstatechange = () => {
       const state = pc.iceConnectionState;
       console.warn(`[DEBUG_LOG] ICE Connection State (${id}):`, state);
 
       if (state === 'connected' || state === 'completed') {
-        this.connectionStatus.next('connected');
-        statusSubject.next('connected');
+        this.connectionStatus.set('connected');
+        statusSignal.set('connected');
       } else if (state === 'failed' || state === 'closed' || state === 'disconnected') {
         // Log explicitly for debugging
         console.warn(`[DEBUG_LOG] WebRTC State change: ${state} for ${id}`);
-        statusSubject.next('disconnected');
+        statusSignal.set('disconnected');
 
         // Wir setzen den Status nur auf disconnected, wenn ALLE Verbindungen weg sind
         const allDisconnected = Array.from(this.peerConnections.values())
           .every(p => p.iceConnectionState === 'disconnected' || p.iceConnectionState === 'failed' || p.iceConnectionState === 'closed');
         if (allDisconnected) {
-          this.connectionStatus.next('disconnected');
+          this.connectionStatus.set('disconnected');
         }
       }
     };
@@ -247,24 +247,24 @@ export class WebRTCService {
   private setupDataChannel(channel: RTCDataChannel, id: string) {
     this.dataChannels.set(id, channel);
     if (!this.individualStatus.has(id)) {
-      this.individualStatus.set(id, new BehaviorSubject<'disconnected' | 'connecting' | 'connected'>('disconnected'));
+      this.individualStatus.set(id, signal<'disconnected' | 'connecting' | 'connected'>('disconnected'));
     }
-    const statusSubject = this.individualStatus.get(id)!;
+    const statusSignal = this.individualStatus.get(id)!;
 
     channel.onopen = () => {
       console.warn(`[DEBUG_LOG] DataChannel open (${id})`);
-      this.connectionStatus.next('connected');
-      statusSubject.next('connected');
+      this.connectionStatus.set('connected');
+      statusSignal.set('connected');
     };
     channel.onclose = () => {
       console.warn(`[DEBUG_LOG] DataChannel closed (${id})`);
       this.dataChannels.delete(id);
       this.peerConnections.delete(id);
-      statusSubject.next('disconnected');
+      statusSignal.set('disconnected');
 
       const allDisconnected = this.dataChannels.size === 0;
       if (allDisconnected) {
-        this.connectionStatus.next('disconnected');
+        this.connectionStatus.set('disconnected');
       }
     };
     channel.onmessage = (event) => {

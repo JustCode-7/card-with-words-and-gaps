@@ -1,5 +1,4 @@
-import {inject, Injectable} from '@angular/core';
-import {BehaviorSubject} from 'rxjs';
+import {inject, Injectable, signal} from '@angular/core';
 import {io, Socket} from 'socket.io-client';
 import {environment} from "../../environments/environment";
 import {WebRTCService} from "./webrtc.service";
@@ -20,7 +19,7 @@ interface Room {
   providedIn: 'root'
 })
 export class ServerService {
-  public isServerRunning = new BehaviorSubject<boolean>(false);
+  public isServerRunning = signal<boolean>(false);
   public serverPort = 3000;
   // Use a local server for development
   public serverUrl = environment.socketUrl;
@@ -38,7 +37,7 @@ export class ServerService {
     localStorage.setItem('currentP2PRoomId', roomId);
     this.saveState(); // Sicherstellen, dass der State sofort gespeichert wird
 
-    if (this.isServerRunning.value) {
+    if (this.isServerRunning()) {
       console.log('Server is already running');
       return;
     }
@@ -49,7 +48,7 @@ export class ServerService {
         console.log("P2P mode detected: Running ServerService in memory mode (No Socket.io).");
         this.socket = null;
         this.createRoom(roomId);
-        this.isServerRunning.next(true);
+        this.isServerRunning.set(true);
         return;
       }
 
@@ -63,7 +62,7 @@ export class ServerService {
       this.createRoom(roomId);
 
       // Mark server as running
-      this.isServerRunning.next(true);
+      this.isServerRunning.set(true);
       console.log(`Connected to server at ${this.serverUrl}`);
     } catch (error) {
       console.error('Failed to start server:', error);
@@ -75,7 +74,7 @@ export class ServerService {
     localStorage.removeItem('currentP2PRoomId');
     localStorage.removeItem('p2p_saved_games');
 
-    if (!this.isServerRunning.value) {
+    if (!this.isServerRunning()) {
       console.log('Server is not running');
       return;
     }
@@ -91,7 +90,7 @@ export class ServerService {
       this.socket = null;
       this.rooms.clear();
       this.games.clear();
-      this.isServerRunning.next(false);
+      this.isServerRunning.set(false);
       console.log('Disconnected from server');
     } catch (error) {
       console.error('Failed to stop server:', error);
@@ -241,7 +240,7 @@ export class ServerService {
         }
       }
 
-      this.isServerRunning.next(true);
+      this.isServerRunning.set(true);
     }
   }
 

@@ -41,7 +41,7 @@ export class PlayerNamePage implements OnInit {
     const storedName = localStorage.getItem('playerName');
     const storedIsHost = localStorage.getItem('isHost') === 'true';
     const storedRoom = localStorage.getItem('currentP2PRoomId');
-    const isHost = storedIsHost || socketService.isHost.value || !!socketService.getP2PRoomId();
+    const isHost = storedIsHost || socketService.isHost() || !!socketService.getP2PRoomId();
 
     console.log("[DEBUG_LOG] PlayerNamePage ngOnInit. Name:", name, "StoredName:", storedName, "Answer:", !!answer, "IsHost:", isHost, "StoredRoom:", storedRoom);
 
@@ -49,7 +49,7 @@ export class PlayerNamePage implements OnInit {
     // falls wir im localStorage Daten finden.
     if (answer && !isHost && storedRoom) {
       console.warn("[DEBUG_LOG] PlayerNamePage: Answer parameter detected but isHost is false. Restoring host status.");
-      socketService.isHost.next(true);
+      socketService.isHost.set(true);
       socketService.setP2PRoomId(storedRoom);
     }
     if (!isHost && !storedRoom && answer) {
@@ -59,7 +59,7 @@ export class PlayerNamePage implements OnInit {
     // Falls ein answer-Code vorhanden ist und der User bereits Host eines Raums ist,
     // leiten wir ihn direkt zur Raum-Erstellungs-Seite zurück, damit der Code dort verarbeitet wird.
     const effectiveName = name || (storedName && storedName !== 'undefined' && storedName !== '');
-    if (answer && (isHost || storedRoom || socketService.isHost.value) && effectiveName) {
+    if (answer && (isHost || storedRoom || socketService.isHost()) && effectiveName) {
       console.log("[DEBUG_LOG] Host hat Antwort-Code gescannt. Leite zurück zum Raum...");
       this.router.navigate(['/new-game'], {queryParams: {answer}, queryParamsHandling: 'merge'});
       return;

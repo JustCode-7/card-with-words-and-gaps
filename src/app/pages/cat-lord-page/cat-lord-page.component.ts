@@ -1,17 +1,16 @@
-import {Component, inject, OnDestroy, OnInit, Pipe, PipeTransform} from '@angular/core';
+import {Component, computed, effect, inject, OnDestroy, OnInit, Pipe, PipeTransform} from '@angular/core';
 import {GapTextCardComponent} from "../../components/gap-text-card/gap-text-card.component";
 import {MatCardModule} from "@angular/material/card";
-import {AsyncPipe, NgForOf, NgIf} from "@angular/common";
+import {NgForOf, NgIf} from "@angular/common";
 import {MatButtonModule} from "@angular/material/button";
 import {MatChipsModule} from "@angular/material/chips";
 import {MatIconModule} from "@angular/material/icon";
 import {SocketService} from "../../service/socket.service";
-import {map, Observable, Subscription} from "rxjs";
+import {Subscription} from "rxjs";
 import {ActivatedRoute, Router} from "@angular/router";
 
 import {MatListModule} from "@angular/material/list";
 import {MatchService} from "../../service/match.service";
-import {Game} from "../../model/game-model";
 import {Spieler} from "../../model/spieler-model";
 
 @Pipe({
@@ -36,7 +35,6 @@ export class NextCzarPipe implements PipeTransform {
     MatChipsModule,
     MatIconModule,
     MatListModule,
-    AsyncPipe,
     NextCzarPipe
   ],
   templateUrl: './cat-lord-page.component.html',
@@ -48,27 +46,40 @@ export class CatLordPage implements OnInit, OnDestroy {
 
   matchService: MatchService = inject(MatchService);
   socketService: SocketService = inject(SocketService);
-  game$ = this.matchService.game.asObservable();
+  game = this.matchService.game;
 
-  submittedAnswers$: Observable<any[]> = this.matchService.game.pipe(
-    map(game => {
-      if (!game || !game.gameHash || game.isEnded) return [];
-      if (game.roundStatus === 'ROUND_FINISHED') return [];
-      const submitted = game.spieler
-        .filter((s: Spieler) => !s.catLord && s.ready && s.selectedCards.length > 0)
-        .map((s: Spieler) => ({
-          name: s.name,
-          cards: s.selectedCards,
-          fullText: this.buildFullText(game.currentCatlordCard, s.selectedCards)
-        }));
-      return this.shuffle(submitted);
-    })
-  );
+  submittedAnswers = computed(() => {
+    const game = this.game();
+    if (!game || !game.gameHash || game.isEnded) return [];
+    if (game.roundStatus === 'ROUND_FINISHED') return [];
+    const submitted = game.spieler
+      .filter((s: Spieler) => !s.catLord && s.ready && s.selectedCards.length > 0)
+      .map((s: Spieler) => ({
+        name: s.name,
+        cards: s.selectedCards,
+        fullText: this.buildFullText(game.currentCatlordCard, s.selectedCards)
+      }));
+    return this.shuffle(submitted);
+  });
 
-  isHost = false;
+  isHost = this.socketService.isHost;
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private subscriptions: Subscription[] = [];
+
+  constructor() {
+    effect(() => {
+      const game = this.game();
+      if (!game || !game.gameHash || game.isEnded) return;
+
+      // Find this player in the game
+      const playerInGame = game.spieler.find((s: Spieler) => s.name === this.catLordName);
+      if (playerInGame && !playerInGame.catLord) {
+        console.log("No longer CatLord, redirecting to player page");
+        this.router.navigate(['/game', this.roomname, this.catLordName, 'player']);
+      }
+    });
+  }
 
   ngOnInit(): void {
     // Extract route parameters
@@ -78,33 +89,9 @@ export class CatLordPage implements OnInit, OnDestroy {
 
       console.log(`CatLord ${this.catLordName} in room ${this.roomname}`);
 
-      // Check if this player is the host
-      this.isHost = this.socketService.isHost.value;
-
       // Initialize the match
       this.matchService.initMatch(this.roomname);
     });
-
-    // Subscribe to matchService.game updates
-    this.subscriptions.push(
-      this.matchService.game.subscribe((game: Game) => {
-        if (!game || !game.gameHash || game.isEnded) return;
-
-        // Find this player in the game
-        const playerInGame = game.spieler.find((s: Spieler) => s.name === this.catLordName);
-        if (playerInGame && !playerInGame.catLord) {
-          console.log("No longer CatLord, redirecting to player page");
-          this.router.navigate(['/game', this.roomname, this.catLordName, 'player']);
-        }
-      })
-    );
-
-    // Subscribe to host status changes
-    this.subscriptions.push(
-      this.socketService.isHost.subscribe(isHost => {
-        this.isHost = isHost;
-      })
-    );
   }
 
   ngOnDestroy(): void {

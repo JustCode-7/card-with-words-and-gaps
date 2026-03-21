@@ -1,4 +1,4 @@
-@if ((matchService.gameSignal())?.isEnded) {
+@if (matchService.game().isEnded) {
   <div class="container mt-5">
     <mat-card appearance="outlined" class="bg-success text-white text-center mb-4">
       <mat-card-header>
@@ -7,7 +7,7 @@
         </mat-card-title>
       </mat-card-header>
       <mat-card-content>
-        <p *ngIf="(matchService.gameSignal()).spieler | nextCzar as winner" class="h3">
+        <p *ngIf="matchService.game().spieler | nextCzar as winner" class="h3">
           Gesamtsieger: <strong>{{ winner.name }}</strong>
         </p>
       </mat-card-content>
@@ -19,10 +19,10 @@
       </mat-card-header>
       <mat-card-content>
         <mat-list>
-          <mat-list-item *ngFor="let s of (matchService.gameSignal()).spieler">
+          <mat-list-item *ngFor="let s of matchService.game().spieler">
             <span matListItemTitle>{{ s.name }}</span>
             <span matListItemLine>{{ s.points }} Punkte</span>
-            <mat-icon *ngIf="(matchService.gameSignal()).spieler | nextCzar as winner; else notWinner"
+            <mat-icon *ngIf="matchService.game().spieler | nextCzar as winner; else notWinner"
                       [color]="s.name === winner.name ? 'primary' : ''"
                       matListItemIcon>
               {{ s.name === winner.name ? 'emoji_events' : 'person' }}
@@ -35,23 +35,23 @@
       </mat-card-content>
     </mat-card>
   </div>
-} @else if ((matchService.gameSignal())?.isStarted) {
+} @else if (matchService.game().isStarted) {
   <div>
     <!-- Round Summary for Players -->
-    <div *ngIf="(matchService.gameSignal())?.roundStatus === 'ROUND_FINISHED'" class="mt-4">
+    <div *ngIf="matchService.game().roundStatus === 'ROUND_FINISHED'" class="mt-4">
       <mat-card appearance="outlined" class="bg-success text-white mb-4">
         <mat-card-content class="text-center">
           <h3>Runde beendet!</h3>
-          <p *ngIf="(matchService.gameSignal()).spieler | nextCzar as winner" class="h4">
+          <p *ngIf="matchService.game().spieler | nextCzar as winner" class="h4">
             Gewinner: <strong>{{ winner.name }}</strong>
           </p>
-          <p class="h5 mt-2">"{{ (matchService.gameSignal())?.lastWinnerFullText }}"</p>
+          <p class="h5 mt-2">"{{ matchService.game().lastWinnerFullText }}"</p>
         </mat-card-content>
       </mat-card>
 
       <h3>Alle Vorschläge dieser Runde</h3>
       <div class="row w-100 p-2">
-        <div *ngFor="let entry of (matchService.gameSignal())?.lastRoundAnswers" class="col-12 mb-3">
+        <div *ngFor="let entry of matchService.game().lastRoundAnswers" class="col-12 mb-3">
           <mat-card [class.border-3]="entry.isWinner" [class.border-primary]="entry.isWinner" appearance="outlined">
             <mat-card-header>
               <mat-card-title>
@@ -69,7 +69,7 @@
     </div>
 
     <!-- Active Round Interface -->
-    <div *ngIf="(matchService.gameSignal())?.roundStatus !== 'ROUND_FINISHED'">
+    <div *ngIf="matchService.game().roundStatus !== 'ROUND_FINISHED'">
       <app-answer-text-card [playername]="playername"></app-answer-text-card>
     </div>
 
@@ -77,7 +77,7 @@
     <div class="mt-5">
       <h3>Spielstand</h3>
       <mat-list>
-        <mat-list-item *ngFor="let s of (matchService.gameSignal()).spieler">
+        <mat-list-item *ngFor="let s of matchService.game().spieler">
           <span matListItemTitle>{{ s.name }} {{ s.catLord ? '(Catlord)' : '' }}</span>
           <span matListItemLine>{{ s.points }} Punkte</span>
           <mat-icon *ngIf="s.ready && !s.catLord" color="primary" matListItemIcon>check_circle</mat-icon>
