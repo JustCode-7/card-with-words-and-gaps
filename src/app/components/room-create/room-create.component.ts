@@ -185,8 +185,11 @@ export class RoomCreateComponent implements OnInit {
   }
 
   async connect() {
-    const answer = this.answerCodeControl.value;
-    if (answer) {
+    const value = this.answerCodeControl.value;
+    if (value) {
+      let answer = this.extractAnswerFromValue(value);
+
+      console.log("[DEBUG_LOG] WebRTC: Connecting with answer...");
       await this.webrtcService.handleAnswer(answer);
       // Wir bleiben auf der Seite, bis der Host das Spiel startet
       // Der Gast wird über WebRTC 'join-room' senden, was die Liste aktualisiert
@@ -214,7 +217,22 @@ export class RoomCreateComponent implements OnInit {
   async startScanner() {
     this.showScanner.set(true);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({video: {facingMode: 'environment'}});
+      const constraints: any = {
+        video: {
+          facingMode: 'environment',
+          focusMode: 'continuous',
+          whiteBalanceMode: 'continuous'
+        }
+      };
+
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (e) {
+        console.warn("Erweiterte Video-Constraints fehlgeschlagen, Fallback auf Standard.");
+        stream = await navigator.mediaDevices.getUserMedia({video: {facingMode: 'environment'}});
+      }
+
       if (this.scannerVideo) {
         this.scannerVideo.nativeElement.srcObject = stream;
         this.scannerVideo.nativeElement.play();
@@ -278,31 +296,67 @@ export class RoomCreateComponent implements OnInit {
         const barcodes = await barcodeDetector.detect(this.scannerVideo.nativeElement);
         if (barcodes.length > 0) {
           const qrCodeValue = barcodes[0].rawValue;
-          console.log("QR-Code erkannt:", qrCodeValue);
-          this.handleScannedValue(qrCodeValue);
+          if (qrCodeValue) {
+            console.log("QR-Code erkannt:", qrCodeValue.substring(0, 30));
+            this.handleScannedValue(qrCodeValue);
+          }
         }
       } catch (e) {
         // Silently fail if detection fails
       }
-    }, 500);
+    }, 150); // Noch kürzeres Intervall
   }
 
   private handleScannedValue(value: string) {
-    // Versuchen, den answer-Parameter zu extrahieren
-    let answer = '';
-    try {
-      const url = new URL(value);
-      answer = url.searchParams.get('answer') || '';
-    } catch (e) {
-      // Falls es keine URL ist, nehmen wir den Wert direkt
-      answer = value;
-    }
+    console.log("[DEBUG_LOG] WebRTC: Processing scanned value:", value.substring(0, 50) + "...");
+    const answer = this.extractAnswerFromValue(value);
 
-    if (answer) {
+    if (answer && answer.length > 50) { // Ein gültiger Code ist meist recht lang
+      console.log("[DEBUG_LOG] WebRTC: Valid answer found, auto-connecting...");
       this.answerCodeControl.setValue(answer);
       this.stopScanner();
       this.connect();
     }
+  }
+
+  private extractAnswerFromValue(value: string): string {
+    let answer = value.trim();
+    try {
+      // Suche nach dem 'answer' Parameter in der gesamten URL (auch hinter dem Hash)
+      const urlObj = new URL(answer.startsWith('http') ? answer : 'http://localhost/' + answer);
+
+      // 1. Suche in Standard-Query-Parametern
+      let param = urlObj.searchParams.get('answer');
+
+      // 2. Suche in Query-Parametern nach dem Hash (Angular HashLocationStrategy)
+      if (!param && answer.includes('#')) {
+        const hashPart = answer.split('#')[1];
+        if (hashPart.includes('?')) {
+          const hashQuery = hashPart.split('?')[1];
+          const hashParams = new URLSearchParams(hashQuery);
+          param = hashParams.get('answer');
+        }
+      }
+
+      // 3. Regex Fallback für alle Fälle
+      if (!param) {
+        const match = answer.match(/[?&]answer=([^&#]+)/);
+        if (match) {
+          param = decodeURIComponent(match[1]);
+        }
+      }
+
+      if (param) {
+        answer = param;
+      }
+    } catch (e) {
+      // Wenn es keine valide URL ist, versuchen wir es trotzdem mit Regex
+      const match = answer.match(/[?&]answer=([^&#]+)/);
+      if (match) {
+        answer = decodeURIComponent(match[1]);
+      }
+    }
+    return answer;
   }
 
   private extractConnectionId(offer: string) {

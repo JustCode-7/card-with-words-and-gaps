@@ -129,11 +129,13 @@
 
             @if (showScanner()) {
               <div class="scanner-container border rounded overflow-hidden bg-black position-relative"
-                   style="height: 250px;">
-                <video #scannerVideo class="w-100 h-100 object-fit-cover"></video>
+                   style="height: 300px;">
+                <video #scannerVideo class="w-100 h-100 object-fit-cover" playsinline></video>
                 <div
-                  class="scanner-overlay position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center pointer-events-none">
-                  <div class="border border-white border-4 opacity-50" style="width: 150px; height: 150px;"></div>
+                  class="scanner-overlay position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center pointer-events-none">
+                  <div class="border border-white border-2 opacity-50 mb-2"
+                       style="width: 200px; height: 200px; border-radius: 8px;"></div>
+                  <div class="text-white small bg-dark px-2 py-1 rounded opacity-75">QR-Code in den Rahmen halten</div>
                 </div>
               </div>
             }

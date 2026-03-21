@@ -61,28 +61,40 @@ export class WebRTCService {
   async handleAnswer(compressedAnswer: string) {
     console.warn(`[DEBUG_LOG] WebRTC: Handling answer...`);
 
-    let sdp = LZString.decompressFromEncodedURIComponent(compressedAnswer);
+    let sdp = LZString.decompressFromEncodedURIComponent(compressedAnswer.trim());
 
     if (!sdp) {
       console.warn("[DEBUG_LOG] WebRTC: Answer decompression failed! Attempting recovery...");
-      const sanitized = compressedAnswer.replace(/ /g, '+');
+      const sanitized = compressedAnswer.trim().replace(/ /g, '+');
       sdp = LZString.decompressFromEncodedURIComponent(sanitized);
     }
 
-    if (sdp && this.pendingConnectionId) {
+    if (sdp) {
       console.warn(`[DEBUG_LOG] WebRTC: Answer SDP decompressed (length: ${sdp.length})`);
-      const pc = this.peerConnections.get(this.pendingConnectionId);
+
+      let pc: RTCPeerConnection | undefined;
+
+      if (this.pendingConnectionId) {
+        pc = this.peerConnections.get(this.pendingConnectionId);
+      }
+
+      // Fallback: Wenn wir genau eine PeerConnection haben, nehmen wir diese
+      if (!pc && this.peerConnections.size === 1) {
+        pc = Array.from(this.peerConnections.values())[0];
+        console.warn("[DEBUG_LOG] WebRTC: Using single existing PeerConnection as fallback.");
+      }
+
       if (pc) {
-        console.warn(`[DEBUG_LOG] WebRTC: Setting remote description for connectionId: ${this.pendingConnectionId}`);
+        console.warn(`[DEBUG_LOG] WebRTC: Setting remote description.`);
         // Normalisiere Antwort-SDP
         const sanitizedSdp = sdp.split('\n').map(l => l.trim()).filter(l => l.length > 0).join('\r\n') + '\r\n';
         await pc.setRemoteDescription({type: 'answer', sdp: sanitizedSdp});
         this.pendingConnectionId = null;
       } else {
-        console.error(`[DEBUG_LOG] WebRTC ERROR: No peer connection found for ${this.pendingConnectionId}`);
+        console.error(`[DEBUG_LOG] WebRTC ERROR: No matching peer connection found (PendingID: ${this.pendingConnectionId})`);
       }
     } else {
-      console.error(`[DEBUG_LOG] WebRTC ERROR: Invalid answer or no pending connectionId`);
+      console.error(`[DEBUG_LOG] WebRTC ERROR: Invalid answer (decompression failed)`);
     }
   }
 
@@ -92,12 +104,12 @@ export class WebRTCService {
 
     // In manchen Fällen werden Leerzeichen in '+' umgewandelt oder umgekehrt,
     // was die Dekomprimierung behindern kann.
-    let offerPacketString = LZString.decompressFromEncodedURIComponent(compressedOffer);
+    let offerPacketString = LZString.decompressFromEncodedURIComponent(compressedOffer.trim());
 
     if (!offerPacketString) {
       console.warn("[DEBUG_LOG] WebRTC: Decompression failed for offer! Attempting recovery...");
       // Falls der String falsch URL-codiert war (z.B. Leerzeichen statt +)
-      const sanitized = compressedOffer.replace(/ /g, '+');
+      const sanitized = compressedOffer.trim().replace(/ /g, '+');
       offerPacketString = LZString.decompressFromEncodedURIComponent(sanitized);
     }
 
