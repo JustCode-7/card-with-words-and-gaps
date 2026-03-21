@@ -149,6 +149,18 @@ export class WebRTCService {
     });
   }
 
+  public closeAllConnections() {
+    console.warn(`[DEBUG_LOG] WebRTC: Closing all ${this.peerConnections.size} connections`);
+    this.dataChannels.forEach(dc => dc.close());
+    this.peerConnections.forEach(pc => pc.close());
+    this.dataChannels.clear();
+    this.peerConnections.clear();
+    this.individualStatus.forEach(status => status.next('disconnected'));
+    this.individualStatus.clear();
+    this.connectionStatus.next('disconnected');
+    this.pendingConnectionId = null;
+  }
+
   private async waitForIceGathering(pc: RTCPeerConnection) {
     console.warn("[DEBUG_LOG] WebRTC: Waiting for ICE gathering...");
     const isLocal = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1');
@@ -233,6 +245,8 @@ export class WebRTCService {
     };
     channel.onmessage = (event) => {
       const data = JSON.parse(event.data);
+      // Wir fügen die connectionId zur Nachricht hinzu, damit der Empfänger weiß, von wem sie kommt
+      data._connectionId = id;
       this.message$.next(data);
     };
   }

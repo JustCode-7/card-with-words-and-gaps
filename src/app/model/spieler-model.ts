@@ -6,6 +6,7 @@ export class Spieler {
   selectedCards: string[];
   catLord: boolean;
   ready: boolean = false;
+  connectionId?: string;
 
   constructor(id: string,
               name: string,
@@ -13,7 +14,8 @@ export class Spieler {
               cards: string[],
               selectedCards: string[],
               catLord: boolean,
-              ready: boolean = false) {
+              ready: boolean = false,
+              connectionId?: string) {
     this.id = id;
     this.name = name;
     this.points = points;
@@ -21,5 +23,6 @@ export class Spieler {
     this.selectedCards = selectedCards;
     this.catLord = catLord;
     this.ready = ready;
+    this.connectionId = connectionId;
   }
 }

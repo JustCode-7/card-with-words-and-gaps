@@ -10,6 +10,7 @@ import {DataService} from "./data.service";
 import {ServerService} from "./server.service";
 import {environment} from "../../environments/environment";
 import {WebRTCService} from "./webrtc.service";
+import {Router} from "@angular/router";
 
 @Injectable({providedIn: 'root'})
 export class SocketService {
@@ -22,6 +23,7 @@ export class SocketService {
   private dataService = inject(DataService);
   private serverService = inject(ServerService);
   private webrtcService = inject(WebRTCService);
+  private router = inject(Router);
 
   // Zwischenspeicher für den aktuellen P2P-Raumnamen (um Circular Dependency mit MatchService zu vermeiden)
   private currentP2PRoomId: string | null = null;
@@ -299,7 +301,13 @@ export class SocketService {
     } else if (msg.event === 'join-room' && this.isHost.value) {
       // Wenn wir der Host sind, registrieren wir den beigetretenen P2P-Spieler
       const {roomId, player} = msg.data;
-      console.log(`[DEBUG_LOG] Host: P2P player ${player.name} (${player.id}) joining room ${roomId}`);
+      const connectionId = msg._connectionId;
+      console.log(`[DEBUG_LOG] Host: P2P player ${player.name} (${player.id}) joining room ${roomId} via connection ${connectionId}`);
+
+      // Die connectionId am Spieler-Objekt speichern
+      if (player && connectionId) {
+        player.connectionId = connectionId;
+      }
 
       // Den Spieler im ServerService hinzufügen
       this.serverService.addPlayerToRoom(roomId, player);
@@ -318,6 +326,9 @@ export class SocketService {
           data: gameCopy
         });
       }
+    } else if (msg.event === 'room-deleted' && !this.isHost.value) {
+      console.warn("[DEBUG_LOG] P2P: Host deleted the room. Navigating to home.");
+      this.router.navigate(['/']);
     }
   }
 

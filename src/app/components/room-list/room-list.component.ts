@@ -27,78 +27,14 @@ import * as LZString from 'lz-string';
     AsyncPipe,
     MatTooltip
   ],
-  templateUrl: './room-list.component.html',
-  styles: `
-    .mw-50 {
-      max-width: 50%;
-    }
-
-    .room-card {
-      margin-bottom: 1rem;
-    }
-
-    .room-name {
-      margin-right: 1rem;
-      font-weight: bold;
-    }
-
-    .w-100 {
-      width: 100%;
-    }
-
-    .mb-3 {
-      margin-bottom: 1rem;
-    }
-
-    .mb-4 {
-      margin-bottom: 1.5rem;
-    }
-
-    .mt-3 {
-      margin-top: 1rem;
-    }
-
-    .mt-2 {
-      margin-top: 0.5rem;
-    }
-
-    .bg-success-subtle {
-      background-color: #d1e7dd;
-      color: #0f5132;
-    }
-
-    .bg-warning-subtle {
-      background-color: #fff3cd;
-      color: #664d03;
-    }
-
-    .bg-danger-subtle {
-      background-color: #f8d7da;
-      color: #842029;
-    }
-
-    .animation-pulse {
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0% {
-        opacity: 1;
-      }
-      50% {
-        opacity: 0.5;
-      }
-      100% {
-        opacity: 1;
-      }
-    }
-  `
+  templateUrl: './room-list.component.html'
 })
 export class RoomListComponent implements OnInit {
   webrtcService = inject(WebRTCService);
   offerCodeControl = new FormControl('', [Validators.required]);
   answerCode = signal('');
   answerQrCodeUrl = signal('');
+  answerLink = signal('');
   p2pRoomId = signal('P2P-Room');
   p2pConnectionId = signal<string | null>(null);
   protected playerService = inject(PlayerService);
@@ -170,13 +106,24 @@ export class RoomListComponent implements OnInit {
       this.socketService.setP2PRoomId(roomId);
 
       this.answerCode.set(answer);
-      const qr = await this.webrtcService.generateQRCode(answer);
+
+      const url = new URL(window.location.href);
+      // Entferne alle Query-Parameter, um eine saubere Basis-URL zu haben
+      const baseUrl = url.origin + url.pathname;
+      const answerLink = `${baseUrl}#/join-game?answer=${encodeURIComponent(answer)}`;
+      this.answerLink.set(answerLink);
+
+      const qr = await this.webrtcService.generateQRCode(answerLink);
       this.answerQrCodeUrl.set(qr);
     }
   }
 
   copyAnswer() {
     navigator.clipboard.writeText(this.answerCode());
+  }
+
+  copyAnswerLink() {
+    navigator.clipboard.writeText(this.answerLink());
   }
 
   joinRoom(room: string) {

@@ -1,8 +1,8 @@
-<div class="container text-center py-4">
+<div class="justify-content-center p-2">
   <h1>Willkommen zum <code>Banana Kittens</code> Kartenspiel</h1>
 
-  <div class="row justify-content-center mt-4">
-    <div class="col-md-6 col-lg-4 shadow-sm ps-2 pe-4 rounded bg-dark border">
+  <div class="d-flex flex-row justify-content-center mt-4">
+    <div class="col-md-6 col-lg-4 shadow-sm p-2 rounded bg-dark border">
       <h3>Wie heisst du?</h3>
       <form (ngSubmit)="onSubmit()" [formGroup]="form">
         <mat-form-field class="w-100">
@@ -30,10 +30,10 @@
 
       <hr class="my-4">
 
-      <div class="qr-container">
+      <div class="qr-container p-2">
         <p class="small mb-2">Teile das Spiel mit anderen:</p>
         @if (appQrCodeUrl()) {
-          <img [src]="appQrCodeUrl()" alt="App QR Code" class="img-fluid qr-image border rounded p-2">
+          <img [src]="appQrCodeUrl()" alt="App QR Code" class="justify-content-center qr-image border rounded">
         }
         <p class="mt-2 small font-weight-bold">Scan mich zum Mitspielen!</p>
       </div>

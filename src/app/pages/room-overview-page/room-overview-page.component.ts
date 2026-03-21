@@ -9,6 +9,7 @@ import {MatSelectModule} from "@angular/material/select";
 import {SocketService} from "../../service/socket.service";
 import {RoomListComponent} from "../../components/room-list/room-list.component";
 import {RoomCreateComponent} from "../../components/room-create/room-create.component";
+import {AsyncPipe} from "@angular/common";
 
 @Component({
   selector: 'app-room-overview',
@@ -22,19 +23,18 @@ import {RoomCreateComponent} from "../../components/room-create/room-create.comp
     MatSelectModule,
     RoomListComponent,
     RoomCreateComponent,
+    AsyncPipe,
   ],
   template: `
-    <div class="container">
-      <h1>Room Overview</h1>
-      <app-room-create/>
+    <app-room-create/>
+    @if (!(socketService.isHost | async)) {
       <app-room-list/>
-    </div>
+    }
   `,
-  styles: ``
 })
 export class RoomOverviewPage implements OnInit, OnDestroy {
 
-  private socketService = inject(SocketService);
+  socketService = inject(SocketService);
 
   ngOnInit(): void {
     this.socketService.onRoomListener();

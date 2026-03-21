@@ -1,4 +1,4 @@
-import {Component, inject, signal} from '@angular/core';
+import {Component, ElementRef, inject, OnInit, signal, ViewChild} from '@angular/core';
 import {FormControl, ReactiveFormsModule, Validators} from "@angular/forms";
 import {MatButtonModule} from "@angular/material/button";
 import {MatFormFieldModule} from "@angular/material/form-field";
@@ -8,10 +8,13 @@ import {MatChipsModule} from "@angular/material/chips";
 import {AsyncPipe} from "@angular/common";
 import {SocketService} from "../../service/socket.service";
 import {PlayerService} from "../../service/player.service";
-import {Router} from "@angular/router";
+import {ServerService} from "../../service/server.service";
+import {ActivatedRoute, Router} from "@angular/router";
 import {MatchService} from "../../service/match.service";
 import {WebRTCService} from "../../service/webrtc.service";
+import {Game} from "../../model/game-model";
 import * as LZString from 'lz-string';
+import {BehaviorSubject, Subscription} from "rxjs";
 
 @Component({
   selector: 'app-room-create',
@@ -24,59 +27,9 @@ import * as LZString from 'lz-string';
     MatChipsModule,
     AsyncPipe,
   ],
-  templateUrl: './room-create.component.html',
-  styles: `
-    .mw-50 {
-      max-width: 50%;
-    }
-
-    .mt-2 {
-      margin-top: 0.5rem;
-    }
-
-    .mt-3 {
-      margin-top: 1rem;
-    }
-
-    .mt-4 {
-      margin-top: 1.5rem;
-    }
-
-    .mb-3 {
-      margin-bottom: 1rem;
-    }
-
-    .mb-4 {
-      margin-bottom: 1.5rem;
-    }
-
-    .w-100 {
-      width: 100%;
-    }
-
-    .step-box {
-      padding: 1rem;
-      border: 1px solid #dee2e6;
-      border-radius: 0.5rem;
-    }
-
-    .bg-success-subtle {
-      background-color: #d1e7dd;
-      color: #0f5132;
-    }
-
-    .bg-warning-subtle {
-      background-color: #fff3cd;
-      color: #664d03;
-    }
-
-    .bg-danger-subtle {
-      background-color: #f8d7da;
-      color: #842029;
-    }
-  `
+  templateUrl: './room-create.component.html'
 })
-export class RoomCreateComponent {
+export class RoomCreateComponent implements OnInit {
 
   roomIdControl = new FormControl('', [Validators.required, Validators.maxLength(32)]);
   answerCodeControl = new FormControl('', [Validators.required]);
@@ -88,11 +41,46 @@ export class RoomCreateComponent {
   matchService = inject(MatchService);
   socketService = inject(SocketService);
   playerService = inject(PlayerService);
+  serverService = inject(ServerService);
   webrtcService = inject(WebRTCService);
   router = inject(Router);
+  route = inject(ActivatedRoute);
 
   spielerListe = signal<any[]>([]);
   p2pConnectionId = signal<string | null>(null);
+  @ViewChild('statusContainer') statusContainer!: ElementRef;
+  private subscriptions: Subscription[] = [];
+
+  getIndividualStatus(connectionId?: string) {
+    if (connectionId && this.webrtcService.individualStatus.has(connectionId)) {
+      return this.webrtcService.individualStatus.get(connectionId)!;
+    }
+    // Falls keine ID da ist (Host selbst), geben wir connected zurück
+    return new BehaviorSubject('connected');
+  }
+
+  ngOnInit(): void {
+    this.route.queryParams.subscribe(params => {
+      const answer = params['answer'];
+      if (answer) {
+        console.warn("[DEBUG_LOG] WebRTC: Answer parameter detected in URL");
+        this.answerCodeControl.setValue(answer);
+
+        // Kleine Verzögerung, um sicherzustellen, dass createRoom()
+        // bereits einen Offer generiert hat (falls der User die Seite neu lädt)
+        // Wenn er bereits auf der Seite ist, sollte es sofort gehen.
+        const checkSession = setInterval(() => {
+          if (this.sessionCode()) {
+            this.connect();
+            clearInterval(checkSession);
+          }
+        }, 500);
+
+        // Nach 5 Sekunden aufhören zu warten, um Endlosschleifen zu vermeiden
+        setTimeout(() => clearInterval(checkSession), 5000);
+      }
+    });
+  }
 
   async createRoom() {
     if (this.roomIdControl.invalid) return;
@@ -109,11 +97,12 @@ export class RoomCreateComponent {
     await this.generateNewOffer();
 
     // Wir beobachten die Spielerliste aus dem MatchService
-    this.matchService.game.subscribe(game => {
+    const matchSub = this.matchService.game.subscribe(game => {
       if (game && game.spieler) {
         this.spielerListe.set(game.spieler);
       }
     });
+    this.subscriptions.push(matchSub);
   }
 
   async generateNewOffer() {
@@ -167,6 +156,14 @@ export class RoomCreateComponent {
       await this.webrtcService.handleAnswer(answer);
       // Wir bleiben auf der Seite, bis der Host das Spiel startet
       // Der Gast wird über WebRTC 'join-room' senden, was die Liste aktualisiert
+
+      // Eingabefeld für Antwort leeren, nachdem der Spieler hinzugefügt wurde
+      this.answerCodeControl.setValue('');
+
+      // Nach dem Hinzufügen zum Netzwerk-Status scrollen
+      setTimeout(() => {
+        this.statusContainer.nativeElement.scrollIntoView({behavior: 'smooth', block: 'center'});
+      }, 100);
     }
   }
 
@@ -174,6 +171,27 @@ export class RoomCreateComponent {
     const room = this.roomIdControl.value!;
     const playerName = this.playerService.getPlayer().name;
     this.router.navigate(['game', room, playerName, 'catlord']);
+  }
+
+  beitreten() {
+    const room = this.matchService.gameSignal().gameHash;
+    const playerName = this.playerService.getPlayer().name;
+    this.router.navigate(['game', room, playerName, 'catlord']);
+  }
+
+  deleteRoom() {
+    this.subscriptions.forEach(sub => sub.unsubscribe());
+    this.subscriptions = [];
+    this.socketService.isHost.next(false);
+    this.socketService.setP2PRoomId('');
+    this.matchService.game.next(new Game([], [], [], "", "", 'WAITING_FOR_ANSWERS', false, false, false));
+    this.sessionCode.set('');
+    this.joinLink.set('');
+    this.qrCodeDataUrl.set('');
+    this.spielerListe.set([]);
+    this.p2pConnectionId.set(null);
+    this.roomIdControl.reset();
+    this.serverService.stopServer();
   }
 
 }

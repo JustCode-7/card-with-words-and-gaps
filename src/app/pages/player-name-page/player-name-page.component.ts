@@ -17,25 +17,7 @@ import {WebRTCService} from "../../service/webrtc.service";
     MatIconModule,
     ReactiveFormsModule
   ],
-  templateUrl: './player-name-page.component.html',
-  styles: `
-    .qr-container {
-      margin-top: 1rem;
-    }
-
-    .w-100 {
-      width: 100%;
-    }
-
-    .mt-4 {
-      margin-top: 1.5rem;
-    }
-
-    .py-4 {
-      padding-top: 1.5rem;
-      padding-bottom: 1.5rem;
-    }
-  `
+  templateUrl: './player-name-page.component.html'
 })
 export class PlayerNamePage implements OnInit {
   appQrCodeUrl = signal('');

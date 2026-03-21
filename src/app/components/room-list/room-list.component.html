@@ -1,6 +1,6 @@
-<div class="d-flex justify-content-center mx-2 my-2 overflow-hidden">
-  <div class="d-flex flex-column mb-4 p-3 border rounded shadow-sm bg-darks justify-content-center">
-    <h2 class="text-accent mb-3 h4">Über Einladungs-Link beitreten (WebRTC)</h2>
+<div class="d-flex justify-content-center overflow-hidden">
+  <div class="d-flex flex-column m-2 border rounded shadow-sm bg-darks justify-content-center p-2">
+    <h2 class="text-accent h4">Über Einladungs-Link beitreten (WebRTC)</h2>
 
     @if (!answerCode()) {
       <p class="small">Füge den Sessioncode vom Host ein oder nutze einen Einladungs-Link.</p>
@@ -18,9 +18,14 @@
       <h3 class="h6 font-weight-bold text-primary">Antwort-Code generiert!</h3>
       <p class="small">Zeige diesen QR-Code dem Host oder sende ihm den Code-String zurück.</p>
 
-      <img [src]="answerQrCodeUrl()" alt="QR Code"
-           class="img-fluid qr-image border rounded p-2 mb-2">
-
+      <div class="text-center">
+        <img [src]="answerQrCodeUrl()" alt="QR Code"
+             class="img-fluid qr-image border rounded">
+        <button (click)="copyAnswerLink()" class="w-100 mb-3" color="accent" mat-stroked-button>
+          <mat-icon>content_copy</mat-icon>
+          Link kopieren
+        </button>
+      </div>
       <mat-form-field class="w-75">
         <mat-label>Antwort-Code</mat-label>
         <input [value]="answerCode()" matInput readonly>
@@ -46,25 +51,6 @@
       @if ((getConnectionStatus() | async) !== 'connected') {
         <p class="mt-2 small text-center text-danger animation-pulse">Warten auf Bestätigung durch Host...</p>
       }
-    }
-
-    <h1>List of existing Rooms</h1>
-    @for (room of rooms(); track room) {
-      <mat-card class="room-card">
-        <mat-card-content>
-          <span class="room-name">{{ room }}</span>
-          <button (click)="joinRoom(room)"
-                  aria-label="Join"
-                  color="primary"
-                  mat-button
-          >
-            <mat-icon>rocket_launch</mat-icon>
-            Join
-          </button>
-        </mat-card-content>
-      </mat-card>
-    } @empty {
-      <div>There are no rooms yet.</div>
     }
   </div>
 </div>

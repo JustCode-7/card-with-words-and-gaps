@@ -21,10 +21,83 @@ body {
 }
 
 .qr-image {
-  max-width: 200px;
   width: 100%;
   height: auto;
   background: white;
+}
+
+.qr-container {
+  display: block;
+}
+
+.mw-50 {
+  max-width: 50%;
+}
+
+.mw-90 {
+  max-width: 90%;
+  width: 100%;
+}
+
+.step-box {
+  padding: 1rem;
+  border: 1px solid #dee2e6;
+  border-radius: 0.5rem;
+}
+
+.bg-success-subtle {
+  background-color: #d1e7dd;
+  color: #0f5132;
+}
+
+.bg-warning-subtle {
+  background-color: #fff3cd;
+  color: #664d03;
+}
+
+.bg-danger-subtle {
+  background-color: #f8d7da;
+  color: #842029;
+}
+
+.room-card {
+  margin-bottom: 1rem;
+}
+
+.room-name {
+  margin-right: 1rem;
+  font-weight: bold;
+}
+
+.bg-success-subtle {
+  background-color: #d1e7dd;
+  color: #0f5132;
+}
+
+.bg-warning-subtle {
+  background-color: #fff3cd;
+  color: #664d03;
+}
+
+.bg-danger-subtle {
+  background-color: #f8d7da;
+  color: #842029;
+}
+
+.animation-pulse {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
 @import 'styles/bootstrap';

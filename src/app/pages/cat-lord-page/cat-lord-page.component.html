@@ -39,7 +39,7 @@
   <div class="m-3">
     <app-gap-text-card></app-gap-text-card>
   </div>
-  <div class="container mt-2">
+  <div class="mt-2 p-2">
     <div class="d-flex flex-row justify-content-between align-items-center mb-4">
       <div>
         <h2>Catlord: {{ this.catLordName }}</h2>
@@ -84,7 +84,7 @@
     </div>
 
     <!-- Submitted Answers for the Czar -->
-    <div *ngIf="(game$ | async)?.roundStatus === 'CZAR_DECIDING' && (game$ | async)?.answersRevealed" class="row">
+    <div *ngIf="(game$ | async)?.roundStatus === 'CZAR_DECIDING' && (game$ | async)?.answersRevealed" class="row w-100">
       <div *ngFor="let entry of (submittedAnswers$ | async); let i = index" class="col-12 mb-3">
         <mat-card appearance="outlined">
           <mat-card-header>
@@ -113,8 +113,8 @@
       </mat-card>
 
       <h3>Alle Vorschläge dieser Runde</h3>
-      <div class="row">
-        <div *ngFor="let entry of (game$ | async)?.lastRoundAnswers" class="col-12 mb-3">
+      <div class="row w-100 p-2">
+        <div *ngFor="let entry of (game$ | async)?.lastRoundAnswers" class="col-12 mb-3 p-2">
           <mat-card [class.border-3]="entry.isWinner" [class.border-primary]="entry.isWinner" appearance="outlined">
             <mat-card-header>
               <mat-card-title>
@@ -131,7 +131,7 @@
     </div>
 
     <!-- Leaderboard -->
-    <div class="mt-5">
+    <div class="mt-5 step-box mw-75">
       <h3>Spielstand</h3>
       <mat-list>
         <mat-list-item *ngFor="let s of (game$ | async)?.spieler">

@@ -36,7 +36,7 @@
     </mat-card>
   </div>
 } @else if ((matchService.gameSignal())?.isStarted) {
-  <div class="container mt-2">
+  <div>
     <!-- Round Summary for Players -->
     <div *ngIf="(matchService.gameSignal())?.roundStatus === 'ROUND_FINISHED'" class="mt-4">
       <mat-card appearance="outlined" class="bg-success text-white mb-4">
@@ -70,7 +70,7 @@
 
     <!-- Active Round Interface -->
     <div *ngIf="(matchService.gameSignal())?.roundStatus !== 'ROUND_FINISHED'">
-      <app-answer-text-card [playername]="playername" class="p-3"></app-answer-text-card>
+      <app-answer-text-card [playername]="playername"></app-answer-text-card>
     </div>
 
     <!-- Leaderboard -->

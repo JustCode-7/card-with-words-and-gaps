@@ -1,11 +1,13 @@
-import {Injectable} from '@angular/core';
+import {inject, Injectable} from '@angular/core';
 import {BehaviorSubject} from 'rxjs';
 import {io, Socket} from 'socket.io-client';
 import {environment} from "../../environments/environment";
+import {WebRTCService} from "./webrtc.service";
 
 interface Player {
   id: string;
   name: string;
+  connectionId?: string;
 }
 
 interface Room {
@@ -25,6 +27,7 @@ export class ServerService {
   private socket: Socket | null = null;
   private rooms: Map<string, Room> = new Map();
   private games: Map<string, any> = new Map();
+  private webrtcService = inject(WebRTCService);
 
   constructor() {
   }
@@ -70,6 +73,10 @@ export class ServerService {
     }
 
     try {
+      // Vor dem Schließen alle P2P-Gäste informieren
+      this.webrtcService.sendMessage({event: 'room-deleted'});
+      this.webrtcService.closeAllConnections();
+
       if (this.socket) {
         this.socket.disconnect();
       }
@@ -139,12 +146,16 @@ export class ServerService {
           cards: playerCards,
           selectedCards: [],
           catLord: false,
-          ready: false
+          ready: false,
+          connectionId: player.connectionId
         });
       } else {
         console.log(`[SERVER] Player ${player.name} (${player.id}) already exists, updating info`);
-        // Namen aktualisieren, falls er sich geändert hat
+        // Namen und connectionId aktualisieren
         existingInGame.name = player.name;
+        if (player.connectionId) {
+          existingInGame.connectionId = player.connectionId;
+        }
         // Falls der existierende Spieler keine Karten hat oder weniger als 10
         if (existingInGame.cards.length < 10 && game.answerset && game.answerset.length >= (10 - existingInGame.cards.length)) {
           console.log(`[SERVER] Refilling cards for ${player.name} (${player.id})`);
