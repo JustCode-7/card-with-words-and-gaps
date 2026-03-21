@@ -18,6 +18,16 @@ export class WebRTCService {
   constructor() {
   }
 
+  /**
+   * Stellt eine ausstehende Verbindung wieder her, falls die Seite neu geladen wurde.
+   */
+  public restorePendingConnection(id: string) {
+    if (this.peerConnections.has(id)) {
+      this.pendingConnectionId = id;
+      console.warn(`[DEBUG_LOG] WebRTC: Restored pendingConnectionId: ${id}`);
+    }
+  }
+
   // HOST Side
   async createOffer(roomId: string): Promise<string> {
     console.warn(`[DEBUG_LOG] WebRTC: Creating offer for room ${roomId}`);

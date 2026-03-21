@@ -5,12 +5,12 @@
     @if (!answerCode()) {
       <p class="small">Füge den Sessioncode vom Host ein oder nutze einen Einladungs-Link.</p>
       <mat-form-field>
-        <mat-label>Sessioncode vom Host</mat-label>
+        <mat-label>Sessioncode oder join-link vom Host</mat-label>
         <textarea [formControl]="offerCodeControl" matInput rows="3"></textarea>
       </mat-form-field>
-      <button (click)="generateAnswer()" [disabled]="offerCodeControl.invalid" class="w-100" color="accent"
+      <button (click)="handleAction()" [disabled]="offerCodeControl.invalid" class="w-100" color="accent"
               mat-raised-button>
-        Antwort-Code generieren
+        {{ isUrl() ? 'Link aufrufen' : 'Antwort-Code generieren' }}
       </button>
     }
 

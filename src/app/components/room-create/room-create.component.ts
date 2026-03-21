@@ -33,13 +33,11 @@ export class RoomCreateComponent implements OnInit {
 
   roomIdControl = new FormControl('', [Validators.required, Validators.maxLength(32)]);
   answerCodeControl = new FormControl('', [Validators.required]);
-
-  sessionCode = signal('');
-  joinLink = signal('');
-  qrCodeDataUrl = signal('');
-
   matchService = inject(MatchService);
   socketService = inject(SocketService);
+  sessionCode = this.socketService.sessionCode;
+  joinLink = this.socketService.joinLink;
+  qrCodeDataUrl = this.socketService.qrCodeDataUrl;
   playerService = inject(PlayerService);
   serverService = inject(ServerService);
   webrtcService = inject(WebRTCService);
@@ -59,25 +57,57 @@ export class RoomCreateComponent implements OnInit {
     return new BehaviorSubject('connected');
   }
 
-  ngOnInit(): void {
+  async ngOnInit(): Promise<void> {
+    // Falls wir bereits Host sind, müssen wir die Spielerliste und den Raum-Zustand wiederherstellen
+    if (this.socketService.isHost.value) {
+      const room = this.socketService.getP2PRoomId();
+      if (room) {
+        this.roomIdControl.setValue(room);
+
+        // Spielerliste wieder abonnieren
+        const matchSub = this.matchService.game.subscribe(game => {
+          if (game && game.spieler) {
+            this.spielerListe.set(game.spieler);
+          }
+        });
+        this.subscriptions.push(matchSub);
+
+        // Falls noch kein Offer da ist, einen erzeugen
+        if (!this.sessionCode()) {
+          await this.generateNewOffer();
+        } else {
+          // Falls bereits ein Offer da ist (persistiert), extrahieren wir die connectionId
+          this.extractConnectionId(this.sessionCode());
+        }
+      }
+    }
+
     this.route.queryParams.subscribe(params => {
       const answer = params['answer'];
       if (answer) {
         console.warn("[DEBUG_LOG] WebRTC: Answer parameter detected in URL");
-        this.answerCodeControl.setValue(answer);
 
-        // Kleine Verzögerung, um sicherzustellen, dass createRoom()
-        // bereits einen Offer generiert hat (falls der User die Seite neu lädt)
-        // Wenn er bereits auf der Seite ist, sollte es sofort gehen.
+        // Wir prüfen in einem Intervall, ob die Raum-Session bereit ist (Offer generiert)
+        // Sobald sessionCode gesetzt ist, führen wir connect() aus.
         const checkSession = setInterval(() => {
           if (this.sessionCode()) {
+            console.warn("[DEBUG_LOG] WebRTC: Session ready, auto-connecting with answer code...");
+            this.answerCodeControl.setValue(answer);
             this.connect();
             clearInterval(checkSession);
+
+            // Parameter aus der URL entfernen, damit er bei einem manuellen Reload nicht erneut verarbeitet wird
+            this.router.navigate([], {
+              relativeTo: this.route,
+              queryParams: {answer: null},
+              queryParamsHandling: 'merge',
+              replaceUrl: true
+            });
           }
         }, 500);
 
-        // Nach 5 Sekunden aufhören zu warten, um Endlosschleifen zu vermeiden
-        setTimeout(() => clearInterval(checkSession), 5000);
+        // Nach 10 Sekunden aufhören zu warten
+        setTimeout(() => clearInterval(checkSession), 10000);
       }
     });
   }
@@ -106,25 +136,16 @@ export class RoomCreateComponent implements OnInit {
   }
 
   async generateNewOffer() {
-    const room = this.roomIdControl.value!;
+    const room = this.roomIdControl.value || this.socketService.getP2PRoomId();
+    if (!room) {
+      console.error("[DEBUG_LOG] WebRTC: No room name available for offer generation");
+      return;
+    }
     const offer = await this.webrtcService.createOffer(room);
     this.sessionCode.set(offer);
 
     console.warn("[DEBUG_LOG] WebRTC: New offer generated, decoding for connectionId...");
-    // Wir dekodieren den Offer vorab, um die connectionId zu erhalten (für den Status-Check)
-    try {
-      const decoded = LZString.decompressFromEncodedURIComponent(offer);
-      if (decoded) {
-        const packet = JSON.parse(decoded);
-        const id = packet.connectionId;
-        if (id) {
-          console.warn(`[DEBUG_LOG] WebRTC: Extracted connectionId: ${id}`);
-          this.p2pConnectionId.set(id);
-        }
-      }
-    } catch (e) {
-      console.error("[DEBUG_LOG] WebRTC: Error decoding own offer", e);
-    }
+    this.extractConnectionId(offer);
 
     const url = new URL(window.location.href);
     const baseUrl = url.origin + url.pathname;
@@ -192,6 +213,26 @@ export class RoomCreateComponent implements OnInit {
     this.p2pConnectionId.set(null);
     this.roomIdControl.reset();
     this.serverService.stopServer();
+  }
+
+  private extractConnectionId(offer: string) {
+    // Wir dekodieren den Offer vorab, um die connectionId zu erhalten (für den Status-Check)
+    try {
+      const decoded = LZString.decompressFromEncodedURIComponent(offer);
+      if (decoded) {
+        const packet = JSON.parse(decoded);
+        const id = packet.connectionId;
+        if (id) {
+          console.warn(`[DEBUG_LOG] WebRTC: Extracted connectionId: ${id}`);
+          this.p2pConnectionId.set(id);
+          // WICHTIG: Wir müssen dem WebRTC-Service mitteilen, dass dies die aktuell zu erwartende Verbindung ist,
+          // falls die Seite neu geladen wurde und pendingConnectionId dort verloren gegangen ist.
+          this.webrtcService.restorePendingConnection(id);
+        }
+      }
+    } catch (e) {
+      console.error("[DEBUG_LOG] WebRTC: Error decoding offer", e);
+    }
   }
 
 }

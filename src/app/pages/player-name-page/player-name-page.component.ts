@@ -4,6 +4,7 @@ import {MatFormFieldModule} from "@angular/material/form-field";
 import {MatInputModule} from "@angular/material/input";
 import {FormControl, FormGroup, ReactiveFormsModule, Validators} from "@angular/forms";
 import {PlayerService} from "../../service/player.service";
+import {SocketService} from "../../service/socket.service";
 import {MatIconModule} from "@angular/material/icon";
 import {ActivatedRoute, Router} from "@angular/router";
 import {WebRTCService} from "../../service/webrtc.service";
@@ -34,6 +35,18 @@ export class PlayerNamePage implements OnInit {
     const {name} = this.playerService.getPlayer();
     this.form.patchValue({name});
 
+    // Falls ein answer-Code vorhanden ist und der User bereits Host eines Raums ist,
+    // leiten wir ihn direkt zur Raum-Erstellungs-Seite zurück, damit der Code dort verarbeitet wird.
+    const answer = this.route.snapshot.queryParams['answer'];
+    const socketService = inject(SocketService);
+    // Wir nutzen localStorage direkt, falls das Service-Modell noch nicht bereit ist
+    const storedName = localStorage.getItem('playerName');
+    if (answer && socketService.isHost.value && (name || storedName)) {
+      console.log("[DEBUG_LOG] Host hat Antwort-Code gescannt. Leite zurück zum Raum...");
+      this.router.navigate(['/new-game'], {queryParams: {answer}});
+      return;
+    }
+
     // Falls wir von einem Join-Link kommen, behalten wir die Parameter für nachher
     const offer = this.route.snapshot.queryParams['offer'];
     if (offer) {
@@ -52,10 +65,13 @@ export class PlayerNamePage implements OnInit {
 
     // Falls ein Offer-Code vorhanden war, leiten wir direkt zurück zum Join
     const offer = this.route.snapshot.queryParams['offer'];
+    const answer = this.route.snapshot.queryParams['answer'];
+
     if (offer) {
       this.router.navigate(['/join-game'], {queryParams: {offer}});
     } else {
-      this.router.navigate(['/join-game']);
+      // Wenn wir einen Answer-Code haben, nehmen wir diesen mit zur Startseite
+      this.router.navigate(['/'], {queryParams: {answer}, queryParamsHandling: 'merge'});
     }
   }
 }

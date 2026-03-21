@@ -1,4 +1,4 @@
-import {inject, Injectable} from '@angular/core';
+import {inject, Injectable, signal} from '@angular/core';
 import {io, Socket} from 'socket.io-client';
 import {BehaviorSubject, Observable, Subject} from "rxjs";
 import {MYAction, SocketEvent} from "../util/client-enums";
@@ -18,13 +18,16 @@ export class SocketService {
   // Track if this client is hosting a server
   public isHost = new BehaviorSubject<boolean>(false);
   public p2pGameUpdate$ = new Subject<Game>();
+  // P2P UI-Zustände (für Persistenz bei Routen-Wechseln)
+  public sessionCode = signal('');
+  public joinLink = signal('');
+  public qrCodeDataUrl = signal('');
   private socket: Socket | null = null;
   private playerService = inject(PlayerService);
   private dataService = inject(DataService);
   private serverService = inject(ServerService);
   private webrtcService = inject(WebRTCService);
   private router = inject(Router);
-
   // Zwischenspeicher für den aktuellen P2P-Raumnamen (um Circular Dependency mit MatchService zu vermeiden)
   private currentP2PRoomId: string | null = null;
   // Track the current server URL
@@ -224,6 +227,10 @@ export class SocketService {
 
   public setP2PRoomId(roomId: string) {
     this.currentP2PRoomId = roomId;
+  }
+
+  public getP2PRoomId(): string | null {
+    return this.currentP2PRoomId;
   }
 
   public requestGameViaWebRTC(roomId: string) {

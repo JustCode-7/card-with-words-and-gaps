@@ -9,6 +9,10 @@
       <mat-icon>home</mat-icon>
       <span>MainMenue</span>
     </button>
+    <button (click)="goToRoomView()" *ngIf="socketService.isHost | async" mat-menu-item>
+      <mat-icon>meeting_room</mat-icon>
+      <span>Raumview anzeigen</span>
+    </button>
     <button (click)="pwa.askToInstall()" *ngIf="pwa.canInstall$ | async" mat-menu-item>
       <mat-icon>download</mat-icon>
       <span>App installieren</span>

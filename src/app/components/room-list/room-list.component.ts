@@ -37,6 +37,7 @@ export class RoomListComponent implements OnInit {
   answerLink = signal('');
   p2pRoomId = signal('P2P-Room');
   p2pConnectionId = signal<string | null>(null);
+  isUrl = signal(false);
   protected playerService = inject(PlayerService);
   private data = inject(DataService);
   rooms = this.data.roomListSignal;
@@ -47,6 +48,21 @@ export class RoomListComponent implements OnInit {
 
   ngOnInit(): void {
     const player = this.playerService.getPlayer();
+
+    // Reagiere auf Änderungen im Textfeld, um zu prüfen, ob es eine URL ist
+    this.offerCodeControl.valueChanges.subscribe(value => {
+      if (value) {
+        try {
+          // Prüfen, ob der String mit http(s) beginnt und eine gültige URL sein könnte
+          const url = new URL(value.trim());
+          this.isUrl.set(url.protocol === 'http:' || url.protocol === 'https:');
+        } catch (_) {
+          this.isUrl.set(false);
+        }
+      } else {
+        this.isUrl.set(false);
+      }
+    });
 
     // Check for offer in URL
     this.route.queryParams.subscribe(params => {
@@ -74,6 +90,17 @@ export class RoomListComponent implements OnInit {
         this.generateAnswer();
       }
     });
+  }
+
+  async handleAction() {
+    const value = this.offerCodeControl.value;
+    if (!value) return;
+
+    if (this.isUrl()) {
+      window.open(value.trim(), '_self');
+    } else {
+      await this.generateAnswer();
+    }
   }
 
   async generateAnswer() {
@@ -110,7 +137,9 @@ export class RoomListComponent implements OnInit {
       const url = new URL(window.location.href);
       // Entferne alle Query-Parameter, um eine saubere Basis-URL zu haben
       const baseUrl = url.origin + url.pathname;
-      const answerLink = `${baseUrl}#/join-game?answer=${encodeURIComponent(answer)}`;
+      // Der Link sollte generisch sein, damit der Host ihn überall verarbeiten kann,
+      // am besten über die Root-Route, die dann intelligent weiterleitet.
+      const answerLink = `${baseUrl}#/?answer=${encodeURIComponent(answer)}`;
       this.answerLink.set(answerLink);
 
       const qr = await this.webrtcService.generateQRCode(answerLink);
