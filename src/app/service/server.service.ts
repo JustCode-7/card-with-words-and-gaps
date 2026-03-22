@@ -28,10 +28,6 @@ export class ServerService {
   private games: Map<string, any> = new Map();
   private webrtcService = inject(WebRTCService);
 
-  constructor() {
-    this.restoreState();
-  }
-
   public startServer(roomId: string): void {
     if (this.isServerRunning()) {
       console.log('Server is already running');
@@ -82,16 +78,21 @@ export class ServerService {
     try {
       // Vor dem Schließen alle P2P-Gäste informieren
       this.webrtcService.sendMessage({event: 'room-deleted'});
-      this.webrtcService.closeAllConnections();
 
-      if (this.socket) {
-        this.socket.disconnect();
-      }
-      this.socket = null;
-      this.rooms.clear();
-      this.games.clear();
-      this.isServerRunning.set(false);
-      console.log('Disconnected from server');
+      // Kurze Verzögerung, damit die Nachricht noch rausgeht
+      setTimeout(() => {
+        this.webrtcService.closeAllConnections();
+
+        if (this.socket) {
+          this.socket.disconnect();
+        }
+        this.socket = null;
+        this.rooms.clear();
+        this.games.clear();
+        this.saveState(); // Clear persisted state as well
+        this.isServerRunning.set(false);
+        console.log('Disconnected from server');
+      }, 100);
     } catch (error) {
       console.error('Failed to stop server:', error);
     }
@@ -191,6 +192,38 @@ export class ServerService {
 
       this.games.set(roomId, game);
     }
+  }
+
+  public removePlayerByConnectionId(roomId: string, connectionId: string): void {
+    const room = this.rooms.get(roomId);
+    if (!room) return;
+
+    // Spieler aus dem Raum entfernen
+    const playerToRemove = room.players.find(p => p.connectionId === connectionId);
+    if (playerToRemove) {
+      console.log(`[SERVER] Removing player ${playerToRemove.name} (${playerToRemove.id}) from room ${roomId} due to disconnected connection ${connectionId}`);
+      room.players = room.players.filter(p => p.connectionId !== connectionId);
+    }
+
+    // Spieler aus dem Spiel-Objekt entfernen
+    const game = this.games.get(roomId);
+    if (game) {
+      const initialCount = game.spieler.length;
+      game.spieler = game.spieler.filter((s: any) => s.connectionId !== connectionId);
+
+      if (game.spieler.length < initialCount) {
+        console.log(`[SERVER] Removed player with connectionId ${connectionId} from game state. Players left: ${game.spieler.length}`);
+
+        // Falls der CatLord gegangen ist, neuen bestimmen
+        const catLordStillThere = game.spieler.find((s: any) => s.catLord);
+        if (!catLordStillThere && game.spieler.length > 0) {
+          console.log(`[SERVER] CatLord left, assigning new CatLord`);
+          game.spieler[0].catLord = true;
+        }
+      }
+      this.games.set(roomId, game);
+    }
+    this.saveState();
   }
 
   public saveState(): void {

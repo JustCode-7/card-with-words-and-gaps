@@ -7,10 +7,13 @@ import {Subject} from 'rxjs';
 export class WebRTCService {
   public connectionStatus = signal<'disconnected' | 'connecting' | 'connected'>('disconnected');
   public individualStatus = new Map<string, WritableSignal<'disconnected' | 'connecting' | 'connected'>>();
+  public activeConnections = signal<string[]>([]);
   public message$ = new Subject<any>();
-  private peerConnections: Map<string, RTCPeerConnection> = new Map();
+  public connectionDisconnected$ = new Subject<string>();
+  public peerConnections: Map<string, RTCPeerConnection> = new Map();
+  public pendingConnectionId = signal<string | null>(null);
   private dataChannels: Map<string, RTCDataChannel> = new Map();
-  private pendingConnectionId: string | null = null;
+  private pendingConnectionIds: Set<string> = new Set();
   private config: RTCConfiguration = {
     iceServers: [{urls: 'stun:stun.l.google.com:19302'}]
   };
@@ -22,8 +25,8 @@ export class WebRTCService {
    * Stellt eine ausstehende Verbindung wieder her, falls die Seite neu geladen wurde.
    */
   public restorePendingConnection(id: string) {
-    console.log(`[DEBUG_LOG] WebRTC: Setting pendingConnectionId to ${id}`);
-    this.pendingConnectionId = id;
+    console.log(`[DEBUG_LOG] WebRTC: Adding ${id} to pendingConnectionIds`);
+    this.pendingConnectionIds.add(id);
 
     if (!this.peerConnections.has(id)) {
       console.warn(`[DEBUG_LOG] WebRTC: Connection ${id} not found in peerConnections. Handshake might fail if this is a new PC.`);
@@ -34,7 +37,7 @@ export class WebRTCService {
   async createOffer(roomId: string): Promise<string> {
     console.warn(`[DEBUG_LOG] WebRTC: Creating offer for room ${roomId}`);
     const connectionId = Math.random().toString(36).substring(2, 9);
-    this.pendingConnectionId = connectionId;
+    this.pendingConnectionIds.add(connectionId);
 
     const pc = this.initPeerConnection(connectionId);
     const dc = pc.createDataChannel("game-data");
@@ -61,37 +64,82 @@ export class WebRTCService {
   async handleAnswer(compressedAnswer: string) {
     console.warn(`[DEBUG_LOG] WebRTC: Handling answer...`);
 
-    let sdp = LZString.decompressFromEncodedURIComponent(compressedAnswer.trim());
+    let decompressed = LZString.decompressFromEncodedURIComponent(compressedAnswer.trim());
 
-    if (!sdp) {
+    if (!decompressed) {
       console.warn("[DEBUG_LOG] WebRTC: Answer decompression failed! Attempting recovery...");
       const sanitized = compressedAnswer.trim().replace(/ /g, '+');
-      sdp = LZString.decompressFromEncodedURIComponent(sanitized);
+      decompressed = LZString.decompressFromEncodedURIComponent(sanitized);
     }
 
-    if (sdp) {
-      console.warn(`[DEBUG_LOG] WebRTC: Answer SDP decompressed (length: ${sdp.length})`);
+    if (decompressed) {
+      console.warn(`[DEBUG_LOG] WebRTC: Answer decompressed (length: ${decompressed.length})`);
 
       let pc: RTCPeerConnection | undefined;
+      let sdp: string | undefined;
+      let connectionId: string | null = null;
 
-      if (this.pendingConnectionId) {
-        pc = this.peerConnections.get(this.pendingConnectionId);
+      try {
+        // Versuche als JSON zu parsen (neues Format mit connectionId)
+        const packet = JSON.parse(decompressed);
+        sdp = packet.sdp;
+        connectionId = packet.connectionId;
+        console.warn(`[DEBUG_LOG] WebRTC: Parsed answer packet, connectionId: ${connectionId}`);
+      } catch (e) {
+        // Fallback: Altes Format (nur SDP)
+        sdp = decompressed;
+        console.warn(`[DEBUG_LOG] WebRTC: Answer is not JSON, treating as raw SDP (fallback)`);
       }
 
-      // Fallback: Wenn wir genau eine PeerConnection haben, nehmen wir diese
+      if (connectionId) {
+        pc = this.peerConnections.get(connectionId);
+        // TODO:
+        this.individualStatus.set(connectionId, signal<'disconnected' | 'connecting' | 'connected'>('connecting'));
+      }
+
+      if (!pc && this.pendingConnectionIds.size > 0) {
+        // Fallback: Wenn wir keine ID im Paket haben, schauen wir in den ausstehenden Verbindungen nach
+        // Falls nur eine aussteht, nehmen wir diese.
+        if (this.pendingConnectionIds.size === 1) {
+          const id = Array.from(this.pendingConnectionIds)[0];
+          pc = this.peerConnections.get(id);
+          console.warn(`[DEBUG_LOG] WebRTC: Using single pending connection ${id} as fallback.`);
+        } else if (connectionId && this.pendingConnectionIds.has(connectionId)) {
+          pc = this.peerConnections.get(connectionId);
+        }
+      }
+
+      // Letzter Fallback: Wenn wir genau eine PeerConnection haben, nehmen wir diese
       if (!pc && this.peerConnections.size === 1) {
         pc = Array.from(this.peerConnections.values())[0];
         console.warn("[DEBUG_LOG] WebRTC: Using single existing PeerConnection as fallback.");
       }
 
-      if (pc) {
+      if (pc && sdp) {
+        if (pc.signalingState !== 'have-local-offer') {
+          console.warn(`[DEBUG_LOG] WebRTC: Cannot set remote answer in state ${pc.signalingState}. Connection might already be established or in wrong state.`);
+          return;
+        }
+
         console.warn(`[DEBUG_LOG] WebRTC: Setting remote description.`);
         // Normalisiere Antwort-SDP
         const sanitizedSdp = sdp.split('\n').map(l => l.trim()).filter(l => l.length > 0).join('\r\n') + '\r\n';
         await pc.setRemoteDescription({type: 'answer', sdp: sanitizedSdp});
-        this.pendingConnectionId = null;
+
+        // Aus den ausstehenden IDs entfernen, falls vorhanden
+        if (connectionId) {
+          this.pendingConnectionIds.delete(connectionId);
+        } else {
+          // Falls wir über Fallback eine PC gefunden haben, versuchen wir deren ID zu finden und zu löschen
+          for (const [id, p] of this.peerConnections.entries()) {
+            if (p === pc) {
+              this.pendingConnectionIds.delete(id);
+              break;
+            }
+          }
+        }
       } else {
-        console.error(`[DEBUG_LOG] WebRTC ERROR: No matching peer connection found (PendingID: ${this.pendingConnectionId})`);
+        console.error(`[DEBUG_LOG] WebRTC ERROR: No matching peer connection found (ID: ${connectionId}, PendingIDs: ${Array.from(this.pendingConnectionIds).join(',')})`);
       }
     } else {
       console.error(`[DEBUG_LOG] WebRTC ERROR: Invalid answer (decompression failed)`);
@@ -153,7 +201,8 @@ export class WebRTCService {
       const normalizedAnswerSdp = sdp.split('\n').map(line => line.trim()).join('\r\n') + '\r\n';
 
       console.warn(`[DEBUG_LOG] WebRTC: Answer SDP generated (length: ${normalizedAnswerSdp.length}) for connectionId: ${connectionId}`);
-      const answerCompressed = LZString.compressToEncodedURIComponent(normalizedAnswerSdp);
+      const answerPacket = {sdp: normalizedAnswerSdp, connectionId};
+      const answerCompressed = LZString.compressToEncodedURIComponent(JSON.stringify(answerPacket));
       return {answer: answerCompressed, roomId};
     } catch (err: any) {
       console.error(`[DEBUG_LOG] WebRTC: SDP Error: ${err.message}`);
@@ -181,8 +230,9 @@ export class WebRTCService {
     this.peerConnections.clear();
     this.individualStatus.forEach(status => status.set('disconnected'));
     this.individualStatus.clear();
+    this.activeConnections.set([]);
     this.connectionStatus.set('disconnected');
-    this.pendingConnectionId = null;
+    this.pendingConnectionIds.clear();
   }
 
   private async waitForIceGathering(pc: RTCPeerConnection) {
@@ -226,12 +276,26 @@ export class WebRTCService {
       console.warn(`[DEBUG_LOG] ICE Connection State (${id}):`, state);
 
       if (state === 'connected' || state === 'completed') {
+        // connectionStatus signalisiert nur, dass MINDESTENS EINE Verbindung steht
         this.connectionStatus.set('connected');
         statusSignal.set('connected');
+        if (!this.activeConnections().includes(id)) {
+          this.activeConnections.update(prev => [...prev, id]);
+        }
       } else if (state === 'failed' || state === 'closed' || state === 'disconnected') {
         // Log explicitly for debugging
         console.warn(`[DEBUG_LOG] WebRTC State change: ${state} for ${id}`);
         statusSignal.set('disconnected');
+
+        // Wichtig: ID aus aktiven Verbindungen und internen Maps entfernen
+        this.activeConnections.update(prev => prev.filter(cid => cid !== id));
+        this.peerConnections.get(id)?.close();
+        this.peerConnections.delete(id);
+        this.dataChannels.get(id)?.close();
+        this.dataChannels.delete(id);
+        this.pendingConnectionIds.delete(id);
+
+        this.connectionDisconnected$.next(id);
 
         // Wir setzen den Status nur auf disconnected, wenn ALLE Verbindungen weg sind
         const allDisconnected = Array.from(this.peerConnections.values())
@@ -253,14 +317,23 @@ export class WebRTCService {
 
     channel.onopen = () => {
       console.warn(`[DEBUG_LOG] DataChannel open (${id})`);
+      // connectionStatus signalisiert nur, dass MINDESTENS EINE Verbindung steht
+      this.pendingConnectionId.set(null);
       this.connectionStatus.set('connected');
       statusSignal.set('connected');
+      if (!this.activeConnections().includes(id)) {
+        this.activeConnections.update(prev => [...prev, id]);
+      }
     };
     channel.onclose = () => {
       console.warn(`[DEBUG_LOG] DataChannel closed (${id})`);
       this.dataChannels.delete(id);
+      this.peerConnections.get(id)?.close();
       this.peerConnections.delete(id);
+      this.pendingConnectionIds.delete(id);
+      this.activeConnections.update(prev => prev.filter(cid => cid !== id));
       statusSignal.set('disconnected');
+      this.connectionDisconnected$.next(id);
 
       const allDisconnected = this.dataChannels.size === 0;
       if (allDisconnected) {

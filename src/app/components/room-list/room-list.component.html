@@ -3,6 +3,20 @@
     <h2 class="text-accent h4">Über Einladungs-Link beitreten (WebRTC)</h2>
 
     @if (!answerCode()) {
+      @if (getConnectionStatus()() === 'connected') {
+        <div class="bg-success-subtle p-3 rounded mb-3 text-center">
+          <mat-icon class="fs-1 h-auto w-auto" color="primary">check_circle</mat-icon>
+          <p class="mb-2"><strong>Du bist bereits verbunden!</strong></p>
+          <button (click)="finishJoin()" class="w-100" color="primary" mat-raised-button>
+            <mat-icon>play_arrow</mat-icon>
+            Lobby beitreten
+          </button>
+        </div>
+        <div class="text-center my-2">
+          <span class="small text-muted">ODER mit neuem Link verbinden:</span>
+        </div>
+      }
+
       <p class="small">Füge den Sessioncode vom Host ein oder nutze einen Einladungs-Link.</p>
       <mat-form-field>
         <mat-label>Sessioncode oder join-link vom Host</mat-label>
@@ -48,8 +62,18 @@
         Lobby beitreten
       </button>
 
-      @if (getConnectionStatus()() !== 'connected') {
-        <p class="mt-2 small text-center text-danger animation-pulse">Warten auf Bestätigung durch Host...</p>
+      @if (getConnectionStatus()() === 'connected') {
+        <p class="mt-2 small text-center text-success animation-pulse">
+          @if (!isInGame()) {
+            Der Host wartet auf deinen Lobbybeitritt ...
+          } @else {
+            Verbindung bestätigt!
+          }
+        </p>
+      } @else {
+        <p class="mt-2 small text-center text-danger animation-pulse">
+          Warten auf WebRTC-Verbindung...
+        </p>
       }
     }
   </div>

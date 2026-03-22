@@ -33,6 +33,12 @@
           </mat-list-item>
         </mat-list>
       </mat-card-content>
+      <mat-card-actions *ngIf="socketService.isHost()" align="end">
+        <button (click)="matchService.restartGame()" color="accent" mat-raised-button>
+          <mat-icon>refresh</mat-icon>
+          Spiel neu starten
+        </button>
+      </mat-card-actions>
     </mat-card>
   </div>
 } @else if (matchService.game().isStarted) {
@@ -75,7 +81,6 @@
 
     <!-- Leaderboard -->
     <div class="mt-5">
-      <h3>Spielstand</h3>
       <mat-list>
         <mat-list-item *ngFor="let s of matchService.game().spieler">
           <span matListItemTitle>{{ s.name }} {{ s.catLord ? '(Catlord)' : '' }}</span>

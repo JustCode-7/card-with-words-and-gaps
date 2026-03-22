@@ -136,6 +136,11 @@ export class MatchService {
 
     // P2P-Updates abonnieren (um Circular Dependency zu vermeiden)
     this.socketService.p2pGameUpdate$.subscribe(game => {
+      if (!game) {
+        console.warn("[MATCH] Received null game update, resetting state.");
+        this.game.set(new Game(cardSet, [], [], "", "", 'WAITING_FOR_ANSWERS', false, false, false));
+        return;
+      }
       this.updateGameFromServer(game);
     });
   }
@@ -360,6 +365,56 @@ export class MatchService {
     currentGame.isEnded = true;
     this.game.set({...currentGame});
     this.socketService.sendUpdateGame('updateGame', currentGame);
+  }
+
+  clearGame() {
+    console.log("[DEBUG_LOG] MatchService: Clearing game state");
+    const emptyGame = new Game([], [], [], "", "", 'WAITING_FOR_ANSWERS', false, false, false);
+    this.game.set(emptyGame);
+  }
+
+  restartGame() {
+    if (!this.socketService.isHost()) return;
+
+    const currentGame = this.game();
+    const players = currentGame.spieler;
+
+    // Reset players for new game
+    players.forEach(p => {
+      p.points = 0;
+      p.cards = [];
+      p.selectedCards = [];
+      p.ready = false;
+      p.catLord = false;
+    });
+
+    // Pick a random player as first CatLord for the new game
+    const firstCatLordIndex = Math.floor(Math.random() * players.length);
+    players[firstCatLordIndex].catLord = true;
+
+    // Create new game state with current players but fresh decks
+    const restartedGame = new Game(
+      [...this.cardEditorService.gaps()],
+      [...this.cardEditorService.answers()],
+      players,
+      currentGame.gameHash,
+      "",
+      'WAITING_FOR_ANSWERS',
+      false, // isStarted
+      false, // isEnded
+      false  // answersRevealed
+    );
+
+    this.game.set(restartedGame);
+    this.socketService.sendUpdateGame('updateGame', restartedGame);
+
+    // After reset, we need to start the game (deal cards, pick first gap card)
+    // We can call startGame() which handles the rest.
+    // Small delay to ensure clients processed the reset if needed,
+    // though signal updates are usually fine.
+    setTimeout(() => {
+      this.startGame();
+    }, 100);
   }
 
   joinRoom(roomId: string, playerName: string): boolean {

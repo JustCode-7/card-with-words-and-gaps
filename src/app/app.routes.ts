@@ -11,13 +11,14 @@ import {CardEditorPageComponent} from "./pages/card-editor-page/card-editor-page
 import {CardEditorEditComponent} from "./components/card-editor-edit/card-editor-edit.component";
 import {catlordGuard} from "./guards/catlord.guard";
 import {roomGuard} from "./guards/room.guard";
+import {nameGuard} from "./guards/name.guard";
 
 export const routes: Routes = [
   {path: '', component: EntryPageComponent, pathMatch: 'full'},
   {path: 'set-name', component: PlayerNamePage},
   {path: 'new-game', component: NewGamePage, resolve: {roomState: roomStateResolver}},
   {path: 'join-game', component: RoomOverviewPage, resolve: {roomList: roomListResolver}, pathMatch: 'full'},
-  {path: 'create-room/:playername', component: CatLordPage, pathMatch: 'full'},
+  {path: 'create-room/:playername', component: CatLordPage, canActivate: [nameGuard], pathMatch: 'full'},
   {
     path: 'game/:roomname/:playername/catlord',
     component: CatLordPage,

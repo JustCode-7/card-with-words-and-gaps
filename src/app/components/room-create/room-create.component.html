@@ -52,10 +52,12 @@
     <div
       class="d-flex flex-column shadow-sm ps-4 pe-4 rounded bg-dark border align-self-center mt-4 mb-5">
       <h3 class="mb-3 text-primary">WebRTC: Peer-to-Peer Verbindung aufbauen</h3>
+      <h3 class="mt-2 text-primary border bg-warning-subtle rounded">Füge neue Spieler der Reihe nach hinzu. Wurde ein
+        Spieler erfolgreich hinzugefügt, wird ein neuer Einladungslink generiert.</h3>
       <div class="d-flex flex-column">
         <h4 class="h6 font-weight-bold mt-2">Verbundene Spieler in der Lobby:</h4>
         <mat-chip-listbox aria-label="Player selection" class="mb-3">
-          @for (p of matchService.game().spieler; track p.id) {
+          @for (p of matchService.game().spieler; track $index) {
             <mat-chip-option [selectable]="false" color="accent" selected>
               <mat-icon
                 [class.status-icon-connected]="getIndividualStatus(p.connectionId)() === 'connected'"
@@ -69,22 +71,14 @@
               }
             </mat-chip-option>
           }
+          @for (connId of waitingP2PConnections(); track connId) {
+            <mat-chip-option [selectable]="false" color="warn" selected>
+              <mat-icon matChipAvatar>hourglass_empty</mat-icon>
+              waiting
+            </mat-chip-option>
+          }
         </mat-chip-listbox>
 
-        <div #statusContainer
-             [class.bg-danger-subtle]="getConnectionStatus()() === 'disconnected' || matchService.game().spieler.length < 2"
-             [class.bg-success-subtle]="getConnectionStatus()() === 'connected' && matchService.game().spieler.length >= 2"
-             [class.bg-warning-subtle]="getConnectionStatus()() === 'connecting' || (getConnectionStatus()() === 'connected' && matchService.game().spieler.length < 2)"
-             class="mt-2 text-center p-2 rounded small mb-4">
-          Netzwerk-Status:
-          <strong class="text-uppercase">
-            {{
-              (getConnectionStatus()() === 'connected' && matchService.game().spieler.length >= 2) ? 'connected (' + matchService.game().spieler.length + '/8)' :
-                (getConnectionStatus()() === 'connected' && matchService.game().spieler.length < 2) ? 'waiting for players' :
-                  getConnectionStatus()()
-            }}
-          </strong>
-        </div>
         <button (click)="startGame()" [disabled]="matchService.game().spieler.length < 2"
                 class="w-100 p-2 mb-2"
                 color="accent"
@@ -100,10 +94,6 @@
         <div class="step-box mb-4">
           <h4 class="h6 font-weight-bold">Schritt 1 - Einladungs-Link teilen, scan mich
             Spieler {{ matchService.game().spieler.length + 1 }}: </h4>
-          <button (click)="generateNewOffer()" class="w-100 mb-3" color="warn" mat-raised-button>
-            <mat-icon>refresh</mat-icon>
-            Neuen Einladungscode generieren
-          </button>
           <div class="text-center my-3">
             <img [src]="qrCodeDataUrl()" alt="QR Code" class="qr-image border rounded">
           </div>

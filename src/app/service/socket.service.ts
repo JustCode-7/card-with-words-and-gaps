@@ -19,6 +19,7 @@ export class SocketService {
   // Track if this client is hosting a server
   public isHost = signal<boolean>(localStorage.getItem('isHost') === 'true');
   public p2pGameUpdate$ = new Subject<Game>();
+  public p2pConnectionId = signal<string | null>(null);
   // P2P UI-Zustände (für Persistenz bei Routen-Wechseln)
   public sessionCode = signal('');
   public joinLink = signal('');
@@ -40,11 +41,25 @@ export class SocketService {
       this.handleWebRTCMessage(msg);
     });
 
-    // Automatisch beitreten, wenn P2P verbunden ist (nur für Gäste)
+    // Listen for WebRTC disconnections
+    this.webrtcService.connectionDisconnected$.subscribe(id => {
+      this.handleWebRTCDisconnect(id);
+    });
+
+    // Effekt: Automatisch beitreten, sobald der Host uns bestätigt hat
+    // Wichtig: joinRoomViaWebRTC ist idempotent genug (Host ignoriert mehrfache joins vom gleichen Spieler)
     toObservable(this.webrtcService.connectionStatus).subscribe(status => {
       if (status === 'connected' && !this.isHost()) {
-        // Wir nehmen den Raum-Namen aus dem MatchService
+        console.log("[DEBUG_LOG] P2P: Connection established, auto-joining room...");
         this.joinRoomViaWebRTC();
+      }
+
+      // Falls die Verbindung unerwartet getrennt wird (und wir kein Host sind)
+      if (status === 'disconnected' && !this.isHost() && this.currentP2PRoomId) {
+        console.warn("[DEBUG_LOG] P2P: Connection to host lost.");
+        if (this.router.url.includes('/game/')) {
+          this.router.navigate(['/']);
+        }
       }
     });
 
@@ -261,6 +276,43 @@ export class SocketService {
     });
   }
 
+  public clearP2PState() {
+    console.warn("[DEBUG_LOG] Clearing P2P state and localStorage");
+    localStorage.removeItem('isHost');
+    localStorage.removeItem('currentP2PRoomId');
+    localStorage.removeItem('p2p_saved_games');
+
+    this.isHost.set(false);
+    this.currentP2PRoomId = null;
+    this.sessionCode.set('');
+    this.joinLink.set('');
+    this.qrCodeDataUrl.set('');
+
+    this.webrtcService.closeAllConnections();
+
+    // Reset MatchService state via a dummy empty game or null if possible
+    // We emit an empty game update to clear the UI
+    this.p2pGameUpdate$.next(null as any);
+  }
+
+  public joinRoomViaWebRTC() {
+    console.warn("[DEBUG_LOG] joinRoomViaWebRTC called. Host status:", this.isHost());
+
+    const player: Player = this.playerService.getPlayer();
+    if (!player.name || player.name === 'undefined' || player.name === 'null') {
+      console.warn("P2P-Join verzögert: Spielername noch nicht gesetzt oder ungültig:", player.name);
+      return;
+    }
+
+    const roomId = this.currentP2PRoomId || "P2P-Room";
+    console.log(`[DEBUG_LOG] P2P-Join send: room=${roomId}, player=${player.name}`);
+
+    this.webrtcService.sendMessage({
+      event: 'join-room',
+      data: {roomId, player, connectionId: this.p2pConnectionId()}
+    });
+  }
+
   private handleBeforeUnload(): void {
     // Falls wir der Host sind, speichern wir den State noch einmal sicherheitshalber
     if (this.isHost()) {
@@ -281,6 +333,27 @@ export class SocketService {
     this.socket.on('game', () => {
       // Game updates will be handled by subscribers to getGame()
     });
+  }
+
+  private handleWebRTCDisconnect(connectionId: string) {
+    if (!this.isHost()) return;
+
+    const roomId = this.currentP2PRoomId || "P2P-Room";
+    console.warn(`[DEBUG_LOG] Host: P2P connection ${connectionId} disconnected. Removing player.`);
+
+    this.serverService.removePlayerByConnectionId(roomId, connectionId);
+
+    // Broadcast update to all other players
+    const updatedGame = this.serverService.getGame(roomId);
+    if (updatedGame) {
+      const gameCopy = JSON.parse(JSON.stringify(updatedGame));
+      console.log(`[DEBUG_LOG] Host: Broadcasting game update after disconnect. Players left: ${gameCopy.spieler.length}`);
+      this.p2pGameUpdate$.next(gameCopy);
+      this.webrtcService.sendMessage({
+        event: 'game',
+        data: gameCopy
+      });
+    }
   }
 
   private handleWebRTCMessage(msg: any) {
@@ -312,8 +385,8 @@ export class SocketService {
       }
     } else if (msg.event === 'join-room' && this.isHost()) {
       // Wenn wir der Host sind, registrieren wir den beigetretenen P2P-Spieler
-      const {roomId, player} = msg.data;
-      const connectionId = msg._connectionId;
+      const {roomId, player, connectionId: clientSentId} = msg.data;
+      const connectionId = clientSentId || msg._connectionId;
       console.log(`[DEBUG_LOG] Host: P2P player ${player.name} (${player.id}) joining room ${roomId} via connection ${connectionId}`);
 
       // Die connectionId am Spieler-Objekt speichern
@@ -340,27 +413,10 @@ export class SocketService {
         });
       }
     } else if (msg.event === 'room-deleted' && !this.isHost()) {
-      console.warn("[DEBUG_LOG] P2P: Host deleted the room. Navigating to home.");
+      console.warn("[DEBUG_LOG] P2P: Host closed the room. Clearing state.");
+      this.clearP2PState();
       this.router.navigate(['/']);
     }
-  }
-
-  private joinRoomViaWebRTC() {
-    console.warn("[DEBUG_LOG] joinRoomViaWebRTC called. Host status:", this.isHost());
-
-    const player: Player = this.playerService.getPlayer();
-    if (!player.name || player.name === 'undefined' || player.name === 'null') {
-      console.warn("P2P-Join verzögert: Spielername noch nicht gesetzt oder ungültig:", player.name);
-      return;
-    }
-
-    const roomId = this.currentP2PRoomId || "P2P-Room";
-    console.log(`[DEBUG_LOG] P2P-Join send: room=${roomId}, player=${player.name}`);
-
-    this.webrtcService.sendMessage({
-      event: 'join-room',
-      data: {roomId, player}
-    });
   }
 
   private connectToServer(): void {

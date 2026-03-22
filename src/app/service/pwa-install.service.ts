@@ -42,6 +42,9 @@ export class PwaInstallService {
 
     const ref = this.snackBar.open('Möchten Sie die App installieren?', 'Ja, gerne.', {
       duration: 10000,
+      verticalPosition: 'top',
+      panelClass: 'p-3 m-3',
+      horizontalPosition: 'center'
     });
 
     ref.onAction().subscribe(() => {

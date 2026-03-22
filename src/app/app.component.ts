@@ -1,4 +1,4 @@
-import {Component, inject, OnInit} from '@angular/core';
+import {Component, HostListener, inject, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {Router, RouterOutlet} from '@angular/router';
 import {MatButtonModule} from "@angular/material/button";
@@ -32,6 +32,19 @@ export class AppComponent implements OnInit {
   updateService = inject(UpdateService);
   wakeLockService = inject(WakeLockService);
 
+  // Warn user about data loss on reload when not in fullscreen
+  @HostListener('window:beforeunload', ['$event'])
+  public beforeUnloadHandler(event: BeforeUnloadEvent) {
+    // Standard: set returnValue to show confirmation dialog
+    if (navigator.userActivation.hasBeenActive) {
+      // Recommended
+      event.preventDefault();
+      // Included for legacy support, e.g. Chrome/Edge < 119
+      event.returnValue = true;
+    }
+    return
+  }
+
   ngOnInit() {
     // Die PWA-Logik und Update-Prüfungen werden automatisch in den Konstruktoren
     // der injizierten Services (PwaInstallService, UpdateService) gestartet.
@@ -49,5 +62,10 @@ export class AppComponent implements OnInit {
 
   endGame() {
     this.matchService.endGame();
+  }
+
+  protected clearCache() {
+    localStorage.clear();
+    this.router.navigate(['/set-name'], {skipLocationChange: true});
   }
 }

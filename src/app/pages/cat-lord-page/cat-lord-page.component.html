@@ -32,6 +32,12 @@
         </mat-list-item>
       </mat-list>
     </mat-card-content>
+    <mat-card-actions *ngIf="isHost()" align="end">
+      <button (click)="matchService.restartGame()" color="accent" mat-raised-button>
+        <mat-icon>refresh</mat-icon>
+        Spiel neu starten
+      </button>
+    </mat-card-actions>
   </mat-card>
 </div>
 
@@ -58,13 +64,13 @@
       <!-- Start Game Button for Host -->
       <div *ngIf="isHost() && !game().currentCatlordCard">
         <button (click)="matchService.startGame()"
-                [disabled]="(game().spieler?.length || 0) < 2"
+                [disabled]="game().spieler.length < 2"
                 color="accent"
                 mat-raised-button>
           <mat-icon>play_arrow</mat-icon>
           Spiel starten
         </button>
-        <div *ngIf="(game().spieler?.length || 0) < 2" class="small">
+        <div *ngIf="game().spieler.length < 2" class="small">
           Warte auf mindestens einen weiteren Spieler...
         </div>
       </div>

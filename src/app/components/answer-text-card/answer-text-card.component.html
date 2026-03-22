@@ -2,7 +2,7 @@
   <mat-card appearance="outlined" class="bg-gradient bg-success">
     <mat-card-header>
       <mat-card-title>
-        @for (part of lueckentextArr; track part) {
+        @for (part of lueckentextArr; track $index) {
           @if (gapCount() === 0) {
             {{ part.text }}
             <button (click)="markFirstFreeAnswer()" [id]="'gapbtn'+$index"

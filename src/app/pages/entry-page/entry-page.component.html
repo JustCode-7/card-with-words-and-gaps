@@ -1,6 +1,31 @@
 <div>
-  <div class="center-content mt-3">
+  <div class="center-content mt-3 d-flex flex-column align-items-center">
     <h2> Willkommen bei cards and gaps </h2>
+
+    <div class="d-flex align-items-center gap-2 mt-2">
+      @if (!isEditing()) {
+        <h3 class="mb-0 text-warning">{{ nameControl.value }}</h3>
+        <button (click)="toggleEdit()" aria-label="Name bearbeiten" mat-icon-button>
+          <mat-icon>edit</mat-icon>
+        </button>
+      } @else {
+        <mat-form-field appearance="outline" class="dense-form-field">
+          <mat-label>Dein Name</mat-label>
+          <input (keyup.enter)="saveName()" [formControl]="nameControl" matInput maxlength="32">
+          @if (nameControl.invalid) {
+            <mat-error>Name erforderlich</mat-error>
+          }
+        </mat-form-field>
+        <div class="d-flex gap-1">
+          <button (click)="saveName()" [disabled]="nameControl.invalid" color="primary" mat-icon-button>
+            <mat-icon>check</mat-icon>
+          </button>
+          <button (click)="toggleEdit()" color="warn" mat-icon-button>
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      }
+    </div>
   </div>
   <mat-card class="mt-3">
     <mat-card-header class="center-content">

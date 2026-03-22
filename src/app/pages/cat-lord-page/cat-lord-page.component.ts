@@ -70,7 +70,15 @@ export class CatLordPage implements OnInit, OnDestroy {
   constructor() {
     effect(() => {
       const game = this.game();
-      if (!game || !game.gameHash || game.isEnded) return;
+      // If room was closed by host, navigate to home (for guests)
+      if (!game || !game.gameHash) {
+        if (!this.socketService.isHost()) {
+          console.warn("[DEBUG_LOG] Game state cleared, returning home.");
+          this.router.navigate(['/']);
+        }
+        return;
+      }
+      if (game.isEnded) return;
 
       // Find this player in the game
       const playerInGame = game.spieler.find((s: Spieler) => s.name === this.catLordName);

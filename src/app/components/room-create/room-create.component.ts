@@ -1,4 +1,4 @@
-import {Component, ElementRef, inject, OnInit, signal, ViewChild} from '@angular/core';
+import {Component, computed, effect, ElementRef, inject, OnInit, signal, ViewChild} from '@angular/core';
 import {FormControl, ReactiveFormsModule, Validators} from "@angular/forms";
 import {MatButtonModule} from "@angular/material/button";
 import {MatFormFieldModule} from "@angular/material/form-field";
@@ -13,7 +13,6 @@ import {ServerService} from "../../service/server.service";
 import {ActivatedRoute, Router} from "@angular/router";
 import {MatchService} from "../../service/match.service";
 import {WebRTCService} from "../../service/webrtc.service";
-import {Game} from "../../model/game-model";
 import * as LZString from 'lz-string';
 import {Subscription} from "rxjs";
 
@@ -47,23 +46,43 @@ export class RoomCreateComponent implements OnInit {
   router = inject(Router);
   route = inject(ActivatedRoute);
 
-  spielerListe = signal<any[]>([]);
+  spielerListe = computed(() => this.matchService.game().spieler);
   p2pConnectionId = signal<string | null>(null);
   showScanner = signal(false);
   zoomLevel = signal(1.0);
   hasBarcodeDetector = 'BarcodeDetector' in window;
+
+  waitingP2PConnections = signal<string[]>([]);
 
   @ViewChild('statusContainer') statusContainer!: ElementRef;
   @ViewChild('scannerVideo') scannerVideo!: ElementRef<HTMLVideoElement>;
   private subscriptions: Subscription[] = [];
   private scannerInterval: any;
 
-  getIndividualStatus(connectionId?: string) {
-    if (connectionId && this.webrtcService.individualStatus.has(connectionId)) {
-      return this.webrtcService.individualStatus.get(connectionId)!;
+  constructor() {
+    effect(() => {
+      const active = this.webrtcService.activeConnections();
+      const spieler = this.matchService.game().spieler;
+      const spielerConnectionIds = spieler.map(s => s.connectionId).filter(id => !!id);
+
+      // Finde alle aktiven Verbindungen, die nicht in der Spielerliste sind
+      const waiting = active.filter(id => !spielerConnectionIds.includes(id));
+
+      // Nur aktualisieren, wenn sich die IDs wirklich geändert haben (Vermeidung von unnötigen Re-renders)
+      const current = this.waitingP2PConnections();
+      if (waiting.length !== current.length || !waiting.every(id => current.includes(id))) {
+        this.waitingP2PConnections.set(waiting);
+        console.error('Current waiting connectionId:', this.waitingP2PConnections()[0]);
+      }
+    });
+  }
+
+  getIndividualStatus(id?: string) {
+    if (this.webrtcService.pendingConnectionId() === null && id && this.webrtcService.individualStatus.has(id)) {
+      return signal<'disconnected' | 'connecting' | 'connected'>('connected');
     }
-    // Falls keine ID da ist (Host selbst), geben wir connected zurück
-    return signal('connected');
+    // Falls keine ID da ist (Host selbst) oder ID unbekannt
+    return signal(id ? 'disconnected' : 'connected');
   }
 
   async ngOnInit(): Promise<void> {
@@ -74,18 +93,9 @@ export class RoomCreateComponent implements OnInit {
       if (room) {
         this.roomIdControl.setValue(room);
 
-        // Spielerliste via game anstatt manuellem Subscribe
-        // Aber für Initialisierung können wir ein einmaliges Update erzwingen
-        if (this.matchService.game().spieler) {
-          this.spielerListe.set(this.matchService.game().spieler);
-        }
-
         // Falls noch kein Offer da ist, einen erzeugen
         if (!this.sessionCode()) {
           await this.generateNewOffer();
-        } else {
-          // Falls bereits ein Offer da ist (persistiert), extrahieren wir die connectionId
-          this.extractConnectionId(this.sessionCode());
         }
       }
     }
@@ -93,17 +103,18 @@ export class RoomCreateComponent implements OnInit {
     this.route.queryParams.subscribe(params => {
       // Parameter können vor oder nach dem Hash stehen
       const answer = params['answer'] || this.getQueryParamFromUrl('answer');
-      if (answer) {
-        console.warn("[DEBUG_LOG] WebRTC: Answer parameter detected in URL");
+      if (answer && this.socketService.isHost()) {
+        console.warn("[DEBUG_LOG] WebRTC: Answer parameter detected in URL for Host");
 
         // Wir prüfen in einem Intervall, ob die Raum-Session bereit ist (Offer generiert)
         // Sobald sessionCode gesetzt ist, führen wir connect() aus.
         const checkSession = setInterval(() => {
           if (this.sessionCode()) {
+            clearInterval(checkSession); // Zuerst Interval stoppen
+
             console.warn("[DEBUG_LOG] WebRTC: Session ready, auto-connecting with answer code...");
             this.answerCodeControl.setValue(answer);
             this.connect();
-            clearInterval(checkSession);
 
             // Parameter aus der URL entfernen, damit er bei einem manuellen Reload nicht erneut verarbeitet wird
             this.router.navigate([], {
@@ -164,13 +175,14 @@ export class RoomCreateComponent implements OnInit {
     this.answerCodeControl.setValue('');
   }
 
-  getConnectionStatus() {
-    const id = this.p2pConnectionId();
+  getConnectionStatus(connectionId?: string) {
+    const id = connectionId || this.p2pConnectionId();
     if (id && this.webrtcService.individualStatus.has(id)) {
       return this.webrtcService.individualStatus.get(id)!;
     }
     return this.webrtcService.connectionStatus;
   }
+
 
   copyLink() {
     navigator.clipboard.writeText(this.joinLink());
@@ -195,6 +207,10 @@ export class RoomCreateComponent implements OnInit {
           this.statusContainer.nativeElement.scrollIntoView({behavior: 'smooth', block: 'center'});
         }
       }, 100);
+
+      // Automatisch einen neuen Offer-Code für den nächsten Gast generieren
+      console.log("[DEBUG_LOG] WebRTC: Auto-generating new offer for the next guest...");
+      await this.generateNewOffer();
     }
   }
 
@@ -299,16 +315,14 @@ export class RoomCreateComponent implements OnInit {
   deleteRoom() {
     this.subscriptions.forEach(sub => sub.unsubscribe());
     this.subscriptions = [];
-    this.socketService.isHost.set(false);
-    this.socketService.setP2PRoomId('');
-    this.matchService.game.set(new Game([], [], [], "", "", 'WAITING_FOR_ANSWERS', false, false, false));
-    this.sessionCode.set('');
-    this.joinLink.set('');
-    this.qrCodeDataUrl.set('');
-    this.spielerListe.set([]);
+
+    // Inform all guests and cleanup
+    this.serverService.stopServer();
+
+    // Reset local UI state
+    this.socketService.clearP2PState();
     this.p2pConnectionId.set(null);
     this.roomIdControl.reset();
-    this.serverService.stopServer();
   }
 
   private initScannerLoop() {
@@ -346,17 +360,15 @@ export class RoomCreateComponent implements OnInit {
   }
 
   private extractAnswerFromValue(value: string): string {
-    let answer = value.trim();
-    try {
-      // Suche nach dem 'answer' Parameter in der gesamten URL (auch hinter dem Hash)
-      const urlObj = new URL(answer.startsWith('http') ? answer : 'http://localhost/' + answer);
+    let rawValue = value.trim();
 
-      // 1. Suche in Standard-Query-Parametern
+    // 1. Versuche, den 'answer' Parameter aus einer URL zu extrahieren
+    try {
+      const urlObj = new URL(rawValue.startsWith('http') ? rawValue : 'http://localhost/' + rawValue);
       let param = urlObj.searchParams.get('answer');
 
-      // 2. Suche in Query-Parametern nach dem Hash (Angular HashLocationStrategy)
-      if (!param && answer.includes('#')) {
-        const hashPart = answer.split('#')[1];
+      if (!param && rawValue.includes('#')) {
+        const hashPart = rawValue.split('#')[1];
         if (hashPart.includes('?')) {
           const hashQuery = hashPart.split('?')[1];
           const hashParams = new URLSearchParams(hashQuery);
@@ -364,25 +376,25 @@ export class RoomCreateComponent implements OnInit {
         }
       }
 
-      // 3. Regex Fallback für alle Fälle
       if (!param) {
-        const match = answer.match(/[?&]answer=([^&#]+)/);
+        const match = rawValue.match(/[?&]answer=([^&#]+)/);
         if (match) {
           param = decodeURIComponent(match[1]);
         }
       }
 
       if (param) {
-        answer = param;
+        return param;
       }
     } catch (e) {
-      // Wenn es keine valide URL ist, versuchen wir es trotzdem mit Regex
-      const match = answer.match(/[?&]answer=([^&#]+)/);
+      const match = rawValue.match(/[?&]answer=([^&#]+)/);
       if (match) {
-        answer = decodeURIComponent(match[1]);
+        return decodeURIComponent(match[1]);
       }
     }
-    return answer;
+
+    // Wenn es keine URL mit answer-Parameter ist, geben wir den getrimmten String zurück
+    return rawValue;
   }
 
   private extractConnectionId(offer: string) {

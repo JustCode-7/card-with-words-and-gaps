@@ -28,6 +28,7 @@ export class PlayerNamePage implements OnInit {
   private playerService = inject(PlayerService);
   private webrtcService = inject(WebRTCService);
   private router = inject(Router);
+  private socketService = inject(SocketService);
 
   private route = inject(ActivatedRoute);
 
@@ -35,11 +36,10 @@ export class PlayerNamePage implements OnInit {
     const {name} = this.playerService.getPlayer();
     this.form.patchValue({name});
 
-    const socketService = inject(SocketService);
     // Parameter können vor oder nach dem Hash stehen
     const answer = this.route.snapshot.queryParams['answer'] || this.getQueryParamFromUrl('answer');
-    const isHost = socketService.isHost();
-    const storedRoom = socketService.getP2PRoomId();
+    const isHost = this.socketService.isHost();
+    const storedRoom = this.socketService.getP2PRoomId();
 
     console.log("[DEBUG_LOG] PlayerNamePage ngOnInit. Name:", name, "Answer:", !!answer, "IsHost:", isHost, "StoredRoom:", storedRoom);
 

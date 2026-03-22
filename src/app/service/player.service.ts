@@ -12,7 +12,14 @@ export class PlayerService {
   }
 
   public setName(name: string): void {
-    localStorage.setItem('playerName', name);
+    if (name && name !== 'undefined' && name !== 'null') {
+      const oldName = localStorage.getItem('playerName');
+      console.log(`[DEBUG_LOG] PlayerService: Setting name from "${oldName}" to "${name}".`);
+      if (name === 'Karl' || name === 'Jenny' || name === 'lord') {
+        console.trace("[DEBUG_LOG] PlayerService: Name trace for " + name);
+      }
+      localStorage.setItem('playerName', name);
+    }
   }
 
   public getPlayer(): Player {
