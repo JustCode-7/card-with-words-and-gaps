@@ -8,8 +8,6 @@ import {MatIconModule} from "@angular/material/icon";
 import {MatchService} from "./service/match.service";
 import {SocketService} from "./service/socket.service";
 import {PwaInstallService} from "./service/pwa-install.service";
-import {UpdateService} from "./service/update.service";
-import {WakeLockService} from "./service/wake-lock.service";
 
 @Component({
   selector: 'app-root',
@@ -29,8 +27,6 @@ export class AppComponent implements OnInit {
   socketService = inject(SocketService);
   router = inject(Router);
   pwa = inject(PwaInstallService);
-  updateService = inject(UpdateService);
-  wakeLockService = inject(WakeLockService);
 
   // Warn user about data loss on reload when not in fullscreen
   @HostListener('window:beforeunload', ['$event'])
@@ -49,7 +45,6 @@ export class AppComponent implements OnInit {
     // Die PWA-Logik und Update-Prüfungen werden automatisch in den Konstruktoren
     // der injizierten Services (PwaInstallService, UpdateService) gestartet.
     console.log('[App] Initialisierung abgeschlossen. PWA-Services aktiv.');
-    this.wakeLockService.requestWakeLock();
   }
 
   goToMainMenu() {

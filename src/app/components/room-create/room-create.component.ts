@@ -72,7 +72,6 @@ export class RoomCreateComponent implements OnInit {
       const current = this.waitingP2PConnections();
       if (waiting.length !== current.length || !waiting.every(id => current.includes(id))) {
         this.waitingP2PConnections.set(waiting);
-        console.error('Current waiting connectionId:', this.waitingP2PConnections()[0]);
       }
     });
   }

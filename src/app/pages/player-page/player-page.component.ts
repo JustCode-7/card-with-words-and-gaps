@@ -13,6 +13,7 @@ import {MatListModule} from "@angular/material/list";
 import {MatIconModule} from "@angular/material/icon";
 import {CommonModule} from "@angular/common";
 import {NextCzarPipe} from "../cat-lord-page/cat-lord-page.component";
+import {ToggleFullscreenService} from "../../service/toggle-fullscreen.service";
 
 @Component({
   selector: 'app-player-page',
@@ -40,6 +41,7 @@ export class PlayerPage implements OnInit, OnDestroy {
   router: Router = inject(Router);
 
   player = signal<Spieler>(new Spieler('', this.playername, 1, [], [], false));
+  protected readonly fullscreenService = inject(ToggleFullscreenService);
   private subscriptions: Subscription[] = [];
 
   constructor() {
@@ -76,6 +78,7 @@ export class PlayerPage implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.fullscreenService.toggleTabFullScreenModeGame();
     console.log(`Player ${this.playername} in room ${this.roomname}`);
 
     // Initialize the match
