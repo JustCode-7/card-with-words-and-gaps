@@ -1,4 +1,4 @@
-import {Component, computed, effect, ElementRef, inject, OnInit, signal, ViewChild} from '@angular/core';
+import {Component, computed, effect, ElementRef, inject, OnDestroy, OnInit, signal, ViewChild} from '@angular/core';
 import {FormControl, ReactiveFormsModule, Validators} from "@angular/forms";
 import {MatButtonModule} from "@angular/material/button";
 import {MatFormFieldModule} from "@angular/material/form-field";
@@ -14,7 +14,8 @@ import {ActivatedRoute, Router} from "@angular/router";
 import {MatchService} from "../../service/match.service";
 import {WebRTCService} from "../../service/webrtc.service";
 import * as LZString from 'lz-string';
-import {Subscription} from "rxjs";
+import {MatProgressSpinner} from "@angular/material/progress-spinner";
+import {MatProgressBar} from "@angular/material/progress-bar";
 
 @Component({
   selector: 'app-room-create',
@@ -27,11 +28,13 @@ import {Subscription} from "rxjs";
     MatChipsModule,
     MatTooltipModule,
     MatSliderModule,
+    MatProgressSpinner,
+    MatProgressBar,
 
   ],
   templateUrl: './room-create.component.html'
 })
-export class RoomCreateComponent implements OnInit {
+export class RoomCreateComponent implements OnInit, OnDestroy {
 
   roomIdControl = new FormControl('', [Validators.required, Validators.maxLength(32)]);
   answerCodeControl = new FormControl('', [Validators.required]);
@@ -54,9 +57,11 @@ export class RoomCreateComponent implements OnInit {
 
   waitingP2PConnections = signal<string[]>([]);
 
+  public timeLeft = signal(300); // 5 Minuten
   @ViewChild('statusContainer') statusContainer!: ElementRef;
   @ViewChild('scannerVideo') scannerVideo!: ElementRef<HTMLVideoElement>;
-  private subscriptions: Subscription[] = [];
+  protected readonly parent = parent;
+  private timerInterval: any;
   private scannerInterval: any;
 
   constructor() {
@@ -74,6 +79,10 @@ export class RoomCreateComponent implements OnInit {
         this.waitingP2PConnections.set(waiting);
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    clearInterval(this.timerInterval);
   }
 
   getIndividualStatus(id?: string) {
@@ -169,19 +178,11 @@ export class RoomCreateComponent implements OnInit {
 
     const qr = await this.webrtcService.generateQRCode(joinLink);
     this.qrCodeDataUrl.set(qr);
+    this.startOfferTimer();
 
     // Eingabefeld für Antwort leeren
     this.answerCodeControl.setValue('');
   }
-
-  getConnectionStatus(connectionId?: string) {
-    const id = connectionId || this.p2pConnectionId();
-    if (id && this.webrtcService.individualStatus.has(id)) {
-      return this.webrtcService.individualStatus.get(id)!;
-    }
-    return this.webrtcService.connectionStatus;
-  }
-
 
   copyLink() {
     navigator.clipboard.writeText(this.joinLink());
@@ -281,11 +282,6 @@ export class RoomCreateComponent implements OnInit {
     }
   }
 
-  async toggleZoom() {
-    const newZoom = this.zoomLevel() >= 2 ? 1 : 2;
-    await this.setZoom(newZoom);
-  }
-
   stopScanner() {
     if (this.scannerInterval) {
       clearInterval(this.scannerInterval);
@@ -311,10 +307,7 @@ export class RoomCreateComponent implements OnInit {
     this.router.navigate(['game', room, playerName, 'catlord']);
   }
 
-  deleteRoom() {
-    this.subscriptions.forEach(sub => sub.unsubscribe());
-    this.subscriptions = [];
-
+  public deleteRoom() {
     // Inform all guests and cleanup
     this.serverService.stopServer();
 
@@ -322,6 +315,25 @@ export class RoomCreateComponent implements OnInit {
     this.socketService.clearP2PState();
     this.p2pConnectionId.set(null);
     this.roomIdControl.reset();
+  }
+
+  startOfferTimer() {
+    this.timeLeft.set(300); // Reset auf 5 Min
+    clearInterval(this.timerInterval);
+    this.timerInterval = setInterval(() => {
+      if (this.timeLeft() > 0) {
+        this.timeLeft.set(this.timeLeft() - 1);
+      } else {
+        clearInterval(this.timerInterval);
+        // Optional: Logik um das Offer im WebRTC-Service zu invalidieren
+      }
+    }, 1000);
+  }
+
+  formatTime(seconds: number) {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return signal<string>(`${mins}:${secs.toString().padStart(2, '0')}`);
   }
 
   private initScannerLoop() {
@@ -424,5 +436,4 @@ export class RoomCreateComponent implements OnInit {
       return null;
     }
   }
-
 }

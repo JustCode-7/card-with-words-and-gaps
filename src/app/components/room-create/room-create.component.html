@@ -55,19 +55,35 @@
       <h3 class="mt-2 text-primary border bg-warning-subtle rounded">Füge neue Spieler der Reihe nach hinzu. Wurde ein
         Spieler erfolgreich hinzugefügt, wird ein neuer Einladungslink generiert.</h3>
       <div class="d-flex flex-column">
-        <h4 class="h6 font-weight-bold mt-2">Verbundene Spieler in der Lobby:</h4>
+        <h4 #statusContainer class="h6 font-weight-bold mt-2">Verbundene Spieler in der Lobby:</h4>
         <mat-chip-listbox aria-label="Player selection" class="mb-3">
-          @for (p of matchService.game().spieler; track $index) {
+          @for (player of matchService.game().spieler; track $index) {
             <mat-chip-option [selectable]="false" color="accent" selected>
               <mat-icon
-                [class.status-icon-connected]="getIndividualStatus(p.connectionId)() === 'connected'"
-                [class.status-icon-disconnected]="getIndividualStatus(p.connectionId)() !== 'connected'"
+                [class.status-icon-connected]="getIndividualStatus(player.connectionId)() === 'connected'"
+                [class.status-icon-disconnected]="getIndividualStatus(player.connectionId)() !== 'connected'"
                 matChipAvatar>
-                {{ getIndividualStatus(p.connectionId)() === 'connected' ? 'person' : 'person_off' }}
+                {{ getIndividualStatus(player.connectionId)() === 'connected' ? 'person' : 'person_off' }}
               </mat-icon>
-              {{ p.name }}
-              @if (getIndividualStatus(p.connectionId)() !== 'connected') {
-                <span class="ms-1 small">({{ getIndividualStatus(p.connectionId)() }})</span>
+              {{ player.name }}
+              @if (player.connectionId && webrtcService.peerConnections.size > 0) {
+                @switch (webrtcService.individualStatus.get(player.connectionId!)!().type) {
+                  @case ('local') {
+                    <span title="lokales netzwerk">🏠 lokales netzwerk</span>
+                  }
+                  @case ('p2p') {
+                    <span title="direkte internetverbindung">🌍 direkte internetverbindung</span>
+                  }
+                  @case ('relay') {
+                    <span title="über server (relay)">☁️ relay</span>
+                  }
+                  @default {
+                    <span title="unbekannt">❓</span>
+                  }
+                }
+              }
+              @if (getIndividualStatus(player.connectionId)() !== 'connected') {
+                <span class="ms-1 small">({{ getIndividualStatus(player.connectionId)() }})</span>
               }
             </mat-chip-option>
           }
@@ -94,6 +110,21 @@
         <div class="step-box mb-4">
           <h4 class="h6 font-weight-bold">Schritt 1 - Einladungs-Link teilen, scan mich
             Spieler {{ matchService.game().spieler.length + 1 }}: </h4>
+          <div class="d-flex flex-column align-items-center mb-2">
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <mat-icon class="timer-icon" color="warn">timer</mat-icon>
+              <span [class.text-danger]="timeLeft() < 60" class="small fw-bold">
+          Link gültig für: {{ formatTime(timeLeft())() }}
+        </span>
+            </div>
+            <mat-progress-bar
+              [color]="timeLeft() < 60 ? 'warn' : 'primary'"
+              [value]="(timeLeft() / 300) * 100"
+              class="rounded"
+              mode="determinate"
+              style="height: 4px; width: 200px;">
+            </mat-progress-bar>
+          </div>
           <div class="text-center my-3">
             <img [src]="qrCodeDataUrl()" alt="QR Code" class="qr-image border rounded">
           </div>
@@ -164,6 +195,11 @@
           </button>
         </div>
       </div>
+    </div>
+  }
+  @if (sessionCode() && !qrCodeDataUrl()) {
+    <div class="mt-3">
+      <mat-spinner class="m-auto"></mat-spinner>
     </div>
   }
 </div>

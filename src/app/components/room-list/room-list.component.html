@@ -3,7 +3,7 @@
     <h2 class="text-accent h4">Über Einladungs-Link beitreten (WebRTC)</h2>
 
     @if (!answerCode()) {
-      @if (getConnectionStatus()() === 'connected') {
+      @if (getConnectionStatus()().state === 'connected') {
         <div class="bg-success-subtle p-3 rounded mb-3 text-center">
           <mat-icon class="fs-1 h-auto w-auto" color="primary">check_circle</mat-icon>
           <p class="mb-2"><strong>Du bist bereits verbunden!</strong></p>
@@ -48,21 +48,21 @@
         </button>
       </mat-form-field>
 
-      <div [class.bg-danger-subtle]="getConnectionStatus()() === 'disconnected'"
-           [class.bg-success-subtle]="getConnectionStatus()() === 'connected'"
-           [class.bg-warning-subtle]="getConnectionStatus()() === 'connecting'"
+      <div [class.bg-danger-subtle]="getConnectionStatus()().state === 'disconnected'"
+           [class.bg-success-subtle]="getConnectionStatus()().state === 'connected'"
+           [class.bg-warning-subtle]="getConnectionStatus()().state === 'connecting'"
            class="mt-3 p-2 text-center rounded">
-        Status: <strong class="text-uppercase">{{ getConnectionStatus()() }}</strong>
+        Status: <strong class="text-uppercase">{{ getConnectionStatus()().state }}</strong>
       </div>
 
-      <button (click)="finishJoin()" [disabled]="getConnectionStatus()() !== 'connected'"
+      <button (click)="finishJoin()" [disabled]="getConnectionStatus()().state !== 'connected'"
               class="w-100 mt-3 py-2" color="primary"
               mat-raised-button>
         <mat-icon>play_arrow</mat-icon>
         Lobby beitreten
       </button>
 
-      @if (getConnectionStatus()() === 'connected') {
+      @if (getConnectionStatus()().state === 'connected') {
         <p class="mt-2 small text-center text-success animation-pulse">
           @if (!isInGame()) {
             Der Host wartet auf deinen Lobbybeitritt ...

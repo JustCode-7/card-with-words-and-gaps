@@ -8,6 +8,7 @@ import {MatIconModule} from "@angular/material/icon";
 import {MatchService} from "./service/match.service";
 import {SocketService} from "./service/socket.service";
 import {PwaInstallService} from "./service/pwa-install.service";
+import {ServerService} from "./service/server.service";
 
 @Component({
   selector: 'app-root',
@@ -27,6 +28,7 @@ export class AppComponent implements OnInit {
   socketService = inject(SocketService);
   router = inject(Router);
   pwa = inject(PwaInstallService);
+  serverService = inject(ServerService);
 
   // Warn user about data loss on reload when not in fullscreen
   @HostListener('window:beforeunload', ['$event'])
@@ -62,5 +64,13 @@ export class AppComponent implements OnInit {
   protected clearCache() {
     localStorage.clear();
     this.router.navigate(['/set-name'], {skipLocationChange: true});
+  }
+
+  protected deleteRoom() {
+    // Inform all guests and cleanup
+    this.serverService.stopServer();
+
+    // Reset local UI state
+    this.socketService.clearP2PState();
   }
 }

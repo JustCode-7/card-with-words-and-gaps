@@ -1,4 +1,4 @@
-<mat-toolbar class="d-flex vw-100" color="primary">
+<mat-toolbar class="" color="primary">
   <span>Card with Words and Gaps</span>
   <span class="spacer"></span>
   <button [matMenuTriggerFor]="menu" aria-label="Menu" mat-icon-button>
@@ -20,6 +20,10 @@
     <button (click)="endGame()" *ngIf="socketService.isHost()" mat-menu-item>
       <mat-icon>stop</mat-icon>
       <span>End Game</span>
+    </button>
+    <button (click)="deleteRoom()" *ngIf="socketService.isHost()" class="bg-danger" mat-menu-item>
+      <mat-icon>delete</mat-icon>
+      <span>Delete Room</span>
     </button>
     <button (click)="clearCache()" mat-menu-item>
       <mat-icon>delete</mat-icon>

@@ -7,7 +7,7 @@ import {ActivatedRoute, Router} from "@angular/router";
 import {PlayerService} from "../../service/player.service";
 import {SocketService} from "../../service/socket.service";
 import {MatchService} from "../../service/match.service";
-import {WebRTCService} from "../../service/webrtc.service";
+import {PeerStatus, WebRTCService} from "../../service/webrtc.service";
 import {FormControl, ReactiveFormsModule, Validators} from "@angular/forms";
 import {MatFormFieldModule} from "@angular/material/form-field";
 import {MatInputModule} from "@angular/material/input";
@@ -58,7 +58,7 @@ export class RoomListComponent implements OnInit {
 
 
       // WICHTIG: Wir triggern das nur, wenn wir bereits eine Antwort generiert haben (also Gast sind)
-      if (status === 'connected' && answer && this.isInGame()) {
+      if (status.state === 'connected' && answer && this.isInGame()) {
         console.log("[DEBUG_LOG] RoomList: Connection confirmed by Host, auto-joining...");
         this.snackBar.open('Verbindung bestätigt! Trete Lobby bei...', 'OK', {duration: 3000});
         this.finishJoin();
@@ -210,15 +210,16 @@ export class RoomListComponent implements OnInit {
     // Wir nehmen den individuellen Status für diese Verbindung.
     // Falls keine ID da ist (noch kein Offer/Answer-Handshake), ist es 'disconnected'.
     if (this.webrtcService.pendingConnectionId() && id) {
-      this.webrtcService.individualStatus.set(id, signal<'disconnected' | 'connecting' | 'connected'>('connecting'));
-      return signal<'disconnected' | 'connecting' | 'connected'>('connecting');
+      this.webrtcService.individualStatus.set(id, signal<PeerStatus>({state: 'disconnected', type: 'unknown'}));
+      return signal<PeerStatus>({state: 'connecting', type: 'unknown'});
     }
     if (this.webrtcService.pendingConnectionId() === null && id && this.webrtcService.individualStatus.has(id)) {
-      return this.webrtcService.individualStatus.get(id)!;
+      return signal<PeerStatus>({state: 'connected', type: 'unknown'});
     }
 
     // Fallback: Wenn noch keine ID da ist, ist es immer disconnected
-    return signal<'disconnected' | 'connecting' | 'connected'>('disconnected');
+
+    return signal<PeerStatus>({state: 'disconnected', type: 'unknown'});
   }
 
   private getQueryParamFromUrl(name: string): string | null {
