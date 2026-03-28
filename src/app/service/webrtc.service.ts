@@ -333,7 +333,6 @@ export class WebRTCService {
     if (!this.individualStatus.has(id)) {
       this.individualStatus.set(id, signal<PeerStatus>({state: 'disconnected', type: 'unknown'}));
     }
-    const statusSignal = this.individualStatus.get(id)!;
 
     pc.oniceconnectionstatechange = () => {
       const state = pc.iceConnectionState;
@@ -354,7 +353,7 @@ export class WebRTCService {
           this.activeConnections.update(prev => [...prev, id]);
         }
 
-        // 4. Pfad-Analyse (ersetzt dein altes logConnectionStats)
+        // 4. Pfad-Analyse
         // Wir warten 1 Sekunde, damit der Browser die Statistiken stabilisiert hat
         setTimeout(() => this.logConnectionStats(id), 1000);
 

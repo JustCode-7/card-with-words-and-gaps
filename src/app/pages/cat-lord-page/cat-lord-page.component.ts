@@ -12,7 +12,6 @@ import {ActivatedRoute, Router} from "@angular/router";
 import {MatListModule} from "@angular/material/list";
 import {MatchService} from "../../service/match.service";
 import {Spieler} from "../../model/spieler-model";
-import {ToggleFullscreenService} from "../../service/toggle-fullscreen.service";
 
 @Pipe({
   name: 'nextCzar',
@@ -62,7 +61,6 @@ export class CatLordPage implements OnInit, OnDestroy {
     return this.shuffle(submitted);
   });
   isHost = this.socketService.isHost;
-  protected readonly fullscreenService = inject(ToggleFullscreenService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private subscriptions: Subscription[] = [];
@@ -90,7 +88,6 @@ export class CatLordPage implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.fullscreenService.toggleTabFullScreenModeGame();
     // Extract route parameters
     this.route.paramMap.subscribe(params => {
       this.roomname = params.get('roomname') || '';

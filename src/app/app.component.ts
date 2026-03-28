@@ -9,6 +9,7 @@ import {MatchService} from "./service/match.service";
 import {SocketService} from "./service/socket.service";
 import {PwaInstallService} from "./service/pwa-install.service";
 import {ServerService} from "./service/server.service";
+import {ToggleFullscreenService} from "./service/toggle-fullscreen.service";
 
 @Component({
   selector: 'app-root',
@@ -29,6 +30,7 @@ export class AppComponent implements OnInit {
   router = inject(Router);
   pwa = inject(PwaInstallService);
   serverService = inject(ServerService);
+  protected readonly fullscreenService = inject(ToggleFullscreenService);
 
   // Warn user about data loss on reload when not in fullscreen
   @HostListener('window:beforeunload', ['$event'])
@@ -69,7 +71,6 @@ export class AppComponent implements OnInit {
   protected deleteRoom() {
     // Inform all guests and cleanup
     this.serverService.stopServer();
-
     // Reset local UI state
     this.socketService.clearP2PState();
   }
