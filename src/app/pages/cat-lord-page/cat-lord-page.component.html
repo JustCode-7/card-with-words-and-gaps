@@ -88,54 +88,53 @@
         Alle Antworten zeigen
       </button>
     </div>
-
-    <!-- Submitted Answers for the Czar -->
-    <div *ngIf="game().roundStatus === 'CZAR_DECIDING' && game().answersRevealed" class="row w-100">
-      <div *ngFor="let entry of submittedAnswers(); let i = index" class="col-12 mb-3">
-        <mat-card appearance="outlined">
-          <mat-card-header>
-            <mat-card-title>Vorschlag {{ i + 1 }}</mat-card-title>
-          </mat-card-header>
-          <mat-card-content class="mt-2">
-            <p class="h5">{{ entry.fullText }}</p>
-          </mat-card-content>
-          <mat-card-actions align="end">
-            <button (click)="pickWinner(entry.name)" color="accent" mat-raised-button>Diesen wählen!</button>
-          </mat-card-actions>
-        </mat-card>
-      </div>
-    </div>
-
-    <!-- Round Summary -->
-    <div *ngIf="game().roundStatus === 'ROUND_FINISHED'" class="mt-4">
-      <mat-card appearance="outlined" class="bg-success text-white mb-4">
-        <mat-card-content class="text-center">
-          <h3>Runde beendet!</h3>
-          <p *ngIf="game().spieler | nextCzar as winner" class="h4">
-            Gewinner: <strong>{{ winner.name }}</strong>
-          </p>
-          <p class="h5 mt-2">"{{ game().lastWinnerFullText }}"</p>
-        </mat-card-content>
-      </mat-card>
-
-      <h3>Alle Vorschläge dieser Runde</h3>
-      <div class="row w-100 p-2">
-        <div *ngFor="let entry of game().lastRoundAnswers" class="col-12 mb-3 p-2">
-          <mat-card [class.border-3]="entry.isWinner" [class.border-primary]="entry.isWinner" appearance="outlined">
+    <div class="container mt-5 w-100 justify-content-center">
+      <!-- Submitted Answers for the Czar -->
+      <div *ngIf="game().roundStatus === 'CZAR_DECIDING' && game().answersRevealed" class="row w-100">
+        <div *ngFor="let entry of submittedAnswers(); let i = index" class="col-12 mb-3">
+          <mat-card appearance="outlined">
             <mat-card-header>
-              <mat-card-title>
-                {{ entry.name }}
-                <mat-icon *ngIf="entry.isWinner" class="align-middle" color="primary">emoji_events</mat-icon>
-              </mat-card-title>
+              <mat-card-title>Vorschlag {{ i + 1 }}</mat-card-title>
             </mat-card-header>
             <mat-card-content class="mt-2">
-              <p [class.fw-bold]="entry.isWinner" class="h5">{{ entry.fullText }}</p>
+              <p class="h5">{{ entry.fullText }}</p>
             </mat-card-content>
+            <mat-card-actions align="end">
+              <button (click)="pickWinner(entry.name)" color="accent" mat-raised-button>Diesen wählen!</button>
+            </mat-card-actions>
           </mat-card>
         </div>
       </div>
-    </div>
+      <!-- Round Summary -->
+      <div *ngIf="game().roundStatus === 'ROUND_FINISHED'" class="mt-4">
+        <mat-card appearance="outlined" class="bg-success text-white mb-4">
+          <mat-card-content class="text-center">
+            <h3>Runde beendet!</h3>
+            <p *ngIf="game().spieler | nextCzar as winner" class="h4">
+              Gewinner: <strong>{{ winner.name }}</strong>
+            </p>
+            <p class="h5 mt-2">"{{ game().lastWinnerFullText }}"</p>
+          </mat-card-content>
+        </mat-card>
 
+        <h3>Alle Vorschläge dieser Runde</h3>
+        <div class="row w-100 p-2">
+          <div *ngFor="let entry of game().lastRoundAnswers" class="col-12 mb-3 p-2">
+            <mat-card [class.border-3]="entry.isWinner" [class.border-primary]="entry.isWinner" appearance="outlined">
+              <mat-card-header>
+                <mat-card-title>
+                  {{ entry.name }}
+                  <mat-icon *ngIf="entry.isWinner" class="align-middle" color="primary">emoji_events</mat-icon>
+                </mat-card-title>
+              </mat-card-header>
+              <mat-card-content class="mt-2">
+                <p [class.fw-bold]="entry.isWinner" class="h5">{{ entry.fullText }}</p>
+              </mat-card-content>
+            </mat-card>
+          </div>
+        </div>
+      </div>
+    </div>
     <!-- Leaderboard -->
     <div class="mt-5 step-box mw-75">
       <h3>Spielstand</h3>

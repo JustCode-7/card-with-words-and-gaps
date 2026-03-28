@@ -52,7 +52,7 @@ export class RoomCreateComponent implements OnInit, OnDestroy {
   spielerListe = computed(() => this.matchService.game().spieler);
   p2pConnectionId = signal<string | null>(null);
   showScanner = signal(false);
-  zoomLevel = signal(1.0);
+  zoomLevel = signal(2.0);
   hasBarcodeDetector = 'BarcodeDetector' in window;
 
   waitingP2PConnections = signal<string[]>([]);

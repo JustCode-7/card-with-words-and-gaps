@@ -12,8 +12,9 @@ import {FormControl, ReactiveFormsModule, Validators} from "@angular/forms";
 import {MatFormFieldModule} from "@angular/material/form-field";
 import {MatInputModule} from "@angular/material/input";
 import {MatTooltip} from "@angular/material/tooltip";
-import {MatSnackBar, MatSnackBarModule} from "@angular/material/snack-bar";
+import {MatSnackBar} from "@angular/material/snack-bar";
 import * as LZString from 'lz-string';
+import {MatExpansionModule} from "@angular/material/expansion";
 
 @Component({
   selector: 'app-room-list',
@@ -25,7 +26,7 @@ import * as LZString from 'lz-string';
     MatFormFieldModule,
     MatInputModule,
     MatTooltip,
-    MatSnackBarModule
+    MatExpansionModule
   ],
   templateUrl: './room-list.component.html'
 })
@@ -60,7 +61,11 @@ export class RoomListComponent implements OnInit {
       // WICHTIG: Wir triggern das nur, wenn wir bereits eine Antwort generiert haben (also Gast sind)
       if (status.state === 'connected' && answer && this.isInGame()) {
         console.log("[DEBUG_LOG] RoomList: Connection confirmed by Host, auto-joining...");
-        this.snackBar.open('Verbindung bestätigt! Trete Lobby bei...', 'OK', {duration: 3000});
+        this.snackBar.open('Verbindung bestätigt! Trete Lobby bei...', 'OK', {
+          horizontalPosition: 'center',
+          verticalPosition: 'top',
+          duration: 3000
+        });
         this.finishJoin();
       }
     });
@@ -180,14 +185,6 @@ export class RoomListComponent implements OnInit {
     navigator.clipboard.writeText(this.answerCode());
   }
 
-  copyAnswerLink() {
-    navigator.clipboard.writeText(this.answerLink());
-  }
-
-  joinRoom(room: string) {
-    this.router.navigate(['game', room, this.playerService.getPlayer().name, 'player']);
-  }
-
   finishJoin() {
     const roomId = this.p2pRoomId();
     const playerName = this.playerService.getPlayer().name;
@@ -211,10 +208,11 @@ export class RoomListComponent implements OnInit {
     // Falls keine ID da ist (noch kein Offer/Answer-Handshake), ist es 'disconnected'.
     if (this.webrtcService.pendingConnectionId() && id) {
       this.webrtcService.individualStatus.set(id, signal<PeerStatus>({state: 'disconnected', type: 'unknown'}));
-      return signal<PeerStatus>({state: 'connecting', type: 'unknown'});
+      return signal<PeerStatus>({state: 'disconnected', type: 'unknown'});
     }
     if (this.webrtcService.pendingConnectionId() === null && id && this.webrtcService.individualStatus.has(id)) {
-      return signal<PeerStatus>({state: 'connected', type: 'unknown'});
+      this.webrtcService.individualStatus.set(id, signal<PeerStatus>({state: 'connecting', type: 'unknown'}));
+      return signal<PeerStatus>({state: 'connecting', type: 'unknown'});
     }
 
     // Fallback: Wenn noch keine ID da ist, ist es immer disconnected

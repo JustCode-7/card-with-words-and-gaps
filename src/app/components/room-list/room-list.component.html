@@ -31,14 +31,19 @@
     @if (answerCode()) {
       <h3 class="h6 font-weight-bold text-primary">Antwort-Code generiert!</h3>
       <p class="small">Zeige diesen QR-Code dem Host oder sende ihm den Code-String zurück.</p>
-
+      <h3 class="mt-2 text-primary border bg-warning-subtle rounded">Sollte der QR-Code benutzt werden, dann muss der
+        Raumersteller (Host), den App-internen QR-Code-Scanner zum scannen nutzen.<br>
+        Sonst bricht die RTC-Verbindung ab.<br>
+        Hinweis: Am zuverlässigsten ist es, sich den Code über einen Messanger zu teilen.<br>
+      </h3>
       <div class="text-center">
-        <img [src]="answerQrCodeUrl()" alt="QR Code"
-             class="img-fluid qr-image border rounded">
-        <button (click)="copyAnswerLink()" class="w-100 mb-3" color="accent" mat-stroked-button>
-          <mat-icon>content_copy</mat-icon>
-          Link kopieren
-        </button>
+        <mat-expansion-panel class="mb-2">
+          <mat-expansion-panel-header>
+            <mat-panel-title>Show QR-Code</mat-panel-title>
+          </mat-expansion-panel-header>
+          <img [src]="answerQrCodeUrl()" alt="QR Code"
+               class="img-fluid qr-image border rounded">
+        </mat-expansion-panel>
       </div>
       <mat-form-field class="w-75">
         <mat-label>Antwort-Code</mat-label>
@@ -54,27 +59,21 @@
            class="mt-3 p-2 text-center rounded">
         Status: <strong class="text-uppercase">{{ getConnectionStatus()().state }}</strong>
       </div>
-
-      <button (click)="finishJoin()" [disabled]="getConnectionStatus()().state !== 'connected'"
-              class="w-100 mt-3 py-2" color="primary"
-              mat-raised-button>
-        <mat-icon>play_arrow</mat-icon>
-        Lobby beitreten
-      </button>
-
-      @if (getConnectionStatus()().state === 'connected') {
+      @if (getConnectionStatus()().state === 'connecting') {
         <p class="mt-2 small text-center text-success animation-pulse">
-          @if (!isInGame()) {
-            Der Host wartet auf deinen Lobbybeitritt ...
-          } @else {
-            Verbindung bestätigt!
-          }
+          Der Host wartet auf deinen Lobbybeitritt ...
         </p>
       } @else {
         <p class="mt-2 small text-center text-danger animation-pulse">
           Warten auf WebRTC-Verbindung...
         </p>
       }
+      <button (click)="finishJoin()" [disabled]="getConnectionStatus()().state !== 'connecting'"
+              class="w-100 mt-3 py-2" color="primary"
+              mat-raised-button>
+        <mat-icon>play_arrow</mat-icon>
+        Lobby beitreten
+      </button>
     }
   </div>
 </div>

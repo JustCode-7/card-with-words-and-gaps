@@ -12,7 +12,8 @@
       <h3 class="mt-2 text-primary border bg-warning-subtle rounded">Als Raumersteller bist du der Host und der Server
         läuft auf
         deinem Gerät.
-        Bitte verlasse den Raum nicht, solange andere Spieler noch darin sind.</h3>
+        Löschst du den Raum, werden alle Spieler aus dem Raum entfernt und der Server wird beendet.
+        Genieße die Macht ;-)</h3>
       <button (click)="deleteRoom()"
               class="w-100 mt-2 mb-2"
               color="warn"
@@ -24,7 +25,6 @@
   } @else {
     <div class="d-flex flex-column p-3 border rounded shadow-sm bg-darks">
       <h2>Einen neuen Raum erstellen:</h2>
-
       <mat-form-field>
         <mat-label>Raum</mat-label>
         <input [formControl]="roomIdControl" matInput maxlength="32" required>
@@ -40,20 +40,21 @@
       </button>
     </div>
   }
-  @if (!matchService.game().isEnded && matchService.game().spieler.length >= 2 && !sessionCode()) {
-    <button (click)="beitreten()" class="w-100 py-3 mb-3 fs-2"
-            color="accent"
-            mat-raised-button>
-      <mat-icon>play_arrow</mat-icon>
-      Raum beitreten
-    </button>
-  }
   @if (sessionCode()) {
     <div
       class="d-flex flex-column shadow-sm ps-4 pe-4 rounded bg-dark border align-self-center mt-4 mb-5">
       <h3 class="mb-3 text-primary">WebRTC: Peer-to-Peer Verbindung aufbauen</h3>
-      <h3 class="mt-2 text-primary border bg-warning-subtle rounded">Füge neue Spieler der Reihe nach hinzu. Wurde ein
-        Spieler erfolgreich hinzugefügt, wird ein neuer Einladungslink generiert.</h3>
+      <h3 class="mt-2 text-primary border bg-warning-subtle rounded">Füge neue Spieler der Reihe nach hinzu.
+        Dazu siehst du weiter unten einen Einladungslink, den sendest du an einen Mitspieler.<br>
+        Aus dem Einladungslink erstellt der eingeladene Spieler eine Antwort, damit sich die Geräte miteinander
+        verbinden können.<br>
+        Diesen Antwortcode muss du dann unten bei "Schritt 2: Antwort-Code" einfügen und "Spieler hinzufügen"
+        klicken.<br>
+        Ist ein Spieler erfolgreich hinzugefügt, wird ein neuer Einladungslink generiert.<br>
+        Hinweis: Leider schlägt dieser Kontaktversuch manchmal fehl, dann probiere es nochmal.
+        Die besten Chancen für eine erfolgreiche Verbindung hat man, wenn alle Geräte im selben W-LAN (Netzwerk)
+        sind.<br>
+      </h3>
       <div class="d-flex flex-column">
         <h4 #statusContainer class="h6 font-weight-bold mt-2">Verbundene Spieler in der Lobby:</h4>
         <mat-chip-listbox aria-label="Player selection" class="mb-3">
@@ -151,7 +152,7 @@
 
             @if (showScanner()) {
               <div
-                class="scanner-container border rounded overflow-hidden bg-black position-relative scanner-container-height">
+                class="scanner-container border rounded overflow-hidden bg-black position-relative">
                 <video #scannerVideo class="w-100 h-100 object-fit-cover" playsinline></video>
                 <div
                   class="scanner-overlay position-absolute top-0 start-0 w-100 h-100 d-flex flex-row align-items-center justify-content-center pointer-events-none">
@@ -159,12 +160,12 @@
                   <!-- Zoom Controls (Left) -->
                   <div
                     class="pointer-events-auto bg-dark text-white border-white border rounded px-2 py-3 d-flex flex-column align-items-center gap-3 ms-2 position-absolute start-0 zoom-controls-panel">
-                    <mat-icon (click)="setZoom(5)" class="cursor-pointer icon-size-24">zoom_in
+                    <mat-icon (click)="setZoom(3)" class="cursor-pointer icon-size-24">zoom_in
                     </mat-icon>
                     <div class="zoom-slider-container">
                       <input #zoomSlider (input)="setZoom(+zoomSlider.value)" [value]="zoomLevel()"
                              class="cursor-pointer zoom-slider-vertical"
-                             max="5" min="1" step="0.1"
+                             max="3" min="1" step="0.1"
                              type="range">
                     </div>
                     <mat-icon (click)="setZoom(1)" class="cursor-pointer icon-size-24">zoom_out

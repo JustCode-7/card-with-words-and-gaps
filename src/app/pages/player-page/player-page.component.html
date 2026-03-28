@@ -42,7 +42,7 @@
     </mat-card>
   </div>
 } @else if (matchService.game().isStarted) {
-  <div>
+  <div class="container mt-5 w-100 justify-content-center">
     <!-- Round Summary for Players -->
     <div *ngIf="matchService.game().roundStatus === 'ROUND_FINISHED'" class="mt-4">
       <mat-card appearance="outlined" class="bg-success text-white mb-4">
@@ -55,21 +55,20 @@
         </mat-card-content>
       </mat-card>
 
-      <h3>Alle Vorschläge dieser Runde</h3>
-      <div class="row w-100 p-2">
-        <div *ngFor="let entry of matchService.game().lastRoundAnswers" class="col-12 mb-3">
-          <mat-card [class.border-3]="entry.isWinner" [class.border-primary]="entry.isWinner" appearance="outlined">
-            <mat-card-header>
-              <mat-card-title>
-                {{ entry.name }}
-                <mat-icon *ngIf="entry.isWinner" class="align-middle" color="primary">emoji_events</mat-icon>
-              </mat-card-title>
-            </mat-card-header>
-            <mat-card-content class="mt-2">
-              <p [class.fw-bold]="entry.isWinner" class="h5">{{ entry.fullText }}</p>
-            </mat-card-content>
-          </mat-card>
-        </div>
+      <h3>Übersicht</h3>
+      <div *ngFor="let entry of matchService.game().lastRoundAnswers"
+           class="flex-column mb-3">
+        <mat-card [class.border-3]="entry.isWinner" [class.border-primary]="entry.isWinner" appearance="outlined">
+          <mat-card-header>
+            <mat-card-title>
+              {{ entry.name }}
+              <mat-icon *ngIf="entry.isWinner" class="align-middle" color="primary">emoji_events</mat-icon>
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content class="mt-2">
+            <p [class.fw-bold]="entry.isWinner" class="h5">{{ entry.fullText }}</p>
+          </mat-card-content>
+        </mat-card>
       </div>
       <hr>
     </div>
@@ -80,7 +79,8 @@
     </div>
 
     <!-- Leaderboard -->
-    <div class="mt-5">
+    <div class="mt-5 step-box mw-75">
+      <h3>Spielstand</h3>
       <mat-list>
         <mat-list-item *ngFor="let s of matchService.game().spieler">
           <span matListItemTitle>{{ s.name }} {{ s.catLord ? '(Catlord)' : '' }}</span>

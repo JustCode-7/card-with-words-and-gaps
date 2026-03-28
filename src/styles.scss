@@ -118,8 +118,11 @@ body {
   transition: all 0.3s ease-in-out;
 }
 
-.scanner-container-height {
-  height: 550px;
+.scanner-container {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
 }
 
 .zoom-controls-panel {
