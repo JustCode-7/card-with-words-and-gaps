@@ -331,11 +331,13 @@ export class RoomCreateComponent implements OnInit, OnDestroy {
   }
 
   protected getHeightFocusBox() {
-    return this.scannerVideo?.nativeElement.offsetHeight * 0.5 || 200;
+    const tenPercent = this.scannerVideo?.nativeElement.offsetHeight * 0.1;
+    return this.scannerVideo?.nativeElement.offsetHeight - tenPercent || 200;
   }
 
   protected getWidthFocusBox() {
-    return this.scannerVideo?.nativeElement.offsetWidth * 0.25 || 200;
+    const tenPercent = this.scannerVideo?.nativeElement.offsetWidth * 0.1;
+    return this.scannerVideo?.nativeElement.offsetWidth - tenPercent || 200;
   }
 
   private initScannerLoop() {
