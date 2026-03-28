@@ -1,4 +1,4 @@
-import {Component, HostListener, inject, OnInit} from '@angular/core';
+import {Component, HostListener, inject, OnDestroy, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {Router, RouterOutlet} from '@angular/router';
 import {MatButtonModule} from "@angular/material/button";
@@ -24,12 +24,13 @@ import {ToggleFullscreenService} from "./service/toggle-fullscreen.service";
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, OnDestroy {
   matchService = inject(MatchService);
   socketService = inject(SocketService);
   router = inject(Router);
   pwa = inject(PwaInstallService);
   serverService = inject(ServerService);
+  toggleFullscreen = inject(ToggleFullscreenService);
   protected readonly fullscreenService = inject(ToggleFullscreenService);
 
   // Warn user about data loss on reload when not in fullscreen
@@ -46,9 +47,14 @@ export class AppComponent implements OnInit {
   }
 
   ngOnInit() {
+    this.toggleFullscreen.initDisplayAlwaysOnMode()
     // Die PWA-Logik und Update-Prüfungen werden automatisch in den Konstruktoren
     // der injizierten Services (PwaInstallService, UpdateService) gestartet.
     console.log('[App] Initialisierung abgeschlossen. PWA-Services aktiv.');
+  }
+
+  ngOnDestroy(): void {
+    this.fullscreenService.releaseDisplayAlwaysOnMode()
   }
 
   goToMainMenu() {

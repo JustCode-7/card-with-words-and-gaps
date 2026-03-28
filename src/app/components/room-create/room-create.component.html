@@ -170,7 +170,7 @@
     </div>
   }
 </div>
-@if (showScanner()) {
+@if (showScanner() && sessionCode()) {
   <div
     class="scanner-container border rounded overflow-hidden bg-black position-relative">
     <video #scannerVideo class="w-100 h-100 object-fit-cover" playsinline></video>
