@@ -301,12 +301,6 @@ export class RoomCreateComponent implements OnInit, OnDestroy {
     this.router.navigate(['game', room, playerName, 'catlord']);
   }
 
-  beitreten() {
-    const room = this.matchService.game().gameHash;
-    const playerName = this.playerService.getPlayer().name;
-    this.router.navigate(['game', room, playerName, 'catlord']);
-  }
-
   public deleteRoom() {
     // Inform all guests and cleanup
     this.serverService.stopServer();
@@ -334,6 +328,14 @@ export class RoomCreateComponent implements OnInit, OnDestroy {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return signal<string>(`${mins}:${secs.toString().padStart(2, '0')}`);
+  }
+
+  protected getHeightFocusBox() {
+    return this.scannerVideo?.nativeElement.offsetHeight * 0.5 || 200;
+  }
+
+  protected getWidthFocusBox() {
+    return this.scannerVideo?.nativeElement.offsetWidth * 0.25 || 200;
   }
 
   private initScannerLoop() {
