@@ -1,5 +1,5 @@
 @if (matchService.game().isEnded) {
-  <div class="container mt-5 w-100">
+  <div class="p-2 mt-5">
     <mat-card appearance="outlined" class="bg-success text-white text-center mb-4">
       <mat-card-header>
         <mat-card-title>
@@ -42,7 +42,7 @@
     </mat-card>
   </div>
 } @else if (matchService.game().isStarted) {
-  <div class="container mt-5 w-100 justify-content-center">
+  <div class="p-2 mt-5 justify-content-center no-overflow">
     <!-- Round Summary for Players -->
     <div *ngIf="matchService.game().roundStatus === 'ROUND_FINISHED'" class="mt-4">
       <mat-card appearance="outlined" class="bg-success text-white mb-4">

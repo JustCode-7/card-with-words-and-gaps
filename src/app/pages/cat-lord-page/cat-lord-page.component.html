@@ -1,4 +1,4 @@
-<div *ngIf="game().isEnded" class="container mt-5">
+<div *ngIf="game().isEnded" class="p-2 mt-5">
   <mat-card appearance="outlined" class="bg-success text-white text-center mb-4">
     <mat-card-header>
       <mat-card-title>
@@ -88,9 +88,9 @@
         Alle Antworten zeigen
       </button>
     </div>
-    <div class="container mt-5 w-100 justify-content-center">
+    <div class="mt-5 justify-content-center">
       <!-- Submitted Answers for the Czar -->
-      <div *ngIf="game().roundStatus === 'CZAR_DECIDING' && game().answersRevealed" class="row w-100">
+      <div *ngIf="game().roundStatus === 'CZAR_DECIDING' && game().answersRevealed" class="flex-row">
         <div *ngFor="let entry of submittedAnswers(); let i = index" class="col-12 mb-3">
           <mat-card appearance="outlined">
             <mat-card-header>
@@ -117,21 +117,19 @@
           </mat-card-content>
         </mat-card>
 
-        <h3>Alle Vorschläge dieser Runde</h3>
-        <div class="row w-100 p-2">
-          <div *ngFor="let entry of game().lastRoundAnswers" class="col-12 mb-3 p-2">
-            <mat-card [class.border-3]="entry.isWinner" [class.border-primary]="entry.isWinner" appearance="outlined">
-              <mat-card-header>
-                <mat-card-title>
-                  {{ entry.name }}
-                  <mat-icon *ngIf="entry.isWinner" class="align-middle" color="primary">emoji_events</mat-icon>
-                </mat-card-title>
-              </mat-card-header>
-              <mat-card-content class="mt-2">
-                <p [class.fw-bold]="entry.isWinner" class="h5">{{ entry.fullText }}</p>
-              </mat-card-content>
-            </mat-card>
-          </div>
+        <h3>Übersicht</h3>
+        <div *ngFor="let entry of game().lastRoundAnswers" class="flex-column mb-3">
+          <mat-card [class.border-3]="entry.isWinner" [class.border-primary]="entry.isWinner" appearance="outlined">
+            <mat-card-header>
+              <mat-card-title>
+                {{ entry.name }}
+                <mat-icon *ngIf="entry.isWinner" class="align-middle" color="primary">emoji_events</mat-icon>
+              </mat-card-title>
+            </mat-card-header>
+            <mat-card-content class="mt-2">
+              <p [class.fw-bold]="entry.isWinner" class="h5">{{ entry.fullText }}</p>
+            </mat-card-content>
+          </mat-card>
         </div>
       </div>
     </div>
