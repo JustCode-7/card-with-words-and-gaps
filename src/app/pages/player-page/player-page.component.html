@@ -6,11 +6,6 @@
           <h1>Spiel beendet!</h1>
         </mat-card-title>
       </mat-card-header>
-      <mat-card-content>
-        <p *ngIf="matchService.game().spieler | nextCzar as winner" class="h3">
-          Gesamtsieger: <strong>{{ winner.name }}</strong>
-        </p>
-      </mat-card-content>
     </mat-card>
 
     <mat-card appearance="outlined">
@@ -91,7 +86,7 @@
     </div>
   </div>
 } @else {
-  <div class="d-flex m-4 no-overflow justify-content-center w-100">
+  <div class="d-flex m-4 no-overflow justify-content-center">
     <mat-card appearance="outlined">
       <mat-card-content>
         <h2>Warte auf den Spielstart...</h2>

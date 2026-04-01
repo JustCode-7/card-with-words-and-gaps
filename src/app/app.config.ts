@@ -5,6 +5,10 @@ import {routes} from './app.routes';
 import {provideHttpClient} from "@angular/common/http";
 import {provideAnimations} from "@angular/platform-browser/animations";
 import {provideServiceWorker} from '@angular/service-worker';
+import {environment} from "../environments/environment";
+
+import {initializeApp, provideFirebaseApp} from '@angular/fire/app';
+import {getDatabase, provideDatabase} from '@angular/fire/database';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -15,5 +19,8 @@ export const appConfig: ApplicationConfig = {
       enabled: !isDevMode(),
       registrationStrategy: 'registerImmediately'
     }),
+    provideFirebaseApp(() => initializeApp(environment.firebase)),
+    // Realtime Database bereitstellen
+    provideDatabase(() => getDatabase())
   ]
 };

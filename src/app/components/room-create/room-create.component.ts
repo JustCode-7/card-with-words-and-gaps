@@ -10,12 +10,17 @@ import {MatSliderModule} from "@angular/material/slider";
 import {SocketService} from "../../service/socket.service";
 import {PlayerService} from "../../service/player.service";
 import {ServerService} from "../../service/server.service";
-import {ActivatedRoute, Router} from "@angular/router";
+import {ActivatedRoute, Router, RouterLink} from "@angular/router";
 import {MatchService} from "../../service/match.service";
 import {WebRTCService} from "../../service/webrtc.service";
 import * as LZString from 'lz-string';
 import {MatProgressSpinner} from "@angular/material/progress-spinner";
 import {MatProgressBar} from "@angular/material/progress-bar";
+import {MatButtonToggleModule} from "@angular/material/button-toggle";
+import {CommonModule} from "@angular/common";
+import {MatSnackBar, MatSnackBarModule} from "@angular/material/snack-bar";
+import {DataService} from "../../service/data.service";
+import {AppComponent} from "../../app.component";
 
 @Component({
   selector: 'app-room-create',
@@ -30,7 +35,10 @@ import {MatProgressBar} from "@angular/material/progress-bar";
     MatSliderModule,
     MatProgressSpinner,
     MatProgressBar,
-
+    MatButtonToggleModule,
+    CommonModule,
+    MatSnackBarModule,
+    RouterLink,
   ],
   templateUrl: './room-create.component.html'
 })
@@ -48,6 +56,12 @@ export class RoomCreateComponent implements OnInit, OnDestroy {
   webrtcService = inject(WebRTCService);
   router = inject(Router);
   route = inject(ActivatedRoute);
+  snackBar = inject(MatSnackBar);
+  appComponent = inject(AppComponent);
+
+  isHosting = signal(false);
+  selectedMode = signal<'online' | 'local'>('online');
+  errorMessage = signal<string | null>(null);
 
   spielerListe = computed(() => this.matchService.game().spieler);
   p2pConnectionId = signal<string | null>(null);
@@ -56,6 +70,7 @@ export class RoomCreateComponent implements OnInit, OnDestroy {
   hasBarcodeDetector = 'BarcodeDetector' in window;
 
   waitingP2PConnections = signal<string[]>([]);
+  dataService = inject(DataService)
 
   public timeLeft = signal(300); // 5 Minuten
   @ViewChild('statusContainer') statusContainer!: ElementRef;
@@ -65,6 +80,11 @@ export class RoomCreateComponent implements OnInit, OnDestroy {
   private scannerInterval: any;
 
   constructor() {
+    this.webrtcService.error$.subscribe(err => {
+      this.snackBar.open(err, 'Schließen', {duration: 5000});
+      this.errorMessage.set(err);
+    });
+
     effect(() => {
       const active = this.webrtcService.activeConnections();
       const spieler = this.matchService.game().spieler;
@@ -94,21 +114,33 @@ export class RoomCreateComponent implements OnInit, OnDestroy {
   }
 
   async ngOnInit(): Promise<void> {
-    // Falls wir bereits Host sind (Resolver hat das bereits im SocketService sichergestellt)
     const isHost = this.socketService.isHost();
-    if (isHost) {
-      const room = this.socketService.getP2PRoomId();
+    const roomFromSocket = this.socketService.getP2PRoomId();
+
+    this.route.queryParams.subscribe(async params => {
+      const roomFromParam = params['room'];
+      const room = roomFromParam || roomFromSocket;
+
       if (room) {
         this.roomIdControl.setValue(room);
 
-        // Falls noch kein Offer da ist, einen erzeugen
-        if (!this.sessionCode()) {
-          await this.generateNewOffer();
+        if (isHost) {
+          this.isHosting.set(true);
+
+          // Strenge Trennung der Hosting-Modi beim Start/Reload
+          if (this.webrtcService.mode() === 'online') {
+            console.warn("[DEBUG_LOG] RoomCreate: Online mode active, firebase listener should be running.");
+            // Im Online-Modus wird das Hosting i.d.R. schon in NewGamePage gestartet (startOnlineHosting)
+          } else {
+            console.warn("[DEBUG_LOG] RoomCreate: Local mode active, checking for offer...");
+            // Im Lokal-Modus brauchen wir ein Offer (sessionCode), falls noch keins da ist
+            if (!this.sessionCode()) {
+              await this.generateNewOffer();
+            }
+          }
         }
       }
-    }
 
-    this.route.queryParams.subscribe(params => {
       // Parameter können vor oder nach dem Hash stehen
       const answer = params['answer'] || this.getQueryParamFromUrl('answer');
       if (answer && this.socketService.isHost()) {
@@ -165,6 +197,12 @@ export class RoomCreateComponent implements OnInit, OnDestroy {
       console.error("[DEBUG_LOG] WebRTC: No room name available for offer generation");
       return;
     }
+
+    if (this.webrtcService.mode() === 'online') {
+      console.warn("[DEBUG_LOG] RoomCreate: generateNewOffer ignored because mode is ONLINE.");
+      return;
+    }
+
     const offer = await this.webrtcService.createOffer(room);
     this.sessionCode.set(offer);
 
@@ -302,11 +340,7 @@ export class RoomCreateComponent implements OnInit, OnDestroy {
   }
 
   public deleteRoom() {
-    // Inform all guests and cleanup
-    this.serverService.stopServer();
-
-    // Reset local UI state
-    this.socketService.clearP2PState();
+    this.appComponent.deleteRoom();
     this.p2pConnectionId.set(null);
     this.roomIdControl.reset();
   }
@@ -338,6 +372,10 @@ export class RoomCreateComponent implements OnInit, OnDestroy {
   protected getWidthFocusBox() {
     const tenPercent = this.scannerVideo?.nativeElement.offsetWidth * 0.1;
     return this.scannerVideo?.nativeElement.offsetWidth - tenPercent || 200;
+  }
+
+  protected copyRoomname(value: string | null) {
+    navigator.clipboard.writeText(value ?? '');
   }
 
   private initScannerLoop() {

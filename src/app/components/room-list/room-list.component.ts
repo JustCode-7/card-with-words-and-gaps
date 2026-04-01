@@ -1,4 +1,4 @@
-import {Component, effect, inject, OnInit, signal} from '@angular/core';
+import {Component, inject, OnInit, signal} from '@angular/core';
 import {MatButtonModule} from "@angular/material/button";
 import {MatIconModule} from "@angular/material/icon";
 import {DataService} from "../../service/data.service";
@@ -7,7 +7,6 @@ import {ActivatedRoute, Router} from "@angular/router";
 import {PlayerService} from "../../service/player.service";
 import {SocketService} from "../../service/socket.service";
 import {MatchService} from "../../service/match.service";
-import {PeerStatus, WebRTCService} from "../../service/webrtc.service";
 import {FormControl, ReactiveFormsModule, Validators} from "@angular/forms";
 import {MatFormFieldModule} from "@angular/material/form-field";
 import {MatInputModule} from "@angular/material/input";
@@ -15,6 +14,11 @@ import {MatTooltip} from "@angular/material/tooltip";
 import {MatSnackBar} from "@angular/material/snack-bar";
 import * as LZString from 'lz-string';
 import {MatExpansionModule} from "@angular/material/expansion";
+import {CommonModule} from "@angular/common";
+import {MatProgressBarModule} from "@angular/material/progress-bar";
+import {MatProgressSpinnerModule} from "@angular/material/progress-spinner";
+import {WebRTCService} from "../../service/webrtc.service";
+import {PeerStatus, WebRTCMode} from "../../service/webrtc.types";
 
 @Component({
   selector: 'app-room-list',
@@ -26,13 +30,18 @@ import {MatExpansionModule} from "@angular/material/expansion";
     MatFormFieldModule,
     MatInputModule,
     MatTooltip,
-    MatExpansionModule
+    MatExpansionModule,
+    CommonModule,
+    MatProgressBarModule,
+    MatProgressSpinnerModule
   ],
   templateUrl: './room-list.component.html'
 })
 export class RoomListComponent implements OnInit {
   webrtcService = inject(WebRTCService);
   offerCodeControl = new FormControl('', [Validators.required]);
+  roomNameControl = new FormControl('', [Validators.required, Validators.maxLength(32)]);
+  isJoiningOnline = signal(false);
   answerCode = signal('');
   answerQrCodeUrl = signal('');
   answerLink = signal('');
@@ -48,28 +57,6 @@ export class RoomListComponent implements OnInit {
   private matchService = inject(MatchService);
   private snackBar = inject(MatSnackBar);
 
-  constructor() {
-    // Effekt: Automatisch beitreten, sobald der Host uns bestätigt hat
-    effect(() => {
-      const pendingId = this.webrtcService.pendingConnectionId();
-      console.log("[DEBUG_LOG] RoomList: pendingId changed...", this.webrtcService.pendingConnectionId());
-      const statusGetter = this.getConnectionStatus();
-      const status = statusGetter();
-      const answer = this.answerCode();
-
-
-      // WICHTIG: Wir triggern das nur, wenn wir bereits eine Antwort generiert haben (also Gast sind)
-      if (status.state === 'connected' && answer && this.isInGame()) {
-        console.log("[DEBUG_LOG] RoomList: Connection confirmed by Host, auto-joining...");
-        this.snackBar.open('Verbindung bestätigt! Trete Lobby bei...', 'OK', {
-          horizontalPosition: 'center',
-          verticalPosition: 'top',
-          duration: 3000
-        });
-        this.finishJoin();
-      }
-    });
-  }
 
   isInGame() {
     const id = this.p2pConnectionId();
@@ -137,7 +124,48 @@ export class RoomListComponent implements OnInit {
     }
   }
 
+  async joinOnlineRoom() {
+    if (this.roomNameControl.invalid) return;
+    const roomName = this.roomNameControl.value!;
+    this.isJoiningOnline.set(true);
+
+    try {
+      console.warn(`[DEBUG_LOG] RoomList: Joining Online Room ${roomName}`);
+      const connectionId = await this.webrtcService.joinOnlineRoom(roomName);
+      this.p2pConnectionId.set(connectionId);
+      this.socketService.p2pConnectionId.set(connectionId);
+      this.webrtcService.pendingConnectionId.set(connectionId);
+
+      this.p2pRoomId.set(roomName);
+      this.answerCode.set('ONLINE_HANDSHAKE'); // Dummy marker
+
+      // Automatisch finishJoin aufrufen, sobald die Verbindung steht
+      // Wir prüfen den Status über das Signal des Services für diese ID
+      const checkInterval = setInterval(() => {
+        const dc = this.webrtcService.dataChannels.get(connectionId);
+        if (dc && dc.readyState === 'open') {
+          console.warn(`[DEBUG_LOG] Online: Connection established (DC Open)! Joining lobby...`);
+          clearInterval(checkInterval);
+          this.finishJoin();
+        }
+      }, 500);
+
+      // Timeout nach 30 Sekunden
+      setTimeout(() => clearInterval(checkInterval), 30000);
+
+      if (this.webrtcService.mode() === 'local') {
+        this.snackBar.open(`Raum ${roomName} beigetreten! Warte auf Host...`, 'OK', {duration: 3000});
+      } else {
+        this.snackBar.open(`Raum ${roomName} beigetreten! Host wartet auf Lobbybeitritt...`, 'OK', {duration: 3000});
+      }
+    } catch (e: any) {
+      this.snackBar.open(`Fehler: ${e.message}`, 'Schließen', {duration: 5000});
+      this.isJoiningOnline.set(false);
+    }
+  }
+
   async generateAnswer() {
+    this.webrtcService.mode.set(WebRTCMode.LOCAL);
     const offer = this.offerCodeControl.value;
     if (offer) {
       console.warn("[DEBUG_LOG] WebRTC: Attempting to decode offer code...");
@@ -196,7 +224,7 @@ export class RoomListComponent implements OnInit {
 
     // Wir fragen das Spiel aktiv beim Host an
     this.socketService.requestGameViaWebRTC(roomId);
-
+    this.webrtcService.pendingConnectionId.set(null);
     // Navigation erst nach einer kleinen Verzögerung oder wenn Daten da sind
     // In diesem Fall navigieren wir und lassen den Spinner in der PlayerPage wirken
     this.router.navigate(['/game', roomId, playerName, 'player']);
@@ -204,25 +232,29 @@ export class RoomListComponent implements OnInit {
 
   getConnectionStatus() {
     const id = this.p2pConnectionId();
-    // Wir nehmen den individuellen Status für diese Verbindung.
-    // Falls keine ID da ist (noch kein Offer/Answer-Handshake), ist es 'disconnected'.
-    if (this.webrtcService.pendingConnectionId() && id) {
-      this.webrtcService.individualStatus.set(id, signal<PeerStatus>({state: 'disconnected', type: 'unknown'}));
+    if (!id) {
       return signal<PeerStatus>({state: 'disconnected', type: 'unknown'});
     }
-    if (this.webrtcService.pendingConnectionId() === null && id && this.webrtcService.individualStatus.has(id)) {
-      this.webrtcService.individualStatus.set(id, signal<PeerStatus>({state: 'connecting', type: 'unknown'}));
+
+    // Wenn ein individueller Status im Service existiert, nutzen wir diesen direkt.
+    // if (this.webrtcService.individualStatus.has(id)) {
+    //   return this.webrtcService.individualStatus.get(id)!;
+    // }
+
+    // Fallback während des Handshakes
+    if (this.webrtcService.pendingConnectionId() === id) {
       return signal<PeerStatus>({state: 'connecting', type: 'unknown'});
     }
-
-    // Fallback: Wenn noch keine ID da ist, ist es immer disconnected
+    if (this.webrtcService.pendingConnectionId() === null) {
+      return signal<PeerStatus>({state: 'connected', type: 'unknown'});
+    }
 
     return signal<PeerStatus>({state: 'disconnected', type: 'unknown'});
   }
 
-  private getQueryParamFromUrl(name: string): string | null {
+  private getQueryParamFromUrl(name: string, urlString?: string): string | null {
     try {
-      const url = new URL(window.location.href);
+      const url = new URL(urlString || window.location.href);
       return url.searchParams.get(name);
     } catch (e) {
       return null;

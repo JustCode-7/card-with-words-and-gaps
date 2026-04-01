@@ -1,4 +1,4 @@
-import {Component, HostListener, inject, OnDestroy, OnInit} from '@angular/core';
+import {Component, effect, HostListener, inject, OnDestroy, OnInit} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {Router, RouterOutlet} from '@angular/router';
 import {MatButtonModule} from "@angular/material/button";
@@ -10,9 +10,12 @@ import {SocketService} from "./service/socket.service";
 import {PwaInstallService} from "./service/pwa-install.service";
 import {ServerService} from "./service/server.service";
 import {ToggleFullscreenService} from "./service/toggle-fullscreen.service";
+import {WebRTCService} from "./service/webrtc.service";
+import {WebRTCMode} from "./service/webrtc.types";
 
 @Component({
   selector: 'app-root',
+  standalone: true,
   imports: [
     CommonModule,
     RouterOutlet,
@@ -27,11 +30,25 @@ import {ToggleFullscreenService} from "./service/toggle-fullscreen.service";
 export class AppComponent implements OnInit, OnDestroy {
   matchService = inject(MatchService);
   socketService = inject(SocketService);
+  webrtcService = inject(WebRTCService);
   router = inject(Router);
   pwa = inject(PwaInstallService);
   serverService = inject(ServerService);
-  toggleFullscreen = inject(ToggleFullscreenService);
   protected readonly fullscreenService = inject(ToggleFullscreenService);
+
+  constructor() {
+    effect(() => {
+      const currentGame = this.matchService.game();
+      const currentUrl = this.router.url;
+
+      // Wenn wir in einem Spiel-Pfad sind (game/...), aber keine gültige Game-Hash mehr haben,
+      // dann leiten wir auf die Startseite zurück.
+      if (currentUrl.includes('/game/') && (!currentGame || !currentGame.gameHash)) {
+        console.warn("[DEBUG_LOG] No valid RoomID found, redirecting to EntryPage");
+        this.router.navigate(['/']);
+      }
+    });
+  }
 
   // Warn user about data loss on reload when not in fullscreen
   @HostListener('window:beforeunload', ['$event'])
@@ -47,7 +64,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.toggleFullscreen.initDisplayAlwaysOnMode()
+    this.fullscreenService.initDisplayAlwaysOnMode()
     // Die PWA-Logik und Update-Prüfungen werden automatisch in den Konstruktoren
     // der injizierten Services (PwaInstallService, UpdateService) gestartet.
     console.log('[App] Initialisierung abgeschlossen. PWA-Services aktiv.');
@@ -69,15 +86,21 @@ export class AppComponent implements OnInit, OnDestroy {
     this.matchService.endGame();
   }
 
+  public deleteRoom() {
+    // Inform all guests and cleanup
+    this.serverService.stopServer();
+
+    if (this.webrtcService.mode() === WebRTCMode.ONLINE) {
+      (this.webrtcService as any).cleanupConnection("HOST_ROOM_LOGIC");
+    }
+
+    // Reset local UI state
+    this.socketService.clearP2PState();
+    this.router.navigate(['/']);
+  }
+
   protected clearCache() {
     localStorage.clear();
     this.router.navigate(['/set-name'], {skipLocationChange: true});
-  }
-
-  protected deleteRoom() {
-    // Inform all guests and cleanup
-    this.serverService.stopServer();
-    // Reset local UI state
-    this.socketService.clearP2PState();
   }
 }

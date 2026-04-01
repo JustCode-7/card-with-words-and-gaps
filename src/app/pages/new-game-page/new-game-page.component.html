@@ -1,0 +1,40 @@
+<div class="mt-4">
+  @if (!roomNameParam()) {
+    <div class="d-flex flex-column p-4 border rounded shadow-sm bg-dark mx-auto my-auto px-1 py-1">
+      <h2 class="h4 mb-4 text-center">Neues Spiel erstellen</h2>
+
+      <mat-button-toggle-group (change)="selectedMode.set($event.value)"
+                               [value]="selectedMode()" class="justify-content-between mb-4">
+        <mat-button-toggle value="online">
+          <mat-icon>public</mat-icon>
+          Online (Server)
+        </mat-button-toggle>
+        <mat-button-toggle class="text-wrap" value="local">
+          <mat-icon>wifi</mat-icon>
+          Lokales WLAN (QR/Privat)
+        </mat-button-toggle>
+      </mat-button-toggle-group>
+
+      <mat-form-field appearance="outline" class="w-100 mb-2">
+        <mat-label>Raumname</mat-label>
+        <input [formControl]="roomIdControl" matInput maxlength="32" placeholder="z.B. MeinAbend" required>
+        <mat-hint>Spieler geben diesen Namen ein, um beizutreten.</mat-hint>
+      </mat-form-field>
+
+      <button (click)="createRoom()"
+              [disabled]="roomIdControl.invalid || isCreating()"
+              class="w-100 mt-3 py-2"
+              color="accent"
+              mat-raised-button>
+        <mat-icon>{{ selectedMode() === 'online' ? 'cloud_queue' : 'add' }}</mat-icon>
+        {{ selectedMode() === 'online' ? 'Online-Raum starten' : 'Lokalen Raum erstellen' }}
+      </button>
+
+      @if (errorMessage()) {
+        <div class="text-danger small mt-3 text-center">{{ errorMessage() }}</div>
+      }
+    </div>
+  } @else {
+    <app-room-create/>
+  }
+</div>
